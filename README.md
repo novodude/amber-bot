@@ -64,13 +64,13 @@ python main.py
 
 ---
 
--  ✅ Add `/duck` (Completed!)
--  ✅ Add `/rarch` inkblot generator (Completed!)
--  Add a simple game
--  Add gambling (because why not)
--  Train a simple LLM model and link it to the bot
--  Add `/fact`, `/quote`, and `/8ball`
--  Add a leveling system
+-  [x] Add `/duck` (Completed!)
+-  [x] Add `/rarch` inkblot generator (Completed!)
+- [ ] Add a simple game
+- [ ] Add gambling (because why not)
+- [ ] Train a simple LLM model and link it to the bot
+- [ ] Add `/fact`, `/quote`, and `/8ball`
+- [ ] Add a leveling system
     
 
 ---
