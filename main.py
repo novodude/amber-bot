@@ -4,7 +4,8 @@ from discord import app_commands, User
 import logging
 from dotenv import load_dotenv
 import os
-from reactions import setup_reactions
+from commands.reactions import setup_reactions
+from commands.inkblot import inkblot_setup
 import random
 import aiohttp
 
@@ -20,7 +21,8 @@ bot = commands.Bot(command_prefix='!', intents=intents)
 @bot.event
 async def on_ready():
     print(f"we are quacking here, {bot.user.name}")
-    await setup_reactions(bot)   
+    await setup_reactions(bot)
+    await inkblot_setup(bot)   
     await bot.tree.sync()
     print("Commands synced.")
 

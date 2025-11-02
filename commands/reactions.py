@@ -117,14 +117,13 @@ ACTIONS = {
 }
 
 async def setup_reactions(bot):
-    """Setup the /do command with all reactions"""
-    
     @bot.tree.command(name="do", description="Perform an action with a GIF!")
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     @app_commands.allowed_installs(guilds=True, users=True)
     @app_commands.describe(
         action="Choose an action to perform",
-        user="The person you want to interact with (optional)"
+        user="The person you want to interact with (optional)",
+        everyone="Perform the action on everyone (optional)"
     )
     async def do_action(
         interaction: discord.Interaction,
@@ -133,7 +132,8 @@ async def setup_reactions(bot):
             'punch', 'tickle', 'feed', 'highfive', 'dance', 'sleep', 'cry',
             'blush', 'smile', 'think', 'shrug', 'yawn', 'wave', 'laugh'
         ],
-        user: Optional[discord.User] = None
+        user: Optional[discord.User] = None,
+        everyone: Optional[bool] = False
     ):
         await interaction.response.defer()
         
@@ -149,6 +149,8 @@ async def setup_reactions(bot):
                 embed.description = f"{interaction.user.mention} {action_data['description']} {user.mention} {action_data['emoji']}"
             elif user == interaction.user:
                 embed.description = f"{interaction.user.mention} {action_data['description']} themselves {action_data['emoji']}"
+            elif everyone == True:
+                embed.description = f"{interaction.user.mention} {action_data['description']} everyone {action_data['emoji']}"
             else:
                 embed.description = f"{interaction.user.mention} {action_data['description']} {action_data['emoji']}"
             
