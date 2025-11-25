@@ -13,7 +13,7 @@ def generate_inkblot(width=500, height=700):
     draw = ImageDraw.Draw(img)
     
     dark = ['black', '#432323', '#0C2B4E', '#7A2828', 'darkblue', 'darkred']
-    light = ['white', 'honeydew', 'lightpink', 'lightblue', 'lightyellow']
+    light = ['white', 'honeydew', 'lightblue', 'lightyellow']
 
     if bg_color in ['black', '#432323', '#0C2B4E', '#7A2828']:
         fill_color = random.choice(light) 
@@ -82,13 +82,12 @@ def generate_inkblot(width=500, height=700):
             fill=fill_color
         )
 
-    img = img.filter(ImageFilter.GaussianBlur(radius=1.1))
+    img = img.filter(ImageFilter.GaussianBlur(radius=1))
     left_half = img.crop((0, 0, half_width, height))
     right_half = left_half.transpose(Image.FLIP_LEFT_RIGHT)
     img.paste(right_half, (half_width, 0))
 
     return img
-
 async def inkblot_setup(bot):
     @bot.tree.command(name="rarch", description="Generate a inkblot image.")
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)

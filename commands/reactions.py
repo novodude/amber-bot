@@ -189,53 +189,50 @@ async def setup_reactions(bot):
             action_data = ACTIONS[action]            
             embed = discord.Embed(color=action_data['color'])
             embed.set_image(url=gif_url)
-            if user and user != interaction.user:
+            if everyone:
+                # Everyone case
                 if action_data['lone']:
                     embed.description = (
-                        f"{interaction.user.mention} {action_data['description']} "
-                        f"{action_data['link']} {user.mention} {action_data['emoji']}"
+                        f"### **{interaction.user.display_name} {action_data['description']} {action_data['link']} everyone {action_data['emoji']} **"
                     )
                 else:
                     embed.description = (
-                        f"{interaction.user.mention} {action_data['description']} "
-                        f"{user.mention} {action_data['emoji']}"
+                        f"### **{interaction.user.display_name} {action_data['description']} everyone {action_data['emoji']} **"
                     )
-            
-            elif user == interaction.user:
+
+            elif user and user == interaction.user:
+                # Self-targeting case
                 if action_data['lone']:
                     embed.description = (
-                        f"{interaction.user.mention} {action_data['description']} "
-                        f"{action_data['link']} themselves {action_data['emoji']}"
+                        f"### **{interaction.user.display_name} {action_data['description']} {action_data['link']} themselves {action_data['emoji']} **"
                     )
                 else:
                     embed.description = (
-                        f"{interaction.user.mention} {action_data['description']} "
-                        f"themselves {action_data['emoji']}"
+                        f"### **{interaction.user.display_name} {action_data['description']} themselves {action_data['emoji']} **"
                     )
-            
-            elif everyone == True:
+
+            elif user:
+                # Targeting another user
                 if action_data['lone']:
                     embed.description = (
-                        f"{interaction.user.mention} {action_data['description']} "
-                        f"{action_data['link']} everyone {action_data['emoji']}"
+                        f"### **{interaction.user.display_name} {action_data['description']} {action_data['link']} {user.display_name} {action_data['emoji']} **"
                     )
                 else:
                     embed.description = (
-                        f"{interaction.user.mention} {action_data['description']} "
-                        f"everyone {action_data['emoji']}"
+                        f"### **{interaction.user.display_name} {action_data['description']} {user.display_name} {action_data['emoji']} **"
                     )
-            
+
             else:
+                # No target (solo action)
                 embed.description = (
-                    f"{interaction.user.mention} {action_data['description']} "
-                    f"{action_data['emoji']}"
+                    f"### **{interaction.user.display_name} {action_data['description']} {action_data['emoji']} **"
                 )
-                       
-            await interaction.followup.send(embed=embed)           
+
+            await interaction.followup.send(embed=embed)
         except Exception as e:
             embed = discord.Embed(
                 title="error",
-                description="somthing went wrong!",
+                description=f"somthing went wrong!\n ```log\n\n{str(e)}\n\n```",
                 color=discord.Color.red()
             )
             await interaction.followup.send (embed=embed, ephemeral=True)

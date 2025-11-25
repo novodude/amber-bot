@@ -1,13 +1,13 @@
+import os
 import discord
-from discord.ext import commands
-from discord import app_commands, User
 import logging
 from dotenv import load_dotenv
-import os
+from discord.ext import commands
+from discord import app_commands
 from commands.reactions import setup_reactions
 from commands.inkblot import inkblot_setup
-import random
-import aiohttp
+from commands.ofc import ofc_setup
+from commands.animals import animals_setup
 
 load_dotenv()
 token = os.getenv("DISCORD_TOKEN")
@@ -22,9 +22,60 @@ bot = commands.Bot(command_prefix='!', intents=intents)
 async def on_ready():
     print(f"we are quacking here, {bot.user.name}")
     await setup_reactions(bot)
-    await inkblot_setup(bot)   
+    await inkblot_setup(bot)
+    await ofc_setup(bot)
+    await animals_setup(bot)
     await bot.tree.sync()
     print("Commands synced.")
+@bot.event
+async def on_guild_join(guild):
+        general = discord.utils.find(lambda x: x.name == 'general' and x.type == discord.ChannelType.text, guild.channels)
+        if general and general.permissions_for(guild.me).send_messages:
+            await general.send("Quack! Thanks for adding me to your server!")
+@bot.event
+async def on_message(message):
+    if message.author == bot.user:
+        return
+    
+    if bot.user in message.mentions:
+        help_message = (
+            "\n\n"
+            "**Cute Feathered and Furry Friends**\n"
+            "- `/cat`: Get a random cute cat image. :3\n"
+            "- `/duck`: Get a random mighty duck image. >:P\n"
+            "- `/rat`: Get a random adorable rat image. ^_^\n\n"
+            "**Games and Fun**\n"
+            "- `/rarch`: Generate a random rorschach test. o_o\n"
+            "- `/ofc`: Careful with the out of context command, it can hurt. .-.\n"
+            "   Special thanks to the AMTA discord server for the cursed quotes!\n"
+            "- `/do`: Anime reaction images for various moods. UwU\n"
+        )
+        embed = discord.Embed(title="Quack! Here are some commands you can use:", description=help_message, color=discord.Color.gold())
+        await message.channel.send(embed=embed)
+    await bot.process_commands(message)
+
+@bot.tree.command(name="help", description="Get a list of available commands.")
+@app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+@app_commands.allowed_installs(guilds=True, users=True)
+async def help_command(interaction: discord.Interaction):
+    animals = (
+        "**Cute Feathered and Furry Friends**\n"
+        "- `/cat`: Get a random cute cat image. :3\n"
+        "- `/duck`: Get a random mighty duck image. >:P\n"
+        "- `/rat`: Get a random adorable rat image. ^_^\n\n"
+    )
+    games_n_reactions = (
+        "- `/rarch`: Generate a random rorschach test. o_o\n"
+        "- `/ofc`: Careful with the out of context command, it can hurt. .-.\n"
+        "- `/do`: Anime reaction images for various moods. UwU\n"
+    )
+
+    embed = discord.Embed(title="Quack! Here are some commands you can use:", color=discord.Color.gold())
+    embed.add_field(name="Cute Feathered and Furry Friends", value=animals, inline=False)
+    embed.add_field(name="Games and Fun", value=games_n_reactions, inline=False)
+    embed.set_footer(text="OFC quotes from AMTA discord server 💜")
+    await interaction.response.send_message(embed=embed)
+
 
 @bot.tree.command(name="ping", description="Check the bot's latency.")
 @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
@@ -32,22 +83,4 @@ async def on_ready():
 async def ping(interaction: discord.Interaction):   
     latency = bot.latency * 1000
     await interaction.response.send_message(f"Pong! Latency: {latency:.2f} ms")
-
-@bot.tree.command(name="duck", description="Get a random duck GIF.")
-@app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
-@app_commands.allowed_installs(guilds=True, users=True)
-async def duck(interaction: discord.Interaction):
-    async with aiohttp.ClientSession() as session:
-        async with session.get("https://random-d.uk/api/v2/list") as resp:
-            data = await resp.json()
-            gifs = data.get("gifs", [])
-            if gifs:
-                random_gif = random.choice(gifs)
-                gif_url = f"https://random-d.uk/api/{random_gif}"
-            else:
-                gif_url = "https://random-d.uk/api/random"
-    
-    embed = discord.Embed(title="Random Duck!")
-    embed.set_image(url=gif_url)
-    await interaction.response.send_message(embed=embed)
 bot.run(token, log_handler=handler, log_level=logging.DEBUG)

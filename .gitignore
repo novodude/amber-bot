@@ -13,3 +13,4 @@ bot.log
 .eggs/
 .env.*
 .env
+pyrightconfig.json

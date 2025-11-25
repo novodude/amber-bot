@@ -8,7 +8,7 @@
 
 Amber is a Discord bot with a growing set of fun and interactive features.  
 The name comes from my pet duck, Amber.  
-Right now, it includes the `/do`, `/ping`, and `/duck` commands, with more features added regularly.
+Right now, it includes the `/do`, `/rarch`, `/ofc`, commands, with more features added regularly.
 
 ---
 
@@ -18,10 +18,13 @@ Right now, it includes the `/do`, `/ping`, and `/duck` commands, with more featu
 
 |**/**|**description**|**how I made it?**|
 |---|---|---|
-|**`/do`**|Lets users perform fun actions (like hug, slap, laugh, etc.) using random GIFs fetched from [nekos.best](https://nekos.best/). Each action has its own color, emoji, and description shown in an embed.|I made it by creating a dictionary of actions (with colors, emojis, and text), then used `aiohttp` to fetch GIFs asynchronously from the API. The command builds an embed with the right action info and sends it as a reply. It handles self, user, or no-user cases and includes error handling for failed requests.|
-|**`/ping`**|Checks the bot's latency and responds with how fast it is (in milliseconds).|I used `bot.latency` to measure the delay between the bot and Discord's servers, multiplied by 1000 to get milliseconds. The command replies with a simple "Pong!" message showing the latency value.|
-|**`/duck`**|Fetches a random duck GIF from [random-d.uk](https://random-d.uk/) and displays it in an embed.|I made it using `aiohttp` to asynchronously fetch a list of available duck GIFs from the Random Duck API (`https://random-d.uk/api/v2/list`). The command picks one at random and embeds it with the title "Random Duck!". If no list is available, it falls back to the `/random` endpoint. It supports use in servers, DMs, and private channels.|
-|**`/rarch`**|Generates artistic, symmetrical inkblot images with dynamic color schemes reminiscent of Rorschach tests.|I created this using PIL to generate random, symmetrical patterns with dynamic backgrounds and foregrounds. The command creates various organic shapes using layered circles and blobs, applies color contrasts (dark on light or light on dark), adds texture with noise, and applies a subtle Gaussian blur for a more natural look. Each image is unique, with colors ranging from classic black and white to deep blues and reds.|
+|**`/do`**|Anime reaction images (hug, slap, laugh, etc.) using random GIFs from [nekos.best](https://nekos.best/).|Built from a dictionary of actions (colors, emojis, text) and `aiohttp` to fetch GIFs asynchronously; embeds are built per-action and the command handles self/no-user cases and errors.|
+|**`/ping`**|Checks the bot's latency.|Uses `bot.latency` multiplied by 1000 to report milliseconds.|
+|**`/duck`**|Fetches a random duck GIF from [random-d.uk](https://random-d.uk/) and displays it in an embed.|Uses `aiohttp` to fetch the duck list from `https://random-d.uk/api/v2/list`, picks one at random, and falls back to `/random` if needed.|
+|**`/cat`**|Fetches a random cat image.|fetches a cat image from TheCatAPI and embeds it (see commands/animals.py).|
+|**`/rat`**|Fetches a random rat GIF.|Uses Giphy's random endpoint with the project's `GIPHY_API` environment variable to fetch rat GIFs and embeds them (see commands/animals.py).|
+|**`/rarch`**|Generates artistic, symmetrical inkblot images with dynamic color schemes reminiscent of Rorschach tests.|Uses Pillow to create symmetrical patterns with layered shapes, noise, and Gaussian blur for more natural inkblots.|
+|**`/ofc`**|Displays "out of context" images from local assets.|Serves images from assets/ofc (SFW/NSFW) and enforces NSFW channel checks when requested (see commands/ofc.py).|
 
 ---
 
@@ -46,9 +49,10 @@ source .venv/bin/activate  # On Windows use: .venv\Scripts\activate
 pip install -r requirement.txt
 ```
 
-4. Create a `.env` file and add your Discord bot token:
+4. Create a `.env` file and add your Discord bot token and Giphy API key:
 ```bash
 echo "TOKEN=your_bot_token_here" > .env
+echo "GIPHY_API=your_giphy_api_key_here" >> .env
 ```
 
 5. Run the bot:
@@ -63,8 +67,11 @@ python main.py
 
 ---
 
--  [x] Add `/duck` (Completed!)
--  [x] Add `/rarch` inkblot generator (Completed!)
+- [x] Add `/duck` (Completed!)
+- [x] Add `/rarch` inkblot generator (Completed!)
+- [x] Add `/cat` and `/rat` commands (Completed!)
+- [x] Improve `/do` command with more actions and grammar and better error handling (Completed!)
+- [x] Add `/ofc` command for out-of-context images (Completed!)
 - [ ] Add a simple game
 - [ ] Add gambling (because why not)
 - [ ] Train a simple LLM model and link it to the bot
