@@ -74,7 +74,7 @@ python main.py
 - [x] Add `/cat` and `/rat` commands (Completed!)
 - [x] Improve `/do` command with more actions and grammar and better error handling (Completed!)
 - [x] Add `/ofc` command for out-of-context images (Completed!)
-- [ ] add `/melody` command to generate simple melodies
+- [x] add `/melody` command to generate simple melodies
 - [ ] add `/4k` command to quote someone message
 - [ ] Add `/toe` command for tic-tac-toe games
 - [ ] Add gambling (because why not)
