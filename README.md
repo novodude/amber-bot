@@ -25,6 +25,8 @@ Right now, it includes the `/do`, `/rarch`, `/ofc`, commands, with more features
 |**`/rat`**|Fetches a random rat GIF.|Uses Giphy's random endpoint with the project's `GIPHY_API` environment variable to fetch rat GIFs and embeds them (see commands/animals.py).|
 |**`/rarch`**|Generates artistic, symmetrical inkblot images with dynamic color schemes reminiscent of Rorschach tests.|Uses Pillow to create symmetrical patterns with layered shapes, noise, and Gaussian blur for more natural inkblots.|
 |**`/ofc`**|Displays "out of context" images from local assets.|Serves images from assets/ofc (SFW/NSFW) and enforces NSFW channel checks when requested (see commands/ofc.py).|
+|**`/wanted`**|Creates a "Wanted" poster for a user with their avatar and a bounty amount.|Uses Pillow to composite the user's avatar onto a poster template, fits text with a TTF font, and returns a PNG (see commands/fun.py).|
+|**`/melody`**|Interactive melody generator that creates short WAV files from notes or beat patterns.|Provides a modal to enter notes or beats, generates audio with wavesynth, and returns a WAV attachment (see commands/melody.py).|
 
 ---
 
@@ -72,12 +74,11 @@ python main.py
 - [x] Add `/cat` and `/rat` commands (Completed!)
 - [x] Improve `/do` command with more actions and grammar and better error handling (Completed!)
 - [x] Add `/ofc` command for out-of-context images (Completed!)
-- [ ] Add a simple game
+- [ ] add `/melody` command to generate simple melodies
+- [ ] add `/4k` command to quote someone message
+- [ ] Add `/toe` command for tic-tac-toe games
 - [ ] Add gambling (because why not)
 - [ ] Train a simple LLM model and link it to the bot
-- [ ] Add `/fact`, `/quote`, and `/8ball`
-- [ ] Add a leveling system
-    
 
 ---
 

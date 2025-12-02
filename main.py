@@ -8,10 +8,13 @@ from commands.reactions import setup_reactions
 from commands.inkblot import inkblot_setup
 from commands.ofc import ofc_setup
 from commands.animals import animals_setup
+from commands.fun import fun_setup
+from commands.melody import melody_setup
+
 
 load_dotenv()
 token = os.getenv("DISCORD_TOKEN")
-
+  
 handler = logging.FileHandler(filename='bot.log', encoding='utf-8', mode='w')
 intents = discord.Intents.default()
 intents.message_content = True
@@ -25,6 +28,8 @@ async def on_ready():
     await inkblot_setup(bot)
     await ofc_setup(bot)
     await animals_setup(bot)
+    await melody_setup(bot)
+    await fun_setup(bot)
     await bot.tree.sync()
     print("Commands synced.")
 @bot.event
@@ -38,19 +43,21 @@ async def on_message(message):
         return
     
     if bot.user in message.mentions:
-        help_message = (
-            "\n\n"
-            "**Cute Feathered and Furry Friends**\n"
+        animals = (
             "- `/cat`: Get a random cute cat image. :3\n"
             "- `/duck`: Get a random mighty duck image. >:P\n"
             "- `/rat`: Get a random adorable rat image. ^_^\n\n"
-            "**Games and Fun**\n"
+        )
+        games_n_reactions = (
             "- `/rarch`: Generate a random rorschach test. o_o\n"
             "- `/ofc`: Careful with the out of context command, it can hurt. .-.\n"
-            "   Special thanks to the AMTA discord server for the cursed quotes!\n"
             "- `/do`: Anime reaction images for various moods. UwU\n"
         )
-        embed = discord.Embed(title="Quack! Here are some commands you can use:", description=help_message, color=discord.Color.gold())
+
+        embed = discord.Embed(title="Quack! Here are some commands you can use:", color=discord.Color.gold())
+        embed.add_field(name="Cute Feathered and Furry Friends", value=animals, inline=False)
+        embed.add_field(name="Games and Fun", value=games_n_reactions, inline=False)
+        embed.set_footer(text="OFC quotes from AMTA discord server 💜")
         await message.channel.send(embed=embed)
     await bot.process_commands(message)
 
@@ -69,7 +76,7 @@ async def help_command(interaction: discord.Interaction):
         "- `/ofc`: Careful with the out of context command, it can hurt. .-.\n"
         "- `/do`: Anime reaction images for various moods. UwU\n"
     )
-
+ 
     embed = discord.Embed(title="Quack! Here are some commands you can use:", color=discord.Color.gold())
     embed.add_field(name="Cute Feathered and Furry Friends", value=animals, inline=False)
     embed.add_field(name="Games and Fun", value=games_n_reactions, inline=False)
@@ -83,4 +90,5 @@ async def help_command(interaction: discord.Interaction):
 async def ping(interaction: discord.Interaction):   
     latency = bot.latency * 1000
     await interaction.response.send_message(f"Pong! Latency: {latency:.2f} ms")
-bot.run(token, log_handler=handler, log_level=logging.DEBUG)
+
+bot.run(token, reconnect=True, log_handler=handler)
