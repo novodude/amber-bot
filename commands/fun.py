@@ -2,8 +2,10 @@ from PIL import Image, ImageDraw, ImageFont
 from io import BytesIO
 import discord
 import aiohttp
-from discord import app_commands
+from discord import app_commands, message
+from discord.ext import commands
 from pathlib import Path
+import os
 
 async def fun_setup(bot):
     @bot.tree.command(name="wanted", description="ye criminal mate!")
@@ -84,3 +86,171 @@ async def fun_setup(bot):
             
         except Exception as e:
             await interaction.followup.send(f"An error occurred while processing the image.\n{str(e)}")
+
+
+    @bot.tree.command(name="misquote", description="spreading misinformation is fun :P!")
+    @app_commands.describe(message="what did they say?")
+    @app_commands.describe(user="who said what?")
+    async def misinformation(interaction: discord.Interaction, user: discord.User, message: str):
+        await interaction.response.defer()
+
+        ROOT_DIR = Path(__file__).resolve().parent.parent
+        font_path = str(ROOT_DIR / "assets" / "fonts" / "quote.ttf")
+        user_avatar_url = user.display_avatar.url
+        
+        async with aiohttp.ClientSession() as session:
+            async with session.get(user_avatar_url) as resp:
+                avatar_bytes = await resp.read()
+
+        canvas = Image.new("RGBA", (500, 250), "black")
+        draw = ImageDraw.Draw(canvas)
+
+        avatar = Image.open(BytesIO(avatar_bytes)).convert("RGBA").resize((250, 250))
+        canvas.paste(avatar, (0, 0), avatar)
+
+        def fit_text_into_box(text, max_width, max_height, start_size=50):
+            font_size = start_size
+            pad = 20
+            adjusted_width = max_width - 2*pad
+            adjusted_height = max_height - 2*pad
+
+            while font_size > 8:
+                font = ImageFont.truetype(font_path, font_size)
+                lines = []
+                words = text.split()
+                line = ""
+
+                for w in words:
+                    test = line + (" " if line else "") + w
+                    if draw.textlength(w, font=font) > adjusted_width:
+                        chars = list(w)
+                        for c in chars:
+                            test2 = line + c
+                            if draw.textlength(test2, font=font) <= adjusted_width:
+                                line = test2
+                            else:
+                                lines.append(line)
+                                line = c
+                    elif draw.textlength(test, font=font) <= adjusted_width:
+                        line = test
+                    else:
+                        lines.append(line)
+                        line = w
+                lines.append(line)
+
+                total_h = sum(font.getbbox(l)[3] for l in lines)
+                if total_h <= adjusted_height:
+                    return font, "\n".join(lines), pad
+                font_size -= 1
+
+            return ImageFont.truetype(font_path, 8), text, pad
+
+        name_font, wrapped_name, pad = fit_text_into_box(f"- @{user.display_name}", 250, 60, 15)
+        draw.text((270 + pad, 210), wrapped_name, font=name_font, fill=(255, 240, 200))
+
+        quote_font, wrapped_quote, pad = fit_text_into_box(message, 230, 180, 25)
+        draw.text((270 + pad, 90), wrapped_quote, font=quote_font, fill=(200, 200, 200))
+
+        draw.line((270, 200, 480, 200), fill=(200, 200, 200), width=2)
+        draw.line((270, 200, 480, 200), fill=(200, 200, 200), width=2)
+        output_bytes = BytesIO()
+        canvas.save(output_bytes, format="PNG")
+        output_bytes.seek(0)
+
+        await interaction.followup.send(
+            file=discord.File(output_bytes, filename=f"quote_{user.name}.png")
+        )
+
+async def register_events(bot):
+    @bot.event
+    async def on_message(message: discord.Message):
+        if message.author.bot:
+            return
+
+        content = (message.content or "").lower().strip()
+
+        if content != "4k":  
+            return
+
+        if not message.reference or not getattr(message.reference, "message_id", None):
+            await message.reply("You must **reply** to a message to use `4k`.", delete_after=2)
+            return
+
+        try:
+            replied = await message.channel.fetch_message(message.reference.message_id)
+        except:
+            await message.reply("Can't read the replied message.", delete_after=2)
+            return
+
+        user = replied.author
+        text = replied.content or ""
+
+        ROOT_DIR = Path(__file__).resolve().parent.parent
+        font_path = str(ROOT_DIR / "assets" / "fonts" / "quote.ttf")
+
+        user_avatar_url = user.display_avatar.url
+        async with aiohttp.ClientSession() as session:
+            async with session.get(user_avatar_url) as resp:
+                avatar_bytes = await resp.read()
+
+        canvas = Image.new("RGBA", (500, 250), "black")
+        draw = ImageDraw.Draw(canvas)
+
+        avatar = Image.open(BytesIO(avatar_bytes)).convert("RGBA").resize((250, 250))
+        canvas.paste(avatar, (0, 0), avatar)
+
+        def fit_text_into_box(text, max_width, max_height, start_size=50):
+            font_size = start_size
+            pad = 20  # space from edges
+            adjusted_width = max_width - 2*pad
+            adjusted_height = max_height - 2*pad
+
+            while font_size > 8:
+                font = ImageFont.truetype(font_path, font_size)
+                lines = []
+                words = text.split()
+                line = ""
+
+                for w in words:
+                    test = line + (" " if line else "") + w
+                    if draw.textlength(w, font=font) > adjusted_width:
+                        chars = list(w)
+                        for c in chars:
+                            test2 = line + c
+                            if draw.textlength(test2, font=font) <= adjusted_width:
+                                line = test2
+                            else:
+                                lines.append(line)
+                                line = c
+                    elif draw.textlength(test, font=font) <= adjusted_width:
+                        line = test
+                    else:
+                        lines.append(line)
+                        line = w
+                lines.append(line)
+
+                total_h = sum(font.getbbox(l)[3] for l in lines)
+                if total_h <= adjusted_height:
+                    return font, "\n".join(lines), pad  # return pad to use when drawing
+                font_size -= 1
+
+            return ImageFont.truetype(font_path, 8), text, pad
+
+        name_font, wrapped_name, pad = fit_text_into_box(f"- @{user.display_name}", 250, 60, 15)
+        draw.text((270 + pad, 210), wrapped_name, font=name_font, fill=(255, 240, 200))
+
+        quote_font, wrapped_quote, pad = fit_text_into_box(text, 230, 180, 25)
+        draw.text((270 + pad, 90), wrapped_quote, font=quote_font, fill=(200, 200, 200))
+
+        draw.line((270, 200, 480, 200), fill=(200, 200, 200), width=2)
+
+        output_bytes = BytesIO()
+        canvas.save(output_bytes, format="PNG")
+        output_bytes.seek(0)
+
+        await message.reply(
+            file=discord.File(output_bytes, filename=f"quote_{user.name}.png")
+        )
+
+        await bot.process_commands(message)
+
