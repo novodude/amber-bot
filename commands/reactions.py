@@ -259,6 +259,7 @@ async def setup_reactions(bot):
                 # Everyone case
                 if action_data['lone']:
                     embed.title = f"**{action_data['emoji']} {interaction.user.display_name} {action_data['act']} {action_data['link']} everyone {action_data['emoji']}**"
+                    embed.description = action_data['desc_everyone'].format(user=interaction.user)
                 else:
                     embed.title = f"**{action_data['emoji']} {interaction.user.display_name} {action_data['act']} everyone {action_data['emoji']}**"
                 embed.description = action_data['desc_everyone'].format(user=interaction.user)
