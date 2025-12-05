@@ -11,7 +11,6 @@ from commands.animals import animals_setup
 from commands.fun import fun_setup
 from commands.melody import melody_setup
 
-
 load_dotenv()
 token = os.getenv("DISCORD_TOKEN")
   
