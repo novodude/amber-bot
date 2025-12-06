@@ -223,8 +223,68 @@ ACTIONS = {
         'desc_everyone': 'everyone is laughing! what a mood! :P',
         'desc_self': 'having a good time! keep it up! :D',
         'desc_other': 'haha your laugh is adorable! :3'
+    },
+    'yeet': {
+        'act': 'yeeted',
+        'color': discord.Color.dark_purple(),
+        'emoji': '🥏',
+        'lone': False,
+        'link': '',
+        'desc_everyone': 'bye bye everyone >:3',
+        'desc_self': 'weeee',
+        'desc_other': 'can {user.display_name} fly?'
+    },
+    'facepalm': {
+        'act': 'facepalms',
+        'color': discord.Color.dark_orange(),
+        'emoji': '🤦',
+        'lone': True,
+        'link': 'at',
+        'desc_everyone': '*sigh* so uh why we facepalming?',
+        'desc_self': "it's okay to be embarrassed *pat*",
+        'desc_other': 'you made {author.display_name} facepalm ._.'
+    },
+    'baka': {
+        'act': 'stoopid',
+        'color': discord.Color.brand_green(),
+        'emoji': '🦆',
+        'lone': False,
+        'link': ['said', 'is'],
+        'desc_everyone': '{author.display_name} included :P',
+        'desc_self': "mybe you're but you are the special kind of stoopid :3",
+        'desc_other': '{author.display_name} said that not me ._.'
     }
 }
+
+
+def build_title(action: str, action_data: dict, author_name: str, target_name: str = None, everyone: bool = False) -> str:
+    emoji = action_data['emoji']
+    act = action_data['act']
+    link = action_data['link']
+    
+    if action == 'baka':
+        if everyone:
+            return f"**{emoji} {author_name} {link[0]} everyone {link[1]} {act} {emoji}**"
+        elif not target_name:
+            return f"**{emoji} {author_name} {link[0]} {act} {emoji}**"
+        elif target_name == author_name:
+            return f"**{emoji} {author_name} {link[1]} {act} {emoji}**"
+        else:
+            return f"**{emoji} {author_name} {link[0]} {target_name} {link[1]} {act} {emoji}**"
+    
+    if everyone:
+        if action_data['lone']:
+            return f"**{emoji} {author_name} {act} {link} everyone {emoji}**"
+        return f"**{emoji} {author_name} {act} everyone {emoji}**"
+    
+    if not target_name or target_name == author_name:
+        if action_data['lone']:
+            return f"**{emoji} {author_name} {act} {link} themselves {emoji}**"
+        return f"**{emoji} {author_name} {act} themselves {emoji}**"
+    
+    if action_data['lone']:
+        return f"**{emoji} {author_name} {act} {link} {target_name} {emoji}**"
+    return f"**{emoji} {author_name} {act} {target_name} {emoji}**"
 
 
 async def setup_reactions(bot):
@@ -241,7 +301,8 @@ async def setup_reactions(bot):
         action: Literal[
             'hug', 'kiss', 'pat', 'slap', 'poke', 'cuddle', 'bite', 'kick',
             'punch', 'tickle', 'feed', 'highfive', 'dance', 'sleep', 'cry',
-            'blush', 'smile', 'think', 'shrug', 'yawn', 'wave', 'laugh'
+            'blush', 'smile', 'think', 'shrug', 'yawn', 'wave', 'laugh', 'yeet',
+            'baka', 'facepalm'
         ],
         user: Optional[discord.User] = None,
         everyone: Optional[bool] = False
@@ -252,35 +313,22 @@ async def setup_reactions(bot):
                 async with session.get(f"https://nekos.best/api/v2/{action}") as response:
                     data = await response.json()
                     gif_url = data['results'][0]['url']
+            
             action_data = ACTIONS[action]
             embed = discord.Embed(color=action_data['color'])
             embed.set_image(url=gif_url)
+            
+            target_name = user.display_name if user else None
+            embed.title = build_title(action, action_data, interaction.user.display_name, target_name, everyone)
+            
             if everyone:
-                # Everyone case
-                if action_data['lone']:
-                    embed.title = f"**{action_data['emoji']} {interaction.user.display_name} {action_data['act']} {action_data['link']} everyone {action_data['emoji']}**"
-                    embed.description = action_data['desc_everyone'].format(user=interaction.user)
-                else:
-                    embed.title = f"**{action_data['emoji']} {interaction.user.display_name} {action_data['act']} everyone {action_data['emoji']}**"
-                embed.description = action_data['desc_everyone'].format(user=interaction.user)
+                embed.description = action_data['desc_everyone'].format(user=interaction.user, author=interaction.user)
             elif user and user == interaction.user:
-                # Self-targeting case
-                if action_data['lone']:
-                    embed.title = f"**{action_data['emoji']} {interaction.user.display_name} {action_data['act']} {action_data['link']} themselves {action_data['emoji']}**"
-                else:
-                    embed.title = f"**{action_data['emoji']} {interaction.user.display_name} {action_data['act']} themselves {action_data['emoji']}**"
-                embed.description = action_data['desc_self'].format(user=interaction.user)
+                embed.description = action_data['desc_self'].format(user=interaction.user, author=interaction.user)
             elif user:
-                # Targeting another user
-                if action_data['lone']:
-                    embed.title = f"**{action_data['emoji']} {interaction.user.display_name} {action_data['act']} {action_data['link']} {user.display_name} {action_data['emoji']}**"
-                else:
-                    embed.title = f"**{action_data['emoji']} {interaction.user.display_name} {action_data['act']} {user.display_name} {action_data['emoji']}**"
                 embed.description = action_data['desc_other'].format(user=user, author=interaction.user)
             else:
-                # No target (solo action)
-                embed.title = f"**{action_data['emoji']} {interaction.user.display_name} {action_data['act']} {action_data['emoji']}**"
-                embed.description = action_data['desc_self'].format(user=interaction.user)
+                embed.description = action_data['desc_self'].format(user=interaction.user, author=interaction.user)
 
             await interaction.followup.send(embed=embed)
         except Exception as e:
