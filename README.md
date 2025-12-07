@@ -18,7 +18,7 @@ Right now, it includes the `/do`, `/rarch`, `/ofc`, commands, with more features
 
 | **/**         | **description**                                                                                           | **how I made it?**                                                                                                                                                                       |
 | ------------- | --------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **`/do`**     | Anime reaction images (hug, slap, laugh, etc.) using random GIFs from [nekos.best](https://nekos.best/).  | Built from a dictionary of actions (colors, emojis, text) and `aiohttp` to fetch GIFs asynchronously; embeds are built per-action and the command handles self/no-user cases and errors. |
+| **`/do`**     | Anime action images (hug, slap, laugh, etc.) using random GIFs from [nekos.best](https://nekos.best/).  | Built from a dictionary of actions (colors, emojis, text) and `aiohttp` to fetch GIFs asynchronously; embeds are built per-action and the command handles self/no-user cases and errors. |
 | **`/ping`**   | Checks the bot's latency.                                                                                 | Uses `bot.latency` multiplied by 1000 to report milliseconds.                                                                                                                            |
 | **`/duck`**   | Fetches a random duck GIF from [random-d.uk](https://random-d.uk/) and displays it in an embed.           | Uses `aiohttp` to fetch the duck list from `https://random-d.uk/api/v2/list`, picks one at random, and falls back to `/random` if needed.                                                |
 | **`/cat`**    | Fetches a random cat image.                                                                               | fetches a cat image from TheCatAPI and embeds it (see commands/animals.py).                                                                                                              |
@@ -28,6 +28,8 @@ Right now, it includes the `/do`, `/rarch`, `/ofc`, commands, with more features
 | **`/wanted`** | Creates a "Wanted" poster for a user with their avatar and a bounty amount.                               | Uses Pillow to composite the user's avatar onto a poster template, fits text with a TTF font, and returns a PNG (see commands/fun.py).                                                   |
 | **`/melody`** | Interactive melody generator that creates short WAV files from notes or beat patterns.                    | Provides a modal to enter notes or beats, generates audio with wavesynth, and returns a WAV attachment (see commands/melody.py).                                                         |
 | **`/misquote`**   | create a misquoted image of someone                                                                       | Uses Pillow to composite the user's avatar onto a canvas, fits text with a TTF font, and returns a PNG (see commands/fun.py).                                                            |
+| **`/look`**   | Anime reaction images (happy, blush, angry, etc.) using random GIFs from [nekos.best](https://nekos.best/).  | Built from a dictionary of actions (colors, emojis, text) and `aiohttp` to fetch GIFs asynchronously; embeds are built per-action and the command handles self/no-user cases and errors. |
+
 # events
 
 
@@ -78,14 +80,13 @@ python main.py
 
 ---
 
-- [x] Add `/duck` (Completed!)
-- [x] Add `/rarch` inkblot generator (Completed!)
-- [x] Add `/cat` and `/rat` commands (Completed!)
-- [x] Improve `/do` command with more actions and grammar and better error handling (Completed!)
-- [x] Add `/ofc` command for out-of-context images (Completed!)
+- [x] Add `/duck`
+- [x] Add `/rarch` inkblot generator
+- [x] Add `/cat` and `/rat` commands
+- [x] Improve `/do` command with more actions and grammar and better error handling
+- [x] Add `/ofc` command for out-of-context images
 - [x] add `/melody` command to generate simple melodies
-- [x] add `/misquote` command to misquote someone message
-- [ ] add `4k` to quote someone's message
+- [x] add `4k` to quote someone's message
 - [ ] Add `/toe` command for tic-tac-toe games
 - [ ] Add gambling (because why not)
 - [ ] Train a simple LLM model and link it to the bot
