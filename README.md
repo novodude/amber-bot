@@ -103,6 +103,7 @@ Required packages are listed in `requirement.txt`:
 - **python-dotenv** (for secure token loading)
 - **aiohttp** (for asynchronous API requests, used internally by discord.py)
 - **pillow** (PIL, for image generation in `/rarch` command)
+- **wavesynth** (for creating the melodies in `/melody` command)
 
 Install dependencies with:
 ```bash
