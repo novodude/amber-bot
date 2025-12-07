@@ -223,8 +223,220 @@ ACTIONS = {
         'desc_everyone': '{author.display_name} included :P',
         'desc_self': "mybe you're but you are the special kind of stoopid :3",
         'desc_other': '{author.display_name} said that not me ._.'
+    },
+    # NEW ADDITIONS FROM NEKOS.BEST API
+    'handhold': {
+        'act': 'holds hands with',
+        'color': discord.Color.pink(),
+        'emoji': '🤝',
+        'lone': False,
+        'link': 'with',
+        'desc_everyone': 'everyone hold hands! circle time! :3',
+        'desc_self': 'holding your own hand? aww :3',
+        'desc_other': 'how romantic! 💕'
+    },
+    'handshake': {
+        'act': 'shakes hands with',
+        'color': discord.Color.blue(),
+        'emoji': '🤝',
+        'lone': False,
+        'link': 'with',
+        'desc_everyone': 'nice to meet you all! :D',
+        'desc_self': 'firm handshake with yourself! very professional :P',
+        'desc_other': 'what a professional greeting! ✨'
+    },
+    'peck': {
+        'act': 'pecks',
+        'color': discord.Color.pink(),
+        'emoji': '😘',
+        'lone': False,
+        'link': '',
+        'desc_everyone': 'little kisses for everyone! 😚',
+        'desc_self': 'mwah! self-kisses count too! 💋',
+        'desc_other': 'a sweet little peck! 🥰'
+    },
+    'nom': {
+        'act': 'noms on',
+        'color': discord.Color.orange(),
+        'emoji': '😋',
+        'lone': False,
+        'link': '',
+        'desc_everyone': 'nom nom nom everyone! :P',
+        'desc_self': 'nomming on yourself? silly goose! :3',
+        'desc_other': 'tasty? hehe :3'
+    },
+    'nod': {
+        'act': 'nods',
+        'color': discord.Color.green(),
+        'emoji': '😌',
+        'lone': True,
+        'link': 'at',
+        'desc_everyone': 'nod of approval to all! :)',
+        'desc_self': 'nodding to yourself in agreement! :D',
+        'desc_other': 'nod back! :3'
+    },
+    'shoot': {
+        'act': 'shoots',
+        'color': discord.Color.red(),
+        'emoji': '🔫',
+        'lone': False,
+        'link': '',
+        'desc_everyone': 'pew pew everyone! 🔫',
+        'desc_self': 'dont shoot yourself! D:',
+        'desc_other': 'gotcha! *pew* 🎯'
+    },
+    'run': {
+        'act': 'is running',
+        'color': discord.Color.blue(),
+        'emoji': '🏃',
+        'lone': True,
+        'link': 'with',
+        'desc_everyone': 'everyone run! cardio time! 💨',
+        'desc_self': 'running solo! nice workout! :D',
+        'desc_other': 'catch me if you can! 💨'
+    },
+    'lurk': {
+        'act': 'is lurking',
+        'color': discord.Color.dark_grey(),
+        'emoji': '👀',
+        'lone': True,
+        'link': 'at',
+        'desc_everyone': 'someones watching all of us... 👁️',
+        'desc_self': 'lurking in the shadows... 👁️👁️',
+        'desc_other': 'I see you watching! 👀'
+    },
+    'pout': {
+        'act': 'is pouting',
+        'color': discord.Color.purple(),
+        'emoji': '😤',
+        'lone': True,
+        'link': 'at',
+        'desc_everyone': 'someone is pouty! :(',
+        'desc_self': 'aww dont pout! *hugs* 🥺',
+        'desc_other': 'that pout is too cute! :3'
+    },
+    'stare': {
+        'act': 'stares',
+        'color': discord.Color.dark_blue(),
+        'emoji': '👁️',
+        'lone': True,
+        'link': 'at',
+        'desc_everyone': 'staring contest! go! 👁️👁️',
+        'desc_self': 'staring at yourself? mirror time! :P',
+        'desc_other': 'dont blink! 👀'
+    },
+    'thumbsup': {
+        'act': 'gives thumbs up',
+        'color': discord.Color.green(),
+        'emoji': '👍',
+        'lone': True,
+        'link': 'to',
+        'desc_everyone': 'thumbs up everyone! great job! 👍',
+        'desc_self': 'nice work! you got this! 👍',
+        'desc_other': 'approval granted! ✨'
+    },
+    'smug': {
+        'act': 'looks smug',
+        'color': discord.Color.purple(),
+        'emoji': '😏',
+        'lone': True,
+        'link': 'at',
+        'desc_everyone': 'someone is feeling confident! 😏',
+        'desc_self': 'looking good and you know it! 😎',
+        'desc_other': 'that smug face! :P'
+    },
+    'wink': {
+        'act': 'winks',
+        'color': discord.Color.gold(),
+        'emoji': '😉',
+        'lone': True,
+        'link': 'at',
+        'desc_everyone': 'wink wink everyone! 😉✨',
+        'desc_self': 'winking at yourself! confident! :D',
+        'desc_other': 'smooth! 😎'
+    },
+    'handhold': {
+        'act': 'holds hands with',
+        'color': discord.Color.pink(),
+        'emoji': '🤝',
+        'lone': False,
+        'link': 'with',
+        'desc_everyone': 'everyone hold hands! circle time! :3',
+        'desc_self': 'holding your own hand? aww :3',
+        'desc_other': 'how romantic! 💕'
+    },
+    'handshake': {
+        'act': 'shakes hands with',
+        'color': discord.Color.blue(),
+        'emoji': '🤝',
+        'lone': False,
+        'link': 'with',
+        'desc_everyone': 'nice to meet you all! :D',
+        'desc_self': 'firm handshake with yourself! very professional :P',
+        'desc_other': 'what a professional greeting! ✨'
+    },
+    'peck': {
+        'act': 'pecks',
+        'color': discord.Color.pink(),
+        'emoji': '😘',
+        'lone': False,
+        'link': '',
+        'desc_everyone': 'little kisses for everyone! 😚',
+        'desc_self': 'mwah! self-kisses count too! 💋',
+        'desc_other': 'a sweet little peck! 🥰'
+    },
+    'nom': {
+        'act': 'noms on',
+        'color': discord.Color.orange(),
+        'emoji': '😋',
+        'lone': False,
+        'link': '',
+        'desc_everyone': 'nom nom nom everyone! :P',
+        'desc_self': 'nomming on yourself? silly goose! :3',
+        'desc_other': 'tasty? hehe :3'
+    },
+    'shoot': {
+        'act': 'shoots',
+        'color': discord.Color.red(),
+        'emoji': '🔫',
+        'lone': False,
+        'link': '',
+        'desc_everyone': 'pew pew everyone! 🔫',
+        'desc_self': 'dont shoot yourself! D:',
+        'desc_other': 'gotcha! *pew* 🎯'
+    },
+    'run': {
+        'act': 'is running',
+        'color': discord.Color.blue(),
+        'emoji': '🏃',
+        'lone': True,
+        'link': 'with',
+        'desc_everyone': 'everyone run! cardio time! 💨',
+        'desc_self': 'running solo! nice workout! :D',
+        'desc_other': 'catch me if you can! 💨'
+    },
+    'stare': {
+        'act': 'stares',
+        'color': discord.Color.dark_blue(),
+        'emoji': '👁️',
+        'lone': True,
+        'link': 'at',
+        'desc_everyone': 'staring contest! go! 👁️👁️',
+        'desc_self': 'staring at yourself? mirror time! :P',
+        'desc_other': 'dont blink! 👀'
+    },
+    'thumbsup': {
+        'act': 'gives thumbs up',
+        'color': discord.Color.green(),
+        'emoji': '👍',
+        'lone': True,
+        'link': 'to',
+        'desc_everyone': 'thumbs up everyone! great job! 👍',
+        'desc_self': 'nice work! you got this! 👍',
+        'desc_other': 'approval granted! ✨'
     }
 }
+
 REACTION = {
     'blush': {
         'title': '{author.display_name} is blushing',
@@ -250,7 +462,6 @@ REACTION = {
         'title': '{author.display_name} is bored to the bone',
         'description': 'bored? do a backflip :D!',
         'color': discord.Color.gold()
-
     },
     'happy': {
         'title': '{author.display_name} is happy :3',
@@ -261,9 +472,28 @@ REACTION = {
         'title': '{author.display_name} noped out of here',
         'description': 'nope nah nuh uh never :P',
         'color': discord.Color.brand_green()
+    },
+    'smug': {
+        'title': '{author.display_name} looks smug',
+        'description': 'someone is feeling confident :P',
+        'color': discord.Color.purple()
+    },
+    'lurk': {
+        'title': '{author.display_name} is lurking',
+        'description': 'watching from the shadows 👀',
+        'color': discord.Color.dark_grey()
+    },
+    'pout': {
+        'title': '{author.display_name} is pouting',
+        'description': 'aww that pout is too cute :3',
+        'color': discord.Color.purple()
+    },
+    'nod': {
+        'title': '{author.display_name} nods',
+        'description': 'nod of approval :)',
+        'color': discord.Color.green()
     }
 }
-
 
 def build_title(action: str, action_data: dict, author_name: str, target_name: str = None, everyone: bool = False) -> str:
     emoji = action_data['emoji']
@@ -314,7 +544,8 @@ async def setup_reactions(bot):
             'hug', 'kiss', 'pat', 'slap', 'poke', 'cuddle', 'bite', 'kick',
             'punch', 'tickle', 'feed', 'highfive', 'dance', 'sleep', 'cry',
             'smile', 'wave', 'laugh', 'yeet',
-            'baka', 'facepalm', 'think'
+            'baka', 'facepalm', 'think', 'handhold', 'handshake',
+            'peck', 'nom', 'shoot', 'run', 'stare', 'thumbsup', 'wink'
         ],
         user: Optional[discord.User] = None,
         everyone: Optional[bool] = False
@@ -358,7 +589,9 @@ async def setup_reactions(bot):
     @app_commands.describe(reaction="Choose an reaction to perform")
     async def do_reaction(
         interaction: discord.Interaction,
-        reaction: Literal['blush', 'shrug', 'yawn', 'angry', 'bored', 'happy', 'nope']
+        reaction: Literal['blush', 'shrug', 'yawn','angry', 'bored', 'happy',
+              'nope', 'smug', 'lurk', 'pout', 'nod'
+]
     ):
         await interaction.response.defer()
         try:
