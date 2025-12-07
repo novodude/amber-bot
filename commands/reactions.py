@@ -1,5 +1,5 @@
 import discord
-from discord import app_commands
+from discord import Color, app_commands
 import aiohttp
 from typing import Optional, Literal
 
@@ -154,16 +154,6 @@ ACTIONS = {
         'desc_self': 'aww {user.display_name} is lonely\n its okay to cry, let it out 💙',
         'desc_other': 'aww dont cry! *hugs* 🥺'
     },
-    'blush': {
-        'act': 'is blushing',
-        'color': discord.Color.pink(),
-        'emoji': '😊',
-        'lone': True,
-        'link': 'at',
-        'desc_everyone': 'aww give them some space everyone',
-        'desc_self': 'aww getting all flustered! 😊',
-        'desc_other': 'hehe so cute when you blush! :3'
-    },
     'smile': {
         'act': 'is smiling',
         'color': discord.Color.gold(),
@@ -183,26 +173,6 @@ ACTIONS = {
         'desc_everyone': 'I wonder what the others are up to?',
         'desc_self': 'hmm what could it be? 🤔',
         'desc_other': 'they do that all day btw :3'
-    },
-    'shrug': {
-        'act': 'shrugs',
-        'color': discord.Color.greyple(),
-        'emoji': '🤷',
-        'lone': True,
-        'link': 'at',
-        'desc_everyone': 'nobody knows!',
-        'desc_self': 'meh, who knows? 🤷',
-        'desc_other': 'idk either tbh :P'
-    },
-    'yawn': {
-        'act': 'yawns',
-        'color': discord.Color.orange(),
-        'emoji': '🥱',
-        'lone': True,
-        'link': 'with',
-        'desc_everyone': 'yawns are contagious! *yawn* 🥱',
-        'desc_self': 'sleepy time? get some rest! 😴',
-        'desc_other': 'tired already? hehe :3'
     },
     'wave': {
         'act': 'waves',
@@ -255,6 +225,44 @@ ACTIONS = {
         'desc_other': '{author.display_name} said that not me ._.'
     }
 }
+REACTION = {
+    'blush': {
+        'title': '{author.display_name} is blushing',
+        'description': 'awww how cute',
+        'color': discord.Color.pink()
+    },
+    'shrug': {
+        'title': '{author.display_name} shrugs',
+        'description': 'shrugs like a rug',
+        'color': discord.Color.dark_purple()
+    },
+    'yawn': {
+        'title': '{author.display_name} yawned',
+        'description': 'eppy {author.display_name} *pet*',
+        'color': discord.Color.pink()
+    },
+    'angry': {
+        'title': '{author.display_name} is angy >:(',
+        'description': 'be careful everyone',
+        'color': discord.Color.red()
+    },
+    'bored': {
+        'title': '{author.display_name} is bored to the bone',
+        'description': 'bored? do a backflip :D!',
+        'color': discord.Color.gold()
+
+    },
+    'happy': {
+        'title': '{author.display_name} is happy :3',
+        'description': 'yayyy - happy for you too',
+        'color': discord.Color.yellow()
+    },
+    'nope': {
+        'title': '{author.display_name} noped out of here',
+        'description': 'nope nah nuh uh never :P',
+        'color': discord.Color.brand_green()
+    }
+}
 
 
 def build_title(action: str, action_data: dict, author_name: str, target_name: str = None, everyone: bool = False) -> str:
@@ -287,7 +295,11 @@ def build_title(action: str, action_data: dict, author_name: str, target_name: s
     return f"**{emoji} {author_name} {act} {target_name} {emoji}**"
 
 
+
+
+
 async def setup_reactions(bot):
+    # the all mighty /do command(first command i coded :P)
     @bot.tree.command(name="do", description="Perform an action with a GIF!")
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     @app_commands.allowed_installs(guilds=True, users=True)
@@ -301,8 +313,8 @@ async def setup_reactions(bot):
         action: Literal[
             'hug', 'kiss', 'pat', 'slap', 'poke', 'cuddle', 'bite', 'kick',
             'punch', 'tickle', 'feed', 'highfive', 'dance', 'sleep', 'cry',
-            'blush', 'smile', 'think', 'shrug', 'yawn', 'wave', 'laugh', 'yeet',
-            'baka', 'facepalm'
+            'smile', 'wave', 'laugh', 'yeet',
+            'baka', 'facepalm', 'think'
         ],
         user: Optional[discord.User] = None,
         everyone: Optional[bool] = False
@@ -334,6 +346,35 @@ async def setup_reactions(bot):
         except Exception as e:
             embed = discord.Embed(
                 title="Error",
+                description=f"Something went wrong!\n```log\n\n{str(e)}\n\n```",
+                color=discord.Color.red()
+            )
+            await interaction.followup.send(embed=embed, ephemeral=True)
+
+# /look commmand
+    @bot.tree.command(name="look", description="Give a reaction with a GIF!")
+    @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+    @app_commands.allowed_installs(guilds=True, users=True)
+    @app_commands.describe(reaction="Choose an reaction to perform")
+    async def do_reaction(
+        interaction: discord.Interaction,
+        reaction: Literal['blush', 'shrug', 'yawn', 'angry', 'bored', 'happy', 'nope']
+    ):
+        await interaction.response.defer()
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(f"https://nekos.best/api/v2/{reaction}") as response:
+                    data = await response.json()
+                    gif_url = data['results'][0]['url']
+            reaction_data = REACTION[reaction]
+            embed = discord.Embed(color=reaction_data['color'])
+            embed.set_image(url=gif_url)
+            embed.title = reaction_data['title'].format(author=interaction.user)
+            embed.description = reaction_data['description'].format(author=interaction.user)
+            await interaction.followup.send(embed=embed)
+        except Exception as e:
+            embed = discord.Embed(
+                title="**Error**",
                 description=f"Something went wrong!\n```log\n\n{str(e)}\n\n```",
                 color=discord.Color.red()
             )
