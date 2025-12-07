@@ -110,25 +110,6 @@ Install dependencies with:
 pip install -r requirement.txt
 ```
 
----
-
-## Contributing
-
----
-
-If you’d like to contribute:
-
-1. Fork the repository.
-    
-2. Create a new branch for your feature or fix.
-    
-3. Submit a pull request with a clear explanation of what you changed.
-    
-
-Contributions are welcome — just remember to **keep proper credit** to _Novodude and the AKO™ Team_.
-
----
-
 ## License
 
 ---
