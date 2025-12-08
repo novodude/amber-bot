@@ -34,16 +34,6 @@ ACTIONS = {
         'desc_self': 'cute pet for me 🥰',
         'desc_other': 'how adorable!'
     },
-    'slap': {
-        'act': 'slaps',
-        'color': discord.Color.orange(),
-        'emoji': '👋',
-        'lone': False,
-        'link': '',
-        'desc_everyone': 'someone needs to calm down!',
-        'desc_self': 'hug them people, someone need love!',
-        'desc_other': 'this hurts!'
-    },
     'poke': {
         'act': 'pokes',
         'color': discord.Color.green(),
@@ -93,16 +83,6 @@ ACTIONS = {
         'desc_everyone': 'punch for you and you and you-!',
         'desc_self': 'go rest and relax, no need to punch yourself :(',
         'desc_other': 'one punch coming right up!'
-    },
-    'tickle': {
-        'act': 'tickles',
-        'color': discord.Color.yellow(),
-        'emoji': '🤭',
-        'lone': False,
-        'link': '',
-        'desc_everyone': 'tickle fight everyone! :D',
-        'desc_self': 'that doesnt work on yourself silly :P',
-        'desc_other': 'wanna hear you laugh! hehe :3'
     },
     'feed': {
         'act': 'feeds',
@@ -224,36 +204,6 @@ ACTIONS = {
         'desc_self': "mybe you're but you are the special kind of stoopid :3",
         'desc_other': '{author.display_name} said that not me ._.'
     },
-    'handhold': {
-        'act': 'holds hands with',
-        'color': discord.Color.pink(),
-        'emoji': '🤝',
-        'lone': False,
-        'link': 'with',
-        'desc_everyone': 'everyone hold hands! circle time! :3',
-        'desc_self': 'holding your own hand? aww :3',
-        'desc_other': 'how romantic! 💕'
-    },
-    'handshake': {
-        'act': 'shakes hands with',
-        'color': discord.Color.blue(),
-        'emoji': '🤝',
-        'lone': False,
-        'link': 'with',
-        'desc_everyone': 'nice to meet you all! :D',
-        'desc_self': 'firm handshake with yourself! very professional :P',
-        'desc_other': 'what a professional greeting! ✨'
-    },
-    'peck': {
-        'act': 'pecks',
-        'color': discord.Color.pink(),
-        'emoji': '😘',
-        'lone': False,
-        'link': '',
-        'desc_everyone': 'little kisses for everyone! 😚',
-        'desc_self': 'mwah! self-kisses count too! 💋',
-        'desc_other': 'a sweet little peck! 🥰'
-    },
     'nom': {
         'act': 'noms on',
         'color': discord.Color.orange(),
@@ -303,16 +253,6 @@ ACTIONS = {
         'desc_everyone': 'thumbs up everyone! great job! 👍',
         'desc_self': 'nice work! you got this! 👍',
         'desc_other': 'approval granted! ✨'
-    },
-    'wink': {
-        'act': 'winks',
-        'color': discord.Color.gold(),
-        'emoji': '😉',
-        'lone': True,
-        'link': 'at',
-        'desc_everyone': 'wink wink everyone! 😉✨',
-        'desc_self': 'winking at yourself! confident! :D',
-        'desc_other': 'smooth! 😎'
     },
 }
 
@@ -420,11 +360,10 @@ async def setup_reactions(bot):
     async def do_action(
         interaction: discord.Interaction,
         action: Literal[
-            'hug', 'kiss', 'pat', 'slap', 'poke', 'cuddle', 'bite', 'kick',
-            'punch', 'tickle', 'feed', 'highfive', 'dance', 'sleep', 'cry',
-            'smile', 'wave', 'laugh', 'yeet',
-            'baka', 'facepalm', 'think', 'handhold', 'handshake',
-            'peck', 'nom', 'shoot', 'run', 'stare', 'thumbsup', 'wink'
+            'hug', 'kiss', 'pat', 'poke', 'cuddle', 'bite', 'kick',
+            'punch', 'feed', 'highfive', 'dance', 'sleep', 'cry',
+            'smile', 'wave', 'laugh', 'yeet', 'baka', 'facepalm', 'think',
+            'nom', 'shoot', 'run', 'stare', 'thumbsup'
         ],
         user: Optional[discord.User] = None,
         everyone: Optional[bool] = False
@@ -468,8 +407,9 @@ async def setup_reactions(bot):
     @app_commands.describe(reaction="Choose an reaction to perform")
     async def do_reaction(
         interaction: discord.Interaction,
-        reaction: Literal['blush', 'shrug', 'yawn','angry', 'bored', 'happy',
-              'nope', 'smug', 'lurk', 'pout', 'nod'
+        reaction: Literal[
+            'blush', 'shrug', 'yawn','angry', 'bored', 'happy',
+            'nope', 'smug', 'lurk', 'pout', 'nod'
         ]
     ):
         await interaction.response.defer()

@@ -36,6 +36,7 @@ async def on_ready():
     await melody_setup(bot)
     await fun_setup(bot)
     await register_events(bot)
+    print('test')
     await bot.tree.sync()
     print("Commands synced.")
 @bot.event
