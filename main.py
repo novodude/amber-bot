@@ -12,7 +12,7 @@ from commands.reactions import setup_reactions
 from commands.inkblot import inkblot_setup
 from commands.ofc import ofc_setup
 from commands.animals import animals_setup
-from commands.fun import fun_setup, register_events
+from commands.fun import fun_setup
 from commands.melody import melody_setup
 from pathlib import Path
 
@@ -35,8 +35,6 @@ async def on_ready():
     await animals_setup(bot)
     await melody_setup(bot)
     await fun_setup(bot)
-    await register_events(bot)
-    print('test')
     await bot.tree.sync()
     print("Commands synced.")
 @bot.event
@@ -44,6 +42,22 @@ async def on_guild_join(guild):
         general = discord.utils.find(lambda x: x.name == 'general' and x.type == discord.ChannelType.text, guild.channels)
         if general and general.permissions_for(guild.me).send_messages:
             await general.send("Quack! Thanks for adding me to your server!")
+
+@bot.event
+async def on_message(message: discord.Message):
+    if message.author.bot:
+        return
+
+    from commands.fun import handle_4k
+    from commands.utils import handle_pin
+
+    if await handle_4k(bot, message):
+        return
+
+    if await handle_pin(bot, message):
+        return
+
+    await bot.process_commands(message)
 
 @bot.tree.command(name="help", description="Get a list of available commands.")
 @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)

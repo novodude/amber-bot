@@ -161,9 +161,7 @@ async def fun_setup(bot):
             file=discord.File(output_bytes, filename=f"quote_{user.name}.png")
         )
 
-async def register_events(bot):
-    @bot.event
-    async def on_message(message: discord.Message):
+async def handle_4k(bot, message):
         if message.author.bot:
             return
 
@@ -252,5 +250,25 @@ async def register_events(bot):
             file=discord.File(output_bytes, filename=f"quote_{user.name}.png")
         )
 
+        if message.author.bot:
+            return
+        if not message.reference:
+            return
+
+        try:
+            replied_message = await message.channel.fetch_message(message.reference.message_id)
+        except discord.NotFound:
+            return
+
+        content = message.content.lower().strip()
+
+        if content == "pin":
+            await replied_message.pin(reason=f"Pinned by {message.author}")
+            await message.add_reaction("📌")
+
+        elif content == "unpin":
+            await replied_message.unpin(reason=f"Unpinned by {message.author}")
+            await message.add_reaction("❌")
+        
         await bot.process_commands(message)
 
