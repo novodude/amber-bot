@@ -2,3 +2,7 @@ discord.py
 python-dotenv
 pillow
 wavesynth
+requests
+yt-dlp
+aiosqlite
+spotipy

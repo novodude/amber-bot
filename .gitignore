@@ -13,6 +13,7 @@ bot.log
 .eggs/
 .env.*
 .env
+.cache
 pyrightconfig.json
 commands/events.py
 commands/__init__.py

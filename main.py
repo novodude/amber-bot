@@ -1,21 +1,17 @@
+# other libraries
 import os
-import discord
 import logging
 from io import BytesIO
-import aiohttp
-from PIL import Image, ImageDraw, ImageFont
-import discord
 from dotenv import load_dotenv
+# discord library
+import discord
 from discord.ext import commands
 from discord import app_commands
+# commands and scripts
 from commands.reactions import setup_reactions
-from commands.inkblot import inkblot_setup
-from commands.ofc import ofc_setup
-from commands.animals import animals_setup
 from commands.fun import fun_setup
 from commands.melody import melody_setup
-from pathlib import Path
-
+from utils.radio.database import init_db
 
 load_dotenv()
 token = os.getenv("DISCORD_TOKEN")
@@ -26,37 +22,31 @@ intents.message_content = True
 intents.members = True
 bot = commands.Bot(command_prefix='!', intents=intents)
 
+async def load_extensions():
+    await bot.load_extension('commands.radio.settings')
+    await bot.load_extension('commands.radio.player')
+
 @bot.event
 async def on_ready():
     print(f"we are quacking here, {bot.user.name}")
     await setup_reactions(bot)
-    await inkblot_setup(bot)
-    await ofc_setup(bot)
-    await animals_setup(bot)
     await melody_setup(bot)
     await fun_setup(bot)
+    await init_db()
+    await load_extensions()
     await bot.tree.sync()
     print("Commands synced.")
-@bot.event
-async def on_guild_join(guild):
-        general = discord.utils.find(lambda x: x.name == 'general' and x.type == discord.ChannelType.text, guild.channels)
-        if general and general.permissions_for(guild.me).send_messages:
-            await general.send("Quack! Thanks for adding me to your server!")
 
 @bot.event
 async def on_message(message: discord.Message):
     if message.author.bot:
         return
-
     from commands.fun import handle_4k
     from commands.utils import handle_pin
-
     if await handle_4k(bot, message):
         return
-
     if await handle_pin(bot, message):
         return
-
     await bot.process_commands(message)
 
 @bot.tree.command(name="help", description="Get a list of available commands.")
@@ -69,17 +59,38 @@ async def help_command(interaction: discord.Interaction):
         "- `/rat`: Get a random adorable rat image. ^_^\n\n"
     )
     games_n_reactions = (
+        "- `/do`: do an action with anime gifs. UwU\n"
+        "- `/look`: do a reaction with anime gifs. >:3\n"
         "- `/rarch`: Generate a random rorschach test. o_o\n"
         "- `/ofc`: Careful with the out of context command, it can hurt. .-.\n"
         "- `/do`: Anime reaction images for various moods. UwU\n"
+        "- `/misquote`: spread misinformation in someone's name. :D\n"
+        "- `/melody`: Generate a melody. :P\n"
+        "- `/ping`: Check the bot's latency. :D\n"
+    )
+
+    radio = (
+        "- `/radio`: Play your radio playlist or public playlists. :>\n"
+        "- `/radio_set`: Create a new radio playlist. \n"
+        "- `/radio_libraries`: View your radio playlists. \n"
+        "- `/radio_remove`: Delete a radio playlist. >:D\n"
+        "- `/radio_stop`: Stop the radio and disconnect. :D\n"
+        "- `radio_sync`: Sync your radio playlist. :P\n"
+    )
+
+    bot_events = (
+        "keep in mind amber has to be in the server to do these"
+        "- reply to a message with `4k` and you will quote it in 4k. :3\n"
+        "- you can pin or unpin messages by replying to them with `pin` or `unpin`. >:P\n"
     )
  
     embed = discord.Embed(title="Quack! Here are some commands you can use:", color=discord.Color.gold())
     embed.add_field(name="Cute Feathered and Furry Friends", value=animals, inline=False)
     embed.add_field(name="Games and Fun", value=games_n_reactions, inline=False)
+    embed.add_field(name="Radio System", value=radio, inline=False)
+    embed.add_field(name="Bot Events", value=bot_events, inline=False)
     embed.set_footer(text="OFC quotes from AMTA discord server 💜")
     await interaction.response.send_message(embed=embed)
-
 
 @bot.tree.command(name="ping", description="Check the bot's latency.")
 @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
@@ -87,10 +98,5 @@ async def help_command(interaction: discord.Interaction):
 async def ping(interaction: discord.Interaction):   
     latency = bot.latency * 1000
     await interaction.response.send_message(f"Pong! Latency: {latency:.2f} ms")
-
-
-
-
-
 
 bot.run(token, reconnect=True, log_handler=handler)

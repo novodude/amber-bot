@@ -1,11 +1,14 @@
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFont, ImageFilter
 from io import BytesIO
 import discord
 import aiohttp
+import random
 from discord import app_commands, message
 from discord.ext import commands
 from pathlib import Path
 import os
+import io
+
 
 async def fun_setup(bot):
     @bot.tree.command(name="wanted", description="ye criminal mate!")
@@ -161,6 +164,233 @@ async def fun_setup(bot):
             file=discord.File(output_bytes, filename=f"quote_{user.name}.png")
         )
 
+    def generate_inkblot(width=500, height=700):
+        half_width = width // 2
+        random_color = ['white', 'honeydew','black', '#432323', '#0C2B4E', "#7A2828"]
+        bg_color = random.choice(random_color)
+        img = Image.new('RGB', (width, height), bg_color)
+        draw = ImageDraw.Draw(img)
+        
+        dark = ['black', '#432323', '#0C2B4E', '#7A2828', 'darkblue', 'darkred']
+        light = ['white', 'honeydew', 'lightblue', 'lightyellow']
+
+        if bg_color in ['black', '#432323', '#0C2B4E', '#7A2828']:
+            fill_color = random.choice(light) 
+        else:
+            fill_color = random.choice(dark)
+        num_blobs = random.randint(10, 25)
+        
+        for _ in range(num_blobs):
+            x = random.randint(0, half_width - 50)
+            y = random.randint(50, height - 50)        
+            width_size = random.randint(30, 170)
+            height_size = random.randint(30, 170)        
+            shape_type = random.choice([ 'irregular', 'blob', 'irregular'])
+
+            if shape_type == 'blob':
+                draw.ellipse([x, y, x + width_size, y + height_size], fill=bg_color)
+            elif shape_type == 'irregular':
+                num_circles = random.randint(5, 10)
+                for _ in range(num_circles):
+                    offset_x = random.randint(-40, 40)
+                    offset_y = random.randint(-40, 40)
+                    circle_size = random.randint(30, 90)
+                    draw.ellipse(
+                        [x + offset_x, y + offset_y, 
+                        x + offset_x + circle_size, y + offset_y + circle_size],
+                        fill=fill_color
+                    )
+            else:
+                num_circles = random.randint(3, 7)
+                for _ in range(num_circles):
+                    offset_x = random.randint(-30, 30)
+                    offset_y = random.randint(-30, 30)
+                    circle_size = random.randint(20, 77)
+                    draw.ellipse(
+                        [x + offset_x, y + offset_y, 
+                        x + offset_x + circle_size, y + offset_y + circle_size],
+                        fill=fill_color
+                    )
+            
+
+        for _ in range(random.randint(100, 300)):
+            noise_x = random.randint(0, half_width)
+            noise_y = random.randint(0, height)
+            noise_size = random.randint(1, 3)
+            draw.ellipse(
+                [noise_x, noise_y, noise_x + noise_size, noise_y + noise_size],
+                fill=random_color[random.randint(0, len(random_color)-1)]
+            )
+
+
+        for _ in range(num_blobs):
+            center_x = random.randint(50, half_width - 50)
+            center_y = random.randint(100, height - 100)
+        
+        num_layers = random.randint(5, 15)
+        for layer in range(num_layers):
+            offset_x = random.randint(-40, 40)
+            offset_y = random.randint(-40, 40)
+            size = random.randint(30, 120)
+            
+            draw.ellipse(
+                [center_x + offset_x - size//2,
+                 center_y + offset_y - size//2,
+                 center_x + offset_x + size//2,
+                 center_y + offset_y + size//2],
+                fill=fill_color
+            )
+
+        img = img.filter(ImageFilter.GaussianBlur(radius=1))
+        left_half = img.crop((0, 0, half_width, height))
+        right_half = left_half.transpose(Image.FLIP_LEFT_RIGHT)
+        img.paste(right_half, (half_width, 0))
+
+        return img
+    @bot.tree.command(name="rarch", description="Generate a inkblot image.")
+    @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+    @app_commands.allowed_installs(guilds=True, users=True)
+    async def rarch(interaction: discord.Interaction):
+        inkblot_image = generate_inkblot()
+        with io.BytesIO() as image_binary:
+            inkblot_image.save(image_binary, 'PNG')
+            image_binary.seek(0)
+            file = discord.File(fp=image_binary, filename='inkblot.png')
+            embed = discord.Embed(title="what do you see?")
+            embed.set_image(url="attachment://inkblot.png")
+            await interaction.response.send_message(embed=embed, file=file)
+
+
+
+    api_key = os.getenv('GIPHY_API')
+    @bot.tree.command(name="duck", description="random duck yay")
+    @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+    @app_commands.allowed_installs(guilds=True, users=True)
+    async def duck(interaction: discord.Interaction):
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get("https://random-d.uk/api/v2/list") as resp:
+                    data = await resp.json()
+                    gifs = data.get("gifs", [])
+                    if gifs:
+                        random_gif = random.choice(gifs)
+                        gif_url = f"https://random-d.uk/api/{random_gif}"
+                    else:
+                        gif_url = "https://random-d.uk/api/random"
+            embed = discord.Embed(title="Random Duck!")
+            embed.set_image(url=gif_url)
+            await interaction.response.send_message(embed=embed)
+        except Exception as e:
+            await interaction.followup.send(
+                embed=discord.Embed(
+                    title="Error", 
+                    description=f"```log\n\nError:\n{str(e)}\n\n```",
+                    color=discord.Color.red()
+                )
+            )
+    @bot.tree.command(name="rat", description="look at them ratting around")
+    @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+    @app_commands.allowed_installs(guilds=True, users=True)
+    async def rat(interaction: discord.Interaction):
+        await interaction.response.defer()
+        api = api_key
+        rat_url = "https://api.giphy.com/v1/gifs/random?api_key={api_key}&tag=rat&rating=G"
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(rat_url.format(api_key=api)) as resp:
+                    if resp.status == 200:  # SUCCESS
+                        data = await resp.json()
+                        gif_url = data['data']['images']['original']['url']
+                        
+                        embed = discord.Embed(title="Random Rat!", color=discord.Color.dark_green())
+                        embed.set_image(url=gif_url)
+                        await interaction.followup.send(embed=embed)
+                    else:
+                        embed = discord.Embed(
+                            title="Error", 
+                            description=f"Could not fetch a rat gif at this time. (Status: {resp.status})", 
+                            color=discord.Color.red()
+                        )
+                        await interaction.followup.send(embed=embed)
+        except Exception as e:
+            await interaction.followup.send(
+                embed=discord.Embed(
+                    title="Error", 
+                    description=f"```log\n\nError:\n{str(e)}\n\n```",
+                    color=discord.Color.red()
+                )
+            )
+
+    @bot.tree.command(name="cat", description="orange, white, black omg they're pink too :3")
+    @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+    @app_commands.allowed_installs(guilds=True, users=True)
+    async def cat(interaction: discord.Interaction):
+        cat_url = "https://api.thecatapi.com/v1/images/search?mime_types=gif"
+        
+        clr = [discord.Color.orange(), 0xFFFFFF, discord.Color.pink(), discord.Color.from_rgb(0,0,0)]
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(cat_url) as resp:
+                    if resp.status == 200:
+                        data = await resp.json()
+                        gif_url = data[0]['url']
+                        
+                        embed = discord.Embed(title="Random Cat!", color=random.choice(clr))
+                        embed.set_image(url=gif_url)
+                        await interaction.response.send_message(embed=embed)
+                    else:
+                        embed = discord.Embed(
+                            title="Error", 
+                            description=f"Could not fetch a cat gif at this time. (Status: {resp.status})", 
+                            color=discord.Color.red()
+                        )
+                        await interaction.response.send_message(embed=embed)
+        except Exception as e:
+            await interaction.followup.send(
+                embed=discord.Embed(
+                    title="Error", 
+                    description=f"```log\n\nError:\n{str(e)}\n\n```",
+                    color=discord.Color.red()
+                )
+            )
+
+# Path to the repo root
+    ROOT_DIR = Path(__file__).resolve().parent.parent
+    OFC_SFW = ROOT_DIR / "assets" / "ofc" / "sfw"
+    OFC_NSFW = ROOT_DIR / "assets" / "ofc" / "nsfw"
+
+    async def ofc_setup(bot):
+
+        class OFCType(discord.Enum):
+            SFW = "sfw"
+            NSFW = "nsfw"
+
+        @bot.tree.command(name="ofc", description="out of context image :3")
+        @app_commands.describe(type="Choose whether the image is SFW or NSFW")
+        @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+        @app_commands.allowed_installs(guilds=True, users=True)
+        async def ofc(interaction: discord.Interaction, type: OFCType = OFCType.SFW):
+
+            # check if NSFW is selected in a non-NSFW channel
+            if type == OFCType.NSFW:
+                if interaction.guild is not None:
+                    channel = interaction.channel
+                    if not isinstance(channel, discord.TextChannel) or not channel.is_nsfw():
+                        return await interaction.response.send_message(
+                            "NSFW images can only be requested in NSFW channels.",
+                            ephemeral=True
+                        )
+            img_dir = OFC_SFW if type == OFCType.SFW else OFC_NSFW
+            img = random.choice(os.listdir(img_dir))
+            embed = discord.Embed(color=discord.Color.purple())
+            embed.set_image(url=f"attachment://{img}")
+            embed.set_footer(text="thanks to AMTA community <3")
+
+            await interaction.response.send_message(
+                file=discord.File(img_dir / img),
+                embed=embed
+            )
+
 async def handle_4k(bot, message):
         if message.author.bot:
             return
@@ -250,25 +480,5 @@ async def handle_4k(bot, message):
             file=discord.File(output_bytes, filename=f"quote_{user.name}.png")
         )
 
-        if message.author.bot:
-            return
-        if not message.reference:
-            return
-
-        try:
-            replied_message = await message.channel.fetch_message(message.reference.message_id)
-        except discord.NotFound:
-            return
-
-        content = message.content.lower().strip()
-
-        if content == "pin":
-            await replied_message.pin(reason=f"Pinned by {message.author}")
-            await message.add_reaction("📌")
-
-        elif content == "unpin":
-            await replied_message.unpin(reason=f"Unpinned by {message.author}")
-            await message.add_reaction("❌")
-        
         await bot.process_commands(message)
 
