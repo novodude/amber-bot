@@ -1,273 +1,331 @@
+from typing import Optional
 from PIL import Image, ImageDraw, ImageFont, ImageFilter
 from io import BytesIO
 import discord
 import aiohttp
 import random
-from discord import app_commands, message
+from discord import app_commands
 from discord.ext import commands
 from pathlib import Path
 import os
 import io
 
 
-async def fun_setup(bot):
+class ImageGenerator:
+    """Handles image generation and manipulation."""
+    
+    def __init__(self, root_dir: Path):
+        self.root_dir = root_dir
+        self.font_dir = root_dir / "assets" / "fonts"
+    
+    def get_fitting_font(self, font_path: str, text: str, max_width: int, starting_size: int = 180) -> ImageFont.FreeTypeFont:
+        """Find the largest font size that fits the text within max_width."""
+        font_size = starting_size
+        
+        while font_size > 1:
+            font = ImageFont.truetype(font_path, font_size)
+            if font.getlength(text) <= max_width:
+                return font
+            font_size -= 1
+        
+        return ImageFont.truetype(font_path, 1)
+    
+    def fit_text_into_box(self, draw: ImageDraw.Draw, text: str, font_path: str, 
+                          max_width: int, max_height: int, start_size: int = 50) -> tuple:
+        """Fit text into a box with word wrapping and size adjustment."""
+        font_size = start_size
+        pad = 20
+        adjusted_width = max_width - 2 * pad
+        adjusted_height = max_height - 2 * pad
+        
+        while font_size > 8:
+            font = ImageFont.truetype(font_path, font_size)
+            lines = self._wrap_text(draw, text, font, adjusted_width)
+            
+            total_height = sum(font.getbbox(line)[3] for line in lines)
+            if total_height <= adjusted_height:
+                return font, "\n".join(lines), pad
+            
+            font_size -= 1
+        
+        return ImageFont.truetype(font_path, 8), text, pad
+    
+    def _wrap_text(self, draw: ImageDraw.Draw, text: str, font: ImageFont.FreeTypeFont, 
+                   max_width: int) -> list[str]:
+        """Wrap text to fit within max_width."""
+        lines = []
+        words = text.split()
+        current_line = ""
+        
+        for word in words:
+            test_line = f"{current_line} {word}".strip()
+            
+            # Handle long words that exceed max_width
+            if draw.textlength(word, font=font) > max_width:
+                for char in word:
+                    test_char = current_line + char
+                    if draw.textlength(test_char, font=font) <= max_width:
+                        current_line = test_char
+                    else:
+                        if current_line:
+                            lines.append(current_line)
+                        current_line = char
+            elif draw.textlength(test_line, font=font) <= max_width:
+                current_line = test_line
+            else:
+                if current_line:
+                    lines.append(current_line)
+                current_line = word
+        
+        if current_line:
+            lines.append(current_line)
+        
+        return lines
+    
+    async def create_wanted_poster(self, user: discord.User, amount: int) -> BytesIO:
+        """Create a wanted poster image."""
+        template_path = self.root_dir / "assets" / "fun" / "wanted.png"
+        font_path = self.font_dir / "wanted_font.ttf"
+        
+        # Fetch user avatar
+        async with aiohttp.ClientSession() as session:
+            async with session.get(user.display_avatar.url) as resp:
+                avatar_bytes = await resp.read()
+        
+        # Load and resize images
+        avatar = Image.open(BytesIO(avatar_bytes)).convert("RGBA").resize((900, 900))
+        template = Image.open(str(template_path)).convert("RGBA")
+        
+        # Create output image
+        output = template.copy()
+        frame_width, frame_height = template.size
+        avatar_pos = ((frame_width - 900) // 2, 600)
+        output.paste(avatar, avatar_pos, avatar)
+        
+        # Add text
+        draw = ImageDraw.Draw(output)
+        
+        try:
+            name_font = self.get_fitting_font(str(font_path), user.display_name, 1000, 180)
+            amount_font = ImageFont.truetype(str(font_path), 130)
+        except OSError:
+            name_font = ImageFont.load_default()
+            amount_font = ImageFont.load_default()
+        
+        # Draw name
+        name_bbox = draw.textbbox((0, 0), user.display_name, font=name_font)
+        name_width = name_bbox[2] - name_bbox[0]
+        name_pos = ((frame_width - name_width) // 2, 1790)
+        draw.text(name_pos, user.display_name, font=name_font, fill=(101, 67, 33))
+        
+        # Draw amount
+        amount_text = f"{amount:,}"
+        amount_bbox = draw.textbbox((0, 0), amount_text, font=amount_font)
+        amount_width = amount_bbox[2] - amount_bbox[0]
+        amount_pos = ((frame_width - amount_width) // 2, 2050)
+        draw.text(amount_pos, amount_text, font=amount_font, fill=(139, 69, 19))
+        
+        # Save to bytes
+        output_bytes = BytesIO()
+        output.save(output_bytes, format='PNG')
+        output_bytes.seek(0)
+        return output_bytes
+    
+    async def create_quote_image(self, user: discord.User, message: str) -> BytesIO:
+        """Create a quote/misquote image."""
+        font_path = self.font_dir / "quote.ttf"
+        
+        # Fetch user avatar
+        async with aiohttp.ClientSession() as session:
+            async with session.get(user.display_avatar.url) as resp:
+                avatar_bytes = await resp.read()
+        
+        # Create canvas
+        canvas = Image.new("RGBA", (500, 250), "black")
+        draw = ImageDraw.Draw(canvas)
+        
+        # Add avatar
+        avatar = Image.open(BytesIO(avatar_bytes)).convert("RGBA").resize((250, 250))
+        canvas.paste(avatar, (0, 0), avatar)
+        
+        # Add username
+        name_font, wrapped_name, pad = self.fit_text_into_box(
+            draw, f"- @{user.display_name}", str(font_path), 250, 60, 15
+        )
+        draw.text((270 + pad, 210), wrapped_name, font=name_font, fill=(255, 240, 200))
+        
+        # Add quote
+        quote_font, wrapped_quote, pad = self.fit_text_into_box(
+            draw, message, str(font_path), 230, 190, 25
+        )
+        draw.text((270 + pad, 30), wrapped_quote, font=quote_font, fill=(200, 200, 200))
+        
+        # Add separator line
+        draw.line((270, 200, 480, 200), fill=(200, 200, 200), width=2)
+        
+        # Save to bytes
+        output_bytes = BytesIO()
+        canvas.save(output_bytes, format="PNG")
+        output_bytes.seek(0)
+        return output_bytes
+    
+    def generate_inkblot(self, width: int = 500, height: int = 700) -> Image.Image:
+        """Generate a random Rorschach-style inkblot."""
+        half_width = width // 2
+        
+        # Color palettes
+        colors = ['white', 'honeydew', 'black', '#432323', '#0C2B4E', "#7A2828"]
+        dark_colors = ['black', '#432323', '#0C2B4E', '#7A2828', 'darkblue', 'darkred']
+        light_colors = ['white', 'honeydew', 'lightblue', 'lightyellow']
+        
+        # Choose background and fill colors
+        bg_color = random.choice(colors)
+        fill_color = (random.choice(light_colors) if bg_color in dark_colors 
+                     else random.choice(dark_colors))
+        
+        # Create image
+        img = Image.new('RGB', (width, height), bg_color)
+        draw = ImageDraw.Draw(img)
+        
+        # Draw blobs
+        num_blobs = random.randint(10, 25)
+        for _ in range(num_blobs):
+            self._draw_random_blob(draw, half_width, height, bg_color, fill_color)
+        
+        # Add noise
+        self._add_noise(draw, half_width, height, colors)
+        
+        # Add central feature
+        self._draw_central_feature(draw, half_width, height, fill_color)
+        
+        # Apply blur and mirror
+        img = img.filter(ImageFilter.GaussianBlur(radius=1))
+        left_half = img.crop((0, 0, half_width, height))
+        right_half = left_half.transpose(Image.FLIP_LEFT_RIGHT)
+        img.paste(right_half, (half_width, 0))
+        
+        return img
+    
+    def _draw_random_blob(self, draw: ImageDraw.Draw, half_width: int, height: int, 
+                          bg_color: str, fill_color: str):
+        """Draw a random blob shape."""
+        x = random.randint(0, half_width - 50)
+        y = random.randint(50, height - 50)
+        w_size = random.randint(30, 170)
+        h_size = random.randint(30, 170)
+        
+        shape_type = random.choice(['irregular', 'blob', 'irregular'])
+        
+        if shape_type == 'blob':
+            draw.ellipse([x, y, x + w_size, y + h_size], fill=bg_color)
+        else:
+            num_circles = random.randint(5, 10) if shape_type == 'irregular' else random.randint(3, 7)
+            offset_range = 40 if shape_type == 'irregular' else 30
+            size_range = (30, 90) if shape_type == 'irregular' else (20, 77)
+            
+            for _ in range(num_circles):
+                offset_x = random.randint(-offset_range, offset_range)
+                offset_y = random.randint(-offset_range, offset_range)
+                circle_size = random.randint(*size_range)
+                draw.ellipse([
+                    x + offset_x, y + offset_y,
+                    x + offset_x + circle_size, y + offset_y + circle_size
+                ], fill=fill_color)
+    
+    def _add_noise(self, draw: ImageDraw.Draw, half_width: int, height: int, colors: list):
+        """Add random noise to the image."""
+        for _ in range(random.randint(100, 300)):
+            x = random.randint(0, half_width)
+            y = random.randint(0, height)
+            size = random.randint(1, 3)
+            draw.ellipse([x, y, x + size, y + size], fill=random.choice(colors))
+    
+    def _draw_central_feature(self, draw: ImageDraw.Draw, half_width: int, 
+                             height: int, fill_color: str):
+        """Draw a central feature with multiple layers."""
+        center_x = random.randint(50, half_width - 50)
+        center_y = random.randint(100, height - 100)
+        num_layers = random.randint(5, 15)
+        
+        for _ in range(num_layers):
+            offset_x = random.randint(-40, 40)
+            offset_y = random.randint(-40, 40)
+            size = random.randint(30, 120)
+            
+            draw.ellipse([
+                center_x + offset_x - size // 2,
+                center_y + offset_y - size // 2,
+                center_x + offset_x + size // 2,
+                center_y + offset_y + size // 2
+            ], fill=fill_color)
+
+
+class OFCType(discord.Enum):
+    SFW = "sfw"
+    NSFW = "nsfw"
+
+
+async def fun_setup(bot: commands.Bot):
+    """Set up fun commands for the bot."""
     ROOT_DIR = Path(__file__).resolve().parent.parent
     OFC_SFW = ROOT_DIR / "assets" / "ofc" / "sfw"
     OFC_NSFW = ROOT_DIR / "assets" / "ofc" / "nsfw"
-
-    @bot.tree.command(name="wanted", description="ye criminal mate!")
-    @app_commands.describe(user="The criminal you want the poster for.")
-    @app_commands.describe(amount="The amount for the bounty.")
+    
+    img_gen = ImageGenerator(ROOT_DIR)
+    api_key = os.getenv('GIPHY_API')
+    
+    # ==================== Wanted Poster ====================
+    @bot.tree.command(name="wanted", description="Create a wanted poster!")
+    @app_commands.describe(
+        user="The criminal you want the poster for.",
+        amount="The bounty amount."
+    )
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     @app_commands.allowed_installs(guilds=True, users=True)
     async def wanted(interaction: discord.Interaction, user: discord.User, amount: int):
         await interaction.response.defer(thinking=True)
         try:
-            ROOT_DIR = Path(__file__).resolve().parent.parent
-            template_path = ROOT_DIR / "assets" / "fun" / "wanted.png"
-            font_path = ROOT_DIR / "assets" / "fonts" / "wanted_font.ttf"
-            
-            template_path = str(template_path)
-            font_path = str(font_path)
-            
-            user_avatar_url = user.display_avatar.url
-            
-            async with aiohttp.ClientSession() as session:
-                async with session.get(user_avatar_url) as resp:
-                    avatar_bytes = await resp.read()
-            
-            image_avatar = Image.open(BytesIO(avatar_bytes)).convert("RGBA")
-            image_frame = Image.open(template_path).convert("RGBA")
-            image_avatar = image_avatar.resize((900, 900))
-            image_frame_width, image_frame_height = image_frame.size
-            output = image_frame.copy()
-            image_avatar_width, image_avatar_height = image_avatar.size
-            image_avatar_pos = ((image_frame_width - image_avatar_width) // 2, 600)
-            output.paste(image_avatar, image_avatar_pos, image_avatar)
-            try:
-                def get_fitting_font(font_path, text, max_width, starting_size=180):
-                    font_size = starting_size
-
-                    while font_size > 1:
-                        font = ImageFont.truetype(font_path, font_size)
-                        text_width = font.getlength(text)
-
-                        if text_width <= max_width:
-                            return font
-                        
-                        font_size -= 1
-
-                    return ImageFont.truetype(font_path, 1)
-
-                max_font_size_name = 180
-                name_max_width = 1000
-
-                name_font = get_fitting_font(font_path, user.display_name, name_max_width, starting_size=max_font_size_name)
-                amount_font = ImageFont.truetype(font_path, 130)
-            except OSError as font_error:
-                name_font = ImageFont.load_default()
-                amount_font = ImageFont.load_default()
-            
-            draw = ImageDraw.Draw(output)
-            name_text = user.display_name
-            
-            name_bbox = draw.textbbox((0, 0), name_text, font=name_font)
-            name_width = name_bbox[2] - name_bbox[0]
-            
-            name_position = ((image_frame_width - name_width) // 2, 1790)
-            draw.text(name_position, name_text, font=name_font, fill=(101, 67, 33))
-            
-            amount_text = f"{amount:,}"
-            amount_bbox = draw.textbbox((0, 0), amount_text, font=amount_font)
-            amount_width = amount_bbox[2] - amount_bbox[0]
-            
-            amount_position = ((image_frame_width - amount_width) // 2, 2050)
-            draw.text(amount_position, amount_text, font=amount_font, fill=(139, 69, 19))
-            
-            output_bytes = BytesIO()
-            output.save(output_bytes, format='PNG')
-            output_bytes.seek(0)
-            
+            output_bytes = await img_gen.create_wanted_poster(user, amount)
             file = discord.File(output_bytes, filename=f"wanted_{user.name}.png")
             await interaction.followup.send(file=file)
-            
         except Exception as e:
-            await interaction.followup.send(f"An error occurred while processing the image.\n{str(e)}")
-
-
-    @bot.tree.command(name="misquote", description="spreading misinformation is fun :P!")
-    @app_commands.describe(message="what did they say?")
-    @app_commands.describe(user="who said what?")
-    async def misinformation(interaction: discord.Interaction, user: discord.User, message: str):
+            await interaction.followup.send(f"An error occurred: {str(e)}")
+    
+    # ==================== Misquote ====================
+    @bot.tree.command(name="misquote", description="Create a fake quote image")
+    @app_commands.describe(
+        message="What did they say?",
+        user="Who said it?"
+    )
+    @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+    @app_commands.allowed_installs(guilds=True, users=True)
+    async def misquote(interaction: discord.Interaction, user: discord.User, message: str):
         await interaction.response.defer()
-
-        ROOT_DIR = Path(__file__).resolve().parent.parent
-        font_path = str(ROOT_DIR / "assets" / "fonts" / "quote.ttf")
-        user_avatar_url = user.display_avatar.url
-        
-        async with aiohttp.ClientSession() as session:
-            async with session.get(user_avatar_url) as resp:
-                avatar_bytes = await resp.read()
-
-        canvas = Image.new("RGBA", (500, 250), "black")
-        draw = ImageDraw.Draw(canvas)
-
-        avatar = Image.open(BytesIO(avatar_bytes)).convert("RGBA").resize((250, 250))
-        canvas.paste(avatar, (0, 0), avatar)
-
-        def fit_text_into_box(text, max_width, max_height, start_size=50):
-            font_size = start_size
-            pad = 20
-            adjusted_width = max_width - 2*pad
-            adjusted_height = max_height - 2*pad
-
-            while font_size > 8:
-                font = ImageFont.truetype(font_path, font_size)
-                lines = []
-                words = text.split()
-                line = ""
-
-                for w in words:
-                    test = line + (" " if line else "") + w
-                    if draw.textlength(w, font=font) > adjusted_width:
-                        chars = list(w)
-                        for c in chars:
-                            test2 = line + c
-                            if draw.textlength(test2, font=font) <= adjusted_width:
-                                line = test2
-                            else:
-                                lines.append(line)
-                                line = c
-                    elif draw.textlength(test, font=font) <= adjusted_width:
-                        line = test
-                    else:
-                        lines.append(line)
-                        line = w
-                lines.append(line)
-
-                total_h = sum(font.getbbox(l)[3] for l in lines)
-                if total_h <= adjusted_height:
-                    return font, "\n".join(lines), pad
-                font_size -= 1
-
-            return ImageFont.truetype(font_path, 8), text, pad
-
-        name_font, wrapped_name, pad = fit_text_into_box(f"- @{user.display_name}", 250, 60, 15)
-        draw.text((270 + pad, 210), wrapped_name, font=name_font, fill=(255, 240, 200))
-
-        quote_font, wrapped_quote, pad = fit_text_into_box(message, 230, 180, 25)
-        draw.text((270 + pad, 90), wrapped_quote, font=quote_font, fill=(200, 200, 200))
-
-        draw.line((270, 200, 480, 200), fill=(200, 200, 200), width=2)
-        draw.line((270, 200, 480, 200), fill=(200, 200, 200), width=2)
-        output_bytes = BytesIO()
-        canvas.save(output_bytes, format="PNG")
-        output_bytes.seek(0)
-
-        await interaction.followup.send(
-            file=discord.File(output_bytes, filename=f"quote_{user.name}.png")
-        )
-
-    def generate_inkblot(width=500, height=700):
-        half_width = width // 2
-        random_color = ['white', 'honeydew','black', '#432323', '#0C2B4E', "#7A2828"]
-        bg_color = random.choice(random_color)
-        img = Image.new('RGB', (width, height), bg_color)
-        draw = ImageDraw.Draw(img)
-        
-        dark = ['black', '#432323', '#0C2B4E', '#7A2828', 'darkblue', 'darkred']
-        light = ['white', 'honeydew', 'lightblue', 'lightyellow']
-
-        if bg_color in ['black', '#432323', '#0C2B4E', '#7A2828']:
-            fill_color = random.choice(light) 
-        else:
-            fill_color = random.choice(dark)
-        num_blobs = random.randint(10, 25)
-        
-        for _ in range(num_blobs):
-            x = random.randint(0, half_width - 50)
-            y = random.randint(50, height - 50)        
-            width_size = random.randint(30, 170)
-            height_size = random.randint(30, 170)        
-            shape_type = random.choice([ 'irregular', 'blob', 'irregular'])
-
-            if shape_type == 'blob':
-                draw.ellipse([x, y, x + width_size, y + height_size], fill=bg_color)
-            elif shape_type == 'irregular':
-                num_circles = random.randint(5, 10)
-                for _ in range(num_circles):
-                    offset_x = random.randint(-40, 40)
-                    offset_y = random.randint(-40, 40)
-                    circle_size = random.randint(30, 90)
-                    draw.ellipse(
-                        [x + offset_x, y + offset_y, 
-                        x + offset_x + circle_size, y + offset_y + circle_size],
-                        fill=fill_color
-                    )
-            else:
-                num_circles = random.randint(3, 7)
-                for _ in range(num_circles):
-                    offset_x = random.randint(-30, 30)
-                    offset_y = random.randint(-30, 30)
-                    circle_size = random.randint(20, 77)
-                    draw.ellipse(
-                        [x + offset_x, y + offset_y, 
-                        x + offset_x + circle_size, y + offset_y + circle_size],
-                        fill=fill_color
-                    )
-            
-
-        for _ in range(random.randint(100, 300)):
-            noise_x = random.randint(0, half_width)
-            noise_y = random.randint(0, height)
-            noise_size = random.randint(1, 3)
-            draw.ellipse(
-                [noise_x, noise_y, noise_x + noise_size, noise_y + noise_size],
-                fill=random_color[random.randint(0, len(random_color)-1)]
-            )
-
-
-        for _ in range(num_blobs):
-            center_x = random.randint(50, half_width - 50)
-            center_y = random.randint(100, height - 100)
-        
-        num_layers = random.randint(5, 15)
-        for layer in range(num_layers):
-            offset_x = random.randint(-40, 40)
-            offset_y = random.randint(-40, 40)
-            size = random.randint(30, 120)
-            
-            draw.ellipse(
-                [center_x + offset_x - size//2,
-                 center_y + offset_y - size//2,
-                 center_x + offset_x + size//2,
-                 center_y + offset_y + size//2],
-                fill=fill_color
-            )
-
-        img = img.filter(ImageFilter.GaussianBlur(radius=1))
-        left_half = img.crop((0, 0, half_width, height))
-        right_half = left_half.transpose(Image.FLIP_LEFT_RIGHT)
-        img.paste(right_half, (half_width, 0))
-
-        return img
-    @bot.tree.command(name="rarch", description="Generate a inkblot image.")
+        try:
+            output_bytes = await img_gen.create_quote_image(user, message)
+            file = discord.File(output_bytes, filename=f"quote_{user.name}.png")
+            await interaction.followup.send(file=file)
+        except Exception as e:
+            await interaction.followup.send(f"An error occurred: {str(e)}")
+    
+    # ==================== Rorschach Test ====================
+    @bot.tree.command(name="rarch", description="Generate an inkblot image")
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     @app_commands.allowed_installs(guilds=True, users=True)
     async def rarch(interaction: discord.Interaction):
-        inkblot_image = generate_inkblot()
+        inkblot_image = img_gen.generate_inkblot()
+        
         with io.BytesIO() as image_binary:
             inkblot_image.save(image_binary, 'PNG')
             image_binary.seek(0)
             file = discord.File(fp=image_binary, filename='inkblot.png')
-            embed = discord.Embed(title="what do you see?")
+            
+            embed = discord.Embed(title="What do you see?")
             embed.set_image(url="attachment://inkblot.png")
             await interaction.response.send_message(embed=embed, file=file)
-
-
-
-    api_key = os.getenv('GIPHY_API')
-    @bot.tree.command(name="duck", description="random duck yay")
+    
+    # ==================== Animal Commands ====================
+    @bot.tree.command(name="duck", description="Get a random duck image")
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     @app_commands.allowed_installs(guilds=True, users=True)
     async def duck(interaction: discord.Interaction):
@@ -276,33 +334,33 @@ async def fun_setup(bot):
                 async with session.get("https://random-d.uk/api/v2/list") as resp:
                     data = await resp.json()
                     gifs = data.get("gifs", [])
-                    if gifs:
-                        random_gif = random.choice(gifs)
-                        gif_url = f"https://random-d.uk/api/{random_gif}"
-                    else:
-                        gif_url = "https://random-d.uk/api/random"
+                    gif_url = (f"https://random-d.uk/api/{random.choice(gifs)}" 
+                              if gifs else "https://random-d.uk/api/random")
+            
             embed = discord.Embed(title="Random Duck!")
             embed.set_image(url=gif_url)
             await interaction.response.send_message(embed=embed)
         except Exception as e:
-            await interaction.followup.send(
+            await interaction.response.send_message(
                 embed=discord.Embed(
-                    title="Error", 
-                    description=f"```log\n\nError:\n{str(e)}\n\n```",
+                    title="Error",
+                    description=f"```log\nError:\n{str(e)}\n```",
                     color=discord.Color.red()
                 )
             )
-    @bot.tree.command(name="rat", description="look at them ratting around")
+    
+    @bot.tree.command(name="rotta", description="Get a random rat gif")
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     @app_commands.allowed_installs(guilds=True, users=True)
     async def rat(interaction: discord.Interaction):
         await interaction.response.defer()
-        api = api_key
-        rat_url = "https://api.giphy.com/v1/gifs/random?api_key={api_key}&tag=rat&rating=G"
+        
+        rat_url = f"https://api.giphy.com/v1/gifs/random?api_key={api_key}&tag=rat&rating=G"
+        
         try:
             async with aiohttp.ClientSession() as session:
-                async with session.get(rat_url.format(api_key=api)) as resp:
-                    if resp.status == 200:  # SUCCESS
+                async with session.get(rat_url) as resp:
+                    if resp.status == 200:
                         data = await resp.json()
                         gif_url = data['data']['images']['original']['url']
                         
@@ -310,28 +368,30 @@ async def fun_setup(bot):
                         embed.set_image(url=gif_url)
                         await interaction.followup.send(embed=embed)
                     else:
-                        embed = discord.Embed(
-                            title="Error", 
-                            description=f"Could not fetch a rat gif at this time. (Status: {resp.status})", 
-                            color=discord.Color.red()
+                        await interaction.followup.send(
+                            embed=discord.Embed(
+                                title="Error",
+                                description=f"Could not fetch a rat gif. (Status: {resp.status})",
+                                color=discord.Color.red()
+                            )
                         )
-                        await interaction.followup.send(embed=embed)
         except Exception as e:
             await interaction.followup.send(
                 embed=discord.Embed(
-                    title="Error", 
-                    description=f"```log\n\nError:\n{str(e)}\n\n```",
+                    title="Error",
+                    description=f"```log\nError:\n{str(e)}\n```",
                     color=discord.Color.red()
                 )
             )
-
-    @bot.tree.command(name="cat", description="orange, white, black omg they're pink too :3")
+    
+    @bot.tree.command(name="cat", description="Get a random cat gif")
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     @app_commands.allowed_installs(guilds=True, users=True)
     async def cat(interaction: discord.Interaction):
         cat_url = "https://api.thecatapi.com/v1/images/search?mime_types=gif"
+        colors = [discord.Color.orange(), 0xFFFFFF, discord.Color.pink(), 
+                 discord.Color.from_rgb(0, 0, 0)]
         
-        clr = [discord.Color.orange(), 0xFFFFFF, discord.Color.pink(), discord.Color.from_rgb(0,0,0)]
         try:
             async with aiohttp.ClientSession() as session:
                 async with session.get(cat_url) as resp:
@@ -339,37 +399,33 @@ async def fun_setup(bot):
                         data = await resp.json()
                         gif_url = data[0]['url']
                         
-                        embed = discord.Embed(title="Random Cat!", color=random.choice(clr))
+                        embed = discord.Embed(title="Random Cat!", color=random.choice(colors))
                         embed.set_image(url=gif_url)
                         await interaction.response.send_message(embed=embed)
                     else:
-                        embed = discord.Embed(
-                            title="Error", 
-                            description=f"Could not fetch a cat gif at this time. (Status: {resp.status})", 
-                            color=discord.Color.red()
+                        await interaction.response.send_message(
+                            embed=discord.Embed(
+                                title="Error",
+                                description=f"Could not fetch a cat gif. (Status: {resp.status})",
+                                color=discord.Color.red()
+                            )
                         )
-                        await interaction.response.send_message(embed=embed)
         except Exception as e:
             await interaction.followup.send(
                 embed=discord.Embed(
-                    title="Error", 
-                    description=f"```log\n\nError:\n{str(e)}\n\n```",
+                    title="Error",
+                    description=f"```log\nError:\n{str(e)}\n```",
                     color=discord.Color.red()
                 )
             )
-
-
-    class OFCType(discord.Enum):
-        SFW = "sfw"
-        NSFW = "nsfw"
-
-    @bot.tree.command(name="ofc", description="out of context image :3")
+    
+    # ==================== Out of Context ====================
+    @bot.tree.command(name="ofc", description="Get a random out of context image")
     @app_commands.describe(type="Choose whether the image is SFW or NSFW")
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     @app_commands.allowed_installs(guilds=True, users=True)
     async def ofc(interaction: discord.Interaction, type: OFCType = OFCType.SFW):
-
-        # check if NSFW is selected in a non-NSFW channel
+        # Check NSFW restrictions
         if type == OFCType.NSFW:
             if interaction.guild is not None:
                 channel = interaction.channel
@@ -378,105 +434,77 @@ async def fun_setup(bot):
                         "NSFW images can only be requested in NSFW channels.",
                         ephemeral=True
                     )
+        
         img_dir = OFC_SFW if type == OFCType.SFW else OFC_NSFW
         img = random.choice(os.listdir(img_dir))
+        
         embed = discord.Embed(color=discord.Color.purple())
         embed.set_image(url=f"attachment://{img}")
-        embed.set_footer(text="thanks to AMTA community <3")
-
+        embed.set_footer(text="Thanks to AMTA community <3")
+        
         await interaction.response.send_message(
             file=discord.File(img_dir / img),
             embed=embed
         )
+    
+    # ==================== Games ====================
+    @bot.tree.command(name="8ball", description="Ask the magic 8 ball a question")
+    @app_commands.describe(question="Your question for the magic 8 ball")
+    @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+    @app_commands.allowed_installs(guilds=True, users=True)
+    async def eight_ball(interaction: discord.Interaction, question: str):
+        answers = [
+            "It is certain", "It is decidedly so", "Without a doubt",
+            "Yes, definitely", "You may rely on it", "As I see it, yes",
+            "Most likely", "Outlook good", "Yes", "Signs point to yes",
+            "Reply hazy, try again", "Ask again later", "Better not tell you now",
+            "Cannot predict now", "Concentrate and ask again",
+            "Don't count on it", "My reply is no", "My sources say no",
+            "Outlook not so good", "Very doubtful"
+        ]
+        
+        embed = discord.Embed(title="🎱 The Magic 8 Ball 🎱", color=discord.Color.blurple())
+        embed.add_field(name="Question:", value=question, inline=False)
+        embed.add_field(name="Answer:", value=random.choice(answers), inline=False)
+        embed.set_footer(text="Amber is not responsible for any decisions based on this answer.")
+        
+        await interaction.response.send_message(embed=embed)
+    
+    @bot.tree.command(name="coinflip", description="Flip a coin")
+    @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+    @app_commands.allowed_installs(guilds=True, users=True)
+    async def coinflip(interaction: discord.Interaction):
+        result = random.choice(["Heads", "Tails"])
+        
+        embed = discord.Embed(title="Coin Flip!", color=discord.Color.gold())
+        embed.description = f"The coin landed on **{result}**!"
+        
+        await interaction.response.send_message(embed=embed)
 
-async def handle_4k(bot, message):
-        if message.author.bot:
-            return
+    
 
-        content = (message.content or "").lower().strip()
-
-        if content != "4k":  
-            return
-
-        if not message.reference or not getattr(message.reference, "message_id", None):
-            await message.reply("You must **reply** to a message to use `4k`.", delete_after=2)
-            return
-
-        try:
-            replied = await message.channel.fetch_message(message.reference.message_id)
-        except:
-            await message.reply("Can't read the replied message.", delete_after=2)
-            return
-
-        user = replied.author
-        text = replied.content or ""
-
-        ROOT_DIR = Path(__file__).resolve().parent.parent
-        font_path = str(ROOT_DIR / "assets" / "fonts" / "quote.ttf")
-
-        user_avatar_url = user.display_avatar.url
-        async with aiohttp.ClientSession() as session:
-            async with session.get(user_avatar_url) as resp:
-                avatar_bytes = await resp.read()
-
-        canvas = Image.new("RGBA", (500, 250), "black")
-        draw = ImageDraw.Draw(canvas)
-
-        avatar = Image.open(BytesIO(avatar_bytes)).convert("RGBA").resize((250, 250))
-        canvas.paste(avatar, (0, 0), avatar)
-
-        def fit_text_into_box(text, max_width, max_height, start_size=50):
-            font_size = start_size
-            pad = 20  # space from edges
-            adjusted_width = max_width - 2*pad
-            adjusted_height = max_height - 2*pad
-
-            while font_size > 8:
-                font = ImageFont.truetype(font_path, font_size)
-                lines = []
-                words = text.split()
-                line = ""
-
-                for w in words:
-                    test = line + (" " if line else "") + w
-                    if draw.textlength(w, font=font) > adjusted_width:
-                        chars = list(w)
-                        for c in chars:
-                            test2 = line + c
-                            if draw.textlength(test2, font=font) <= adjusted_width:
-                                line = test2
-                            else:
-                                lines.append(line)
-                                line = c
-                    elif draw.textlength(test, font=font) <= adjusted_width:
-                        line = test
-                    else:
-                        lines.append(line)
-                        line = w
-                lines.append(line)
-
-                total_h = sum(font.getbbox(l)[3] for l in lines)
-                if total_h <= adjusted_height:
-                    return font, "\n".join(lines), pad  # return pad to use when drawing
-                font_size -= 1
-
-            return ImageFont.truetype(font_path, 8), text, pad
-
-        name_font, wrapped_name, pad = fit_text_into_box(f"- @{user.display_name}", 250, 60, 15)
-        draw.text((270 + pad, 210), wrapped_name, font=name_font, fill=(255, 240, 200))
-
-        quote_font, wrapped_quote, pad = fit_text_into_box(text, 230, 180, 25)
-        draw.text((270 + pad, 90), wrapped_quote, font=quote_font, fill=(200, 200, 200))
-
-        draw.line((270, 200, 480, 200), fill=(200, 200, 200), width=2)
-
-        output_bytes = BytesIO()
-        canvas.save(output_bytes, format="PNG")
-        output_bytes.seek(0)
-
-        await message.reply(
-            file=discord.File(output_bytes, filename=f"quote_{user.name}.png")
-        )
-
-        await bot.process_commands(message)
-
+async def handle_4k(bot: commands.Bot, message: discord.Message):
+    """Handle the '4k' message reply command."""
+    if message.author.bot or message.content.lower().strip() != "4k":
+        return
+    
+    if not message.reference or not getattr(message.reference, "message_id", None):
+        await message.reply("You must **reply** to a message to use `4k`.", delete_after=2)
+        return
+    
+    try:
+        replied = await message.channel.fetch_message(message.reference.message_id)
+    except Exception:
+        await message.reply("Can't read the replied message.", delete_after=2)
+        return
+    
+    ROOT_DIR = Path(__file__).resolve().parent.parent
+    img_gen = ImageGenerator(ROOT_DIR)
+    
+    try:
+        output_bytes = await img_gen.create_quote_image(replied.author, replied.content or "")
+        await message.reply(file=discord.File(output_bytes, filename=f"quote_{replied.author.name}.png"))
+    except Exception as e:
+        await message.reply(f"An error occurred: {str(e)}", delete_after=5)
+    
+    await bot.process_commands(message)

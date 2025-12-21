@@ -26,7 +26,7 @@ class RadioPlayer(commands.Cog):
     async def get_user_playlists(self, user_id: int):
         """Get all playlists accessible to a user"""
         async with aiosqlite.connect("data/radio.db") as db:
-            cursor = await db.execute("""
+            cursor = await db.execute ("""
                 SELECT p.id, p.name, p.owner_id, COUNT(s.id) as song_count
                 FROM playlists p
                 LEFT JOIN songs s ON p.id = s.playlist_id
@@ -41,7 +41,7 @@ class RadioPlayer(commands.Cog):
     @app_commands.command(name="radio", description="Start playing music from a playlist")
     @app_commands.describe(
         playlist_id="ID of the playlist to play (use /radio_libraries)",
-        mix_mode="Randomly pick songs from random playlists"
+        mix_mode="Randomly pick songs from all accessible playlists"
     )
     async def radio(self, interaction: discord.Interaction, playlist_id: int = None, mix_mode: bool = False):
         await interaction.response.defer()
@@ -61,29 +61,28 @@ class RadioPlayer(commands.Cog):
         player.user_id = interaction.user.id
         
         if mix_mode:
+            # Get all songs from all accessible playlists
             async with aiosqlite.connect("data/radio.db") as db:
                 cursor = await db.execute("""
-                    SELECT p.id, p.name, COUNT(s.id) as song_count
-                    FROM playlists p
-                    LEFT JOIN songs s ON p.id = s.playlist_id
-                    WHERE (p.owner_id = ? OR p.is_public = 1)
-                    GROUP BY p.id
-                    HAVING song_count > 0
+                    SELECT s.id, s.title, s.artist, s.file_path, s.duration
+                    FROM songs s
+                    INNER JOIN playlists p ON s.playlist_id = p.id
+                    WHERE p.owner_id = ? OR p.is_public = 1
+                    ORDER BY RANDOM()
                 """, (interaction.user.id,))
                 
-                playlists = await cursor.fetchall()
+                player.songs = await cursor.fetchall()
             
-            if not playlists:
-                await interaction.followup.send("No playlists available for mix mode!")
+            if not player.songs:
+                await interaction.followup.send("❌ No songs available for mix mode!")
                 return
             
-            playlist_id, playlist_name, _ = random.choice(playlists)
-            player.playlist_id = playlist_id
-            player.playlist_name = f"{playlist_name} (Mix Mode)"
+            player.playlist_id = None
+            player.playlist_name = "🎲 Mix Mode (All Playlists)"
             
         else:
             if not playlist_id:
-                await interaction.followup.send("Please specify a playlist ID or enable mix mode!")
+                await interaction.followup.send("❌ Please specify a playlist ID or enable mix mode!")
                 return
             
             async with aiosqlite.connect("data/radio.db") as db:
@@ -96,34 +95,31 @@ class RadioPlayer(commands.Cog):
                 playlist = await cursor.fetchone()
                 
                 if not playlist:
-                    await interaction.followup.send("Playlist not found!")
+                    await interaction.followup.send("❌ Playlist not found!")
                     return
                 
                 name, owner_id, is_public = playlist
                 
                 if owner_id != interaction.user.id and not is_public:
-                    await interaction.followup.send("This playlist is private!")
+                    await interaction.followup.send("❌ This playlist is private!")
                     return
                 
                 player.playlist_id = playlist_id
                 player.playlist_name = name
-        
-        async with aiosqlite.connect("data/radio.db") as db:
-            cursor = await db.execute("""
-                SELECT id, title, artist, file_path, duration
-                FROM songs
-                WHERE playlist_id = ?
-                ORDER BY added_at
-            """, (player.playlist_id,))
             
-            player.songs = await cursor.fetchall()
-        
-        if not player.songs:
-            await interaction.followup.send("❌ This playlist has no songs!")
-            return
-        
-        if mix_mode:
-            random.shuffle(player.songs)
+            async with aiosqlite.connect("data/radio.db") as db:
+                cursor = await db.execute("""
+                    SELECT id, title, artist, file_path, duration
+                    FROM songs
+                    WHERE playlist_id = ?
+                    ORDER BY added_at
+                """, (player.playlist_id,))
+                
+                player.songs = await cursor.fetchall()
+            
+            if not player.songs:
+                await interaction.followup.send("❌ This playlist has no songs!")
+                return
         
         player.current_index = 0
         
@@ -143,7 +139,7 @@ class RadioPlayer(commands.Cog):
         player.message = message
         
         await self.play_current_song(guild_id)
-    
+
     def create_player_embed(self, player):
         """Create the player control embed"""
         embed = discord.Embed(
@@ -160,6 +156,7 @@ class RadioPlayer(commands.Cog):
             
             embed.description = f"**{title}**\nby {artist}"
             embed.add_field(name="Playlist", value=player.playlist_name, inline=True)
+            
             embed.add_field(name="Track", value=f"{player.current_index + 1}/{len(player.songs)}", inline=True)
             embed.add_field(name="Duration", value=duration_str, inline=True)
         else:
