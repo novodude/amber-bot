@@ -480,8 +480,21 @@ async def fun_setup(bot: commands.Bot):
         embed.description = f"The coin landed on **{result}**!"
         
         await interaction.response.send_message(embed=embed)
-
+    @bot.tree.command(name="no", description="say no!")
+    @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+    @app_commands.allowed_installs(guilds=True, users=True)
+    async def no(interaction: discord.Interaction):
+        async with aiohttp.ClientSession() as session:
+            async with session.get("https://naas.isalman.dev/no") as resp:
+                data= await resp.json()
     
+
+        embed = discord.Embed(
+            color=discord.Color.red(),
+            title="no!",
+            description=f"{data.get("reason", "no response")}"
+        )
+        await interaction.response.send_message(embed=embed)
 
 async def handle_4k(bot: commands.Bot, message: discord.Message):
     """Handle the '4k' message reply command."""

@@ -29,13 +29,14 @@ Right now, it includes the `/do`, `/rarch`, `/ofc`, commands, with more features
 | **`/melody`**   | Interactive melody generator that creates short WAV files from notes or beat patterns.                      | Provides a modal to enter notes or beats, generates audio with wavesynth, and returns a WAV attachment (see commands/melody.py).                                                         |
 | **`/misquote`** | create a misquoted image of someone                                                                         | Uses Pillow to composite the user's avatar onto a canvas, fits text with a TTF font, and returns a PNG (see commands/fun.py).                                                            |
 | **`/look`**     | Anime reaction images (happy, blush, angry, etc.) using random GIFs from [nekos.best](https://nekos.best/). | Built from a dictionary of actions (colors, emojis, text) and `aiohttp` to fetch GIFs asynchronously; embeds are built per-action and the command handles self/no-user cases and errors. |
+| `/no`           | give ranodom rejection reasons                                                                              | -                                                                                                                                                                                        |
+
 ## **Radio system**
 
-a local audio player that pull your YouTube and Spotify* playlists
+a local audio player that pull your YouTube and Spotify\* playlists
 and sync it locally to play it later, it uses the `yt_dlp` to download the media from YouTube and convert it to `OPUS` format for more compatibility with discord, using `spotipy` to get the meta data of your Spotify playlists to allow `yt_dlp` to download it from youtube.
 
 then the data get stored in a database managed using `aiosqlite` for more control.
-
 
 | **/**              | **what it does?**                                                         |
 | :----------------- | :------------------------------------------------------------------------ |
@@ -45,18 +46,15 @@ then the data get stored in a database managed using `aiosqlite` for more contro
 | `/radio_remove`    | remove playlist by id.                                                    |
 | `/radio_stop`      | stop the radio and disconnect the bot                                     |
 | `/radio_sync`      | sync the playlists using the link                                         |
-
+| `/radio_songs`     | show you the songs of a playlist                                          |
 
 # events
-
 
 | what is it? |                                                                            what it does?                                                                            |
 | :---------: | :-----------------------------------------------------------------------------------------------------------------------------------------------------------------: |
 |  **`4k`**   | event that act when replying to some one.<br>when you reply with `4k` to a message(while amber is a bot in the server) amber will quote the message you replied to. |
 |    `pin`    |                                                               reply to a message with `pin` to pin it                                                               |
 |   `unpin`   |                                                              reply to a message with `upin` to upin it                                                              |
-
-
 
 ---
 
@@ -65,27 +63,32 @@ then the data get stored in a database managed using `aiosqlite` for more contro
 ---
 
 1. Clone the repository:
+
 ```bash
 git clone https://github.com/novodude/amber-bot.git
 cd amber-bot
 ```
 
 2. Create a virtual environment and activate it:
+
 ```bash
 python -m venv .venv
 source .venv/bin/activate  # On Windows use: .venv\Scripts\activate
 ```
 
 3. Install the required dependencies:
+
 ```bash
 pip install -r requirement.txt
 ```
 
 4. get the required API keys:
-  - spotify api key: [spotify develober dashboard](https://developer.spotify.com/dashboard/applications)
-  - giphy api key: [the giphy docs](https://developers.giphy.com/docs/api#quick-start-guide)
+
+- spotify api key: [spotify develober dashboard](https://developer.spotify.com/dashboard/applications)
+- giphy api key: [the giphy docs](https://developers.giphy.com/docs/api#quick-start-guide)
 
 5. Create a `.env` file and add your Discord bot token and other API key:
+
 ```bash
 echo "TOKEN=your_bot_token_here" > .env
 echo "GIPHY_API=your_giphy_api_key_here" >> .env
@@ -94,10 +97,10 @@ echo "SPOTIFY_CLIENT_SECRET=your_spotify_client_secret_here" >> .env
 ```
 
 5. Run the bot:
+
 ```bash
 python main.py
 ```
-    
 
 ---
 
@@ -124,8 +127,8 @@ python main.py
 
 - **ffmpeg**:
   required for audio processing in some commands (like `/radio`).
->  for installation instructions, visit the [FFmpeg download page](https://ffmpeg.org/download.html)
->  and follow the instructions for your operating system.
+  > for installation instructions, visit the [FFmpeg download page](https://ffmpeg.org/download.html)
+  > and follow the instructions for your operating system.
 
 Required packages are listed in `requirement.txt`:
 
@@ -138,8 +141,8 @@ Required packages are listed in `requirement.txt`:
 - **aiosqlite** (for controlling the database, used in `/radio` command)
 - **spotipy** (to make Spotify based playlists in `/radio` command)
 
-
 Install dependencies with:
+
 ```bash
 pip install -r requirement.txt
 ```

@@ -1,6 +1,6 @@
 import os
 import discord
-from discord import app_commands
+from discord import PublicUserFlags, app_commands
 from discord.ext import commands
 import aiosqlite
 
@@ -10,6 +10,147 @@ from utils.radio.audio_processor import (
 )
 
 DB_PATH = "data/radio.db"
+
+async def fetch_playlist_songs(playlist_id: int):
+    async with aiosqlite.connect(DB_PATH) as db:
+        cursor = await db.execute("""
+            SELECT title, artist, duration
+            FROM songs
+            WHERE playlist_id = ?
+            ORDER BY id
+        """, (playlist_id,))
+        return await cursor.fetchall()
+
+
+class PlaylistSongsPaginator(discord.ui.View):
+    def __init__(self, songs, playlist_name, user_id):
+        super().__init__(timeout=180)
+        self.songs = songs
+        self.playlist_name = playlist_name
+        self.user_id = user_id
+        self.page = 0
+        self.per_page = 10
+        self.max_page = (len(songs) - 1) // self.per_page
+
+    def build_embed(self):
+        start = self.page * self.per_page
+        end = start + self.per_page
+        page_songs = self.songs[start:end]
+
+        embed = discord.Embed(
+            title=f"🎶 {self.playlist_name}",
+            description=f"Page {self.page + 1}/{self.max_page + 1}",
+            color=discord.Color.blurple()
+        )
+
+        for idx, (title, artist, duration) in enumerate(page_songs, start=start + 1):
+            embed.add_field(
+                name=f"{idx}. {title}",
+                value=f"👤 {artist or 'Unknown'} • ⏱ {duration or '?'}",
+                inline=False
+            )
+
+        return embed
+
+    async def interaction_check(self, interaction: discord.Interaction) -> bool:
+        if interaction.user.id != self.user_id:
+            await interaction.response.send_message(
+                "❌ You can't control this menu.",
+                ephemeral=True
+            )
+            return False
+        return True
+
+    @discord.ui.button(label="⬅ Back", style=discord.ButtonStyle.secondary)
+    async def back(self, interaction: discord.Interaction, button: discord.ui.Button):
+        self.page = max(self.page - 1, 0)
+        await interaction.response.edit_message(embed=self.build_embed(), view=self)
+
+    @discord.ui.button(label="Next ➡", style=discord.ButtonStyle.secondary)
+    async def next(self, interaction: discord.Interaction, button: discord.ui.Button):
+        self.page = min(self.page + 1, self.max_page)
+        await interaction.response.edit_message(embed=self.build_embed(), view=self)
+
+class RadioSettings(commands.Cog):
+    def __init__(self, bot):
+        self.bot = bot
+
+    async def _sync_playlist(self, interaction, playlist_id, name, source_url, source_type):
+        embed = discord.Embed(
+            title="🔄 Syncing Playlist...",
+            description=f"Downloading songs from **{name}**",
+            color=discord.Color.blue(),
+        )
+        embed.add_field(name="Source", value=source_type.upper())
+        embed.set_footer(text="This may take a while...")
+        await interaction.followup.send(embed=embed)
+
+        if source_type == "youtube":
+            success, songs, message = await download_from_youtube(source_url, playlist_id)
+        elif source_type == "spotify":
+            success, songs, message = await download_from_spotify(source_url, playlist_id)
+        else:
+            await interaction.edit_original_response(
+                embed=discord.Embed(title="Unknown Source Type", color=discord.Color.red())
+            )
+            return
+
+        if not success:
+            await interaction.edit_original_response(
+                embed=discord.Embed(title="Sync Failed", description=message, color=discord.Color.red())
+            )
+            return
+
+        async with aiosqlite.connect(DB_PATH) as db:
+            await db.execute(
+                "UPDATE playlists SET last_synced = CURRENT_TIMESTAMP WHERE id = ?",
+                (playlist_id,),
+            )
+            await db.commit()
+
+        final_embed = discord.Embed(
+            title="✅ Sync Complete",
+            description=f"**{name}** synced successfully!",
+            color=discord.Color.green(),
+        )
+        final_embed.add_field(name="Songs Added", value=len(songs))
+        final_embed.set_footer(text="Use /radio to start playing!")
+
+        await interaction.edit_original_response(embed=final_embed)
+
+    @app_commands.command(
+        name="radio_songs",
+        description="View songs inside a playlist"
+    )
+    @app_commands.describe(playlist_id="Playlist ID")
+    async def radio_songs(self, interaction: discord.Interaction, playlist_id: int):
+        await interaction.response.defer()
+
+        songs = await fetch_playlist_songs(playlist_id)
+
+        if not songs:
+            await interaction.followup.send("📭 This playlist has no songs.")
+            return
+
+        async with aiosqlite.connect(DB_PATH) as db:
+            cursor = await db.execute(
+                "SELECT name FROM playlists WHERE id = ?",
+                (playlist_id,)
+            )
+            row = await cursor.fetchone()
+
+        playlist_name = row[0] if row else "Unknown Playlist"
+
+        view = PlaylistSongsPaginator(
+            songs=songs,
+            playlist_name=playlist_name,
+            user_id=interaction.user.id
+        )
+
+        await interaction.followup.send(
+            embed=view.build_embed(),
+            view=view
+        )
 
 
 class RadioSettings(commands.Cog):
@@ -76,14 +217,14 @@ class RadioSettings(commands.Cog):
     @app_commands.command(name="radio_add", description="Create a new radio playlist")
     @app_commands.describe(
         name="Name of your playlist",
-        source_url="URL to playlist (Spotify/YouTube) - optional",
+        source_url="URL to playlist (Spotify/YouTube)",
         public="Make playlist visible to server members",
     )
     async def set_radio(
         self,
         interaction: discord.Interaction,
         name: str,
-        source_url: str | None = None,
+        source_url: str,
         public: bool = False,
     ):
         await interaction.response.defer(thinking=True)
@@ -133,15 +274,12 @@ class RadioSettings(commands.Cog):
             inline=True,
         )
 
-        if source_url:
-            embed.add_field(
-                name="Source",
-                value=f"[{source_type.upper()}]({source_url})",
-                inline=False,
-            )
-            embed.set_footer(text="🔄 Auto-syncing playlist...")
-        else:
-            embed.set_footer(text="💡 Add songs manually or set a source URL later")
+        embed.add_field(
+            name="Source",
+            value=f"[{source_type.upper()}]({source_url})",
+            inline=False,
+        )
+        embed.set_footer(text="🔄 Auto-syncing playlist...")
 
         await interaction.followup.send(embed=embed)
 
@@ -254,38 +392,91 @@ class RadioSettings(commands.Cog):
 
         await interaction.followup.send(f"✅ Playlist `{playlist_id}` and its songs were removed successfully!")
 
-    @app_commands.command(name="radio_libraries", description="View your radio playlists")
-    async def my_playlists(self, interaction: discord.Interaction):
+    @app_commands.command(
+        name="radio_libraries",
+        description="View your radio playlists or public playlists"
+    )
+    @app_commands.describe(public="Show public playlists")
+    async def my_playlists(
+        self,
+        interaction: discord.Interaction,
+        public: bool = False
+    ):
         await interaction.response.defer(thinking=True)
-        
+
         async with aiosqlite.connect("data/radio.db") as db:
-            cursor = await db.execute("""
-                SELECT p.id, p.name, p.is_public, p.source_type, COUNT(s.id) as song_count
-                FROM playlists p
-                LEFT JOIN songs s ON p.id = s.playlist_id
-                WHERE p.owner_id = ?
-                GROUP BY p.id
-                ORDER BY p.created_at DESC
-            """, (interaction.user.id,))
-            
-            playlists = await cursor.fetchall()
-        
+
+            if public:
+                cursor = await db.execute("""
+                    SELECT
+                        p.id,
+                        p.name,
+                        p.owner_id,
+                        p.source_type,
+                        COUNT(s.id) AS song_count
+                    FROM playlists p
+                    LEFT JOIN songs s ON p.id = s.playlist_id
+                    WHERE p.is_public = 1
+                    AND p.owner_id != ?
+                    GROUP BY p.id
+                    HAVING song_count > 0
+                    ORDER BY p.name
+                """, (interaction.user.id,))
+
+                playlists = await cursor.fetchall()
+                title = "🌐 Public Radio Playlists"
+
+            else:
+                cursor = await db.execute("""
+                    SELECT
+                        p.id,
+                        p.name,
+                        p.is_public,
+                        p.source_type,
+                        COUNT(s.id) AS song_count
+                    FROM playlists p
+                    LEFT JOIN songs s ON p.id = s.playlist_id
+                    WHERE p.owner_id = ?
+                    GROUP BY p.id
+                    ORDER BY p.created_at DESC
+                """, (interaction.user.id,))
+
+                playlists = await cursor.fetchall()
+                title = f"📻 {interaction.user.display_name}'s Radio Playlists"
+
         if not playlists:
-            await interaction.followup.send("📻 You don't have any playlists yet! Use `/set_radio` to create one.")
+            msg = (
+                "📻 You don't have any playlists yet! Use `/set_radio` to create one."
+                if not public else
+                "🌐 There are no public playlists available right now."
+            )
+            await interaction.followup.send(msg)
             return
-        
+
         embed = discord.Embed(
-            title=f"📻 {interaction.user.display_name}'s Radio Playlists",
+            title=title,
             color=discord.Color.blue()
         )
-        
-        for playlist_id, name, is_public, source_type, song_count in playlists:
-            visibility = "🌐 Public" if is_public else "🔒 Private"
+
+        for row in playlists:
+            if public:
+                playlist_id, name, owner_id, source_type, song_count = row
+                visibility = "🌐 Public"
+            else:
+                playlist_id, name, is_public, source_type, song_count = row
+                visibility = "🌐 Public" if is_public else "🔒 Private"
+
             source = f"📡 {source_type.upper()}" if source_type else "📝 Manual"
             value = f"{visibility} • {source} • {song_count} songs"
-            embed.add_field(name=f"`{playlist_id}` • {name}", value=value, inline=False)
-        
+
+            embed.add_field(
+                name=f"`{playlist_id}` • {name}",
+                value=value,
+                inline=False
+            )
+
         await interaction.followup.send(embed=embed)
+    
 
 async def setup(bot):
     await bot.add_cog(RadioSettings(bot))
