@@ -63,7 +63,6 @@ async def help_command(interaction: discord.Interaction):
         "- `/look`: do a reaction with anime gifs. >:3\n"
         "- `/rarch`: Generate a random rorschach test. o_o\n"
         "- `/ofc`: Careful with the out of context command, it can hurt. .-.\n"
-        "- `/do`: Anime reaction images for various moods. UwU\n"
         "- `/misquote`: spread misinformation in someone's name. :D\n"
         "- `/melody`: Generate a melody. :P\n"
         "- `/ping`: Check the bot's latency. :D\n"
@@ -91,6 +90,7 @@ async def help_command(interaction: discord.Interaction):
     embed.add_field(name="Bot Events", value=bot_events, inline=False)
     embed.set_footer(text="OFC quotes from AMTA discord server 💜")
     await interaction.response.send_message(embed=embed)
+
 
 @bot.tree.command(name="ping", description="Check the bot's latency.")
 @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)

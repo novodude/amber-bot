@@ -29,7 +29,10 @@ Right now, it includes the `/do`, `/rarch`, `/ofc`, commands, with more features
 | **`/melody`**   | Interactive melody generator that creates short WAV files from notes or beat patterns.                      | Provides a modal to enter notes or beats, generates audio with wavesynth, and returns a WAV attachment (see commands/melody.py).                                                         |
 | **`/misquote`** | create a misquoted image of someone                                                                         | Uses Pillow to composite the user's avatar onto a canvas, fits text with a TTF font, and returns a PNG (see commands/fun.py).                                                            |
 | **`/look`**     | Anime reaction images (happy, blush, angry, etc.) using random GIFs from [nekos.best](https://nekos.best/). | Built from a dictionary of actions (colors, emojis, text) and `aiohttp` to fetch GIFs asynchronously; embeds are built per-action and the command handles self/no-user cases and errors. |
-| `/no`           | give ranodom rejection reasons                                                                              | -                                                                                                                                                                                        |
+| `/no`           | give random rejection reasons                                                                               | -                                                                                                                                                                                        |
+| `/yes`          | give random agreement reasons                                                                               | -                                                                                                                                                                                        |
+| `/rate`         | gives you or specific user a rating                                                                         | -                                                                                                                                                                                        |
+
 
 ## **Radio system**
 
@@ -115,9 +118,8 @@ python main.py
 - [x] Add `/ofc` command for out-of-context images
 - [x] add `/melody` command to generate simple melodies
 - [x] add `4k` to quote someone's message
-- [ ] Add `/toe` command for tic-tac-toe games
 - [ ] Add gambling (because why not)
-- [ ] Train a simple LLM model and link it to the bot(40% done)
+- [ ] Train a simple LLM model and link it to the bot(90% done)
 
 ---
 

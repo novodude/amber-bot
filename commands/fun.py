@@ -1,12 +1,15 @@
-from typing import Optional
 from PIL import Image, ImageDraw, ImageFont, ImageFilter
+from discord import app_commands, embeds
+from discord.ext import commands
+from os.path import pathsep
+from typing import Optional
+from pathlib import Path
 from io import BytesIO
+import statistics
 import discord
 import aiohttp
 import random
-from discord import app_commands
-from discord.ext import commands
-from pathlib import Path
+import json
 import os
 import io
 
@@ -83,7 +86,7 @@ class ImageGenerator:
         return lines
     
     async def create_wanted_poster(self, user: discord.User, amount: int) -> BytesIO:
-        """Create a wanted poster image."""
+        """Create a wanted poster image with optimized memory usage."""
         template_path = self.root_dir / "assets" / "fun" / "wanted.png"
         font_path = self.font_dir / "wanted_font.ttf"
         
@@ -92,18 +95,26 @@ class ImageGenerator:
             async with session.get(user.display_avatar.url) as resp:
                 avatar_bytes = await resp.read()
         
-        # Load and resize images
-        avatar = Image.open(BytesIO(avatar_bytes)).convert("RGBA").resize((900, 900))
+        # Load template first to get dimensions
         template = Image.open(str(template_path)).convert("RGBA")
-        
-        # Create output image
-        output = template.copy()
         frame_width, frame_height = template.size
+        
+        # Process avatar directly onto template instead of keeping separate copy
+        avatar = Image.open(BytesIO(avatar_bytes))
+        avatar = avatar.convert("RGBA").resize((900, 900), Image.Resampling.LANCZOS)
+        
+        # Clear avatar_bytes from memory
+        del avatar_bytes
+        
+        # Paste avatar directly onto template (reuse template as output)
         avatar_pos = ((frame_width - 900) // 2, 600)
-        output.paste(avatar, avatar_pos, avatar)
+        template.paste(avatar, avatar_pos, avatar)
+        
+        # Clear avatar from memory immediately after use
+        del avatar
         
         # Add text
-        draw = ImageDraw.Draw(output)
+        draw = ImageDraw.Draw(template)
         
         try:
             name_font = self.get_fitting_font(str(font_path), user.display_name, 1000, 180)
@@ -125,10 +136,14 @@ class ImageGenerator:
         amount_pos = ((frame_width - amount_width) // 2, 2050)
         draw.text(amount_pos, amount_text, font=amount_font, fill=(139, 69, 19))
         
-        # Save to bytes
+        # Save to bytes with optimized settings
         output_bytes = BytesIO()
-        output.save(output_bytes, format='PNG')
+        template.save(output_bytes, format='PNG', optimize=True)
         output_bytes.seek(0)
+        
+        # Clean up
+        del template, draw
+        
         return output_bytes
     
     async def create_quote_image(self, user: discord.User, message: str) -> BytesIO:
@@ -265,12 +280,12 @@ class OFCType(discord.Enum):
     NSFW = "nsfw"
 
 
+
 async def fun_setup(bot: commands.Bot):
     """Set up fun commands for the bot."""
     ROOT_DIR = Path(__file__).resolve().parent.parent
     OFC_SFW = ROOT_DIR / "assets" / "ofc" / "sfw"
     OFC_NSFW = ROOT_DIR / "assets" / "ofc" / "nsfw"
-    
     img_gen = ImageGenerator(ROOT_DIR)
     api_key = os.getenv('GIPHY_API')
     
@@ -495,6 +510,83 @@ async def fun_setup(bot: commands.Bot):
             description=f"{data.get("reason", "no response")}"
         )
         await interaction.response.send_message(embed=embed)
+
+    @bot.tree.command(name="yes", description="agreement reason")
+    @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+    @app_commands.allowed_installs(guilds=True, users=True)
+    async def yes(interaction: discord.Interaction):
+        with open("assets/fun/yes.json") as yes:
+            reasons = json.load(yes)
+        response = random.choice(reasons)
+        embed = discord.Embed(
+            color=discord.Color.brand_green(),
+            title="yes!",
+            description=response
+        )
+        await interaction.response.send_message(embed=embed)
+
+    @bot.tree.command(name="rate", description="give you detailed rating")
+    @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+    @app_commands.allowed_installs(guilds=True, users=True)
+    async def rate(interaction: discord.Interaction, user: Optional[discord.User] = None):
+        try:
+            await interaction.response.defer()
+            user = user or interaction.user
+            
+            ratings = {
+                "Smort": random.randint(0, 100),
+                "Funny": random.randint(0, 100),
+                "Rizz": random.randint(0, 100),
+                "Hot": random.randint(0, 100),
+                "cute": random.randint(0, 100),
+                "gay": random.randint(0, 100)
+            }
+
+            mean_rating = statistics.mean(ratings.values())
+
+            with open("assets/fun/rating.json", "r") as f:
+                data = json.load(f)
+
+            if mean_rating >= 75:
+                description = data.get("high", [])
+            elif mean_rating >= 40:
+                description = data.get("medium", [])
+            else:
+                description = data.get("low", [])
+
+            embed = discord.Embed(
+                title=f"Rating for {user.display_name}",
+                color=discord.Color.pink(),
+                description=random.choice(description).format(**ratings)
+            )
+            embed.set_thumbnail(url=user.display_avatar.url)
+            embed.add_field(name="Smort", value=f"**{ratings['Smort']}%** 🤓", inline=True)
+            embed.add_field(name="Funny", value=f"**{ratings['Funny']}%** 😜", inline=True)
+            embed.add_field(name="Rizz", value=f"**{ratings['Rizz']}%** 😗", inline=True)
+            embed.add_field(name="Hot", value=f"**{ratings['Hot']}%** 🔥", inline=True)
+            embed.add_field(name="Cute", value=f"**{ratings['cute']}%** 🫶", inline=True)
+            embed.add_field(name="gay", value=f"**{ratings['gay']}%** 🏳️‍🌈", inline=True)
+            
+            await interaction.followup.send(embed=embed)
+            
+        except Exception as e:
+            if interaction.response.is_done():
+                await interaction.followup.send(
+                    embed=discord.Embed(
+                        title="Error",
+                        description=f"```log\nError:\n{str(e)}\n```",
+                        color=discord.Color.red()
+                    )
+                )
+            else:
+                await interaction.response.send_message(
+                    embed=discord.Embed(
+                        title="Error",
+                        description=f"```log\nError:\n{str(e)}\n```",
+                        color=discord.Color.red()
+                    ),
+                    ephemeral=True
+                )
 
 async def handle_4k(bot: commands.Bot, message: discord.Message):
     """Handle the '4k' message reply command."""
