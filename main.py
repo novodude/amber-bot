@@ -9,9 +9,13 @@ from discord.ext import commands
 from discord import app_commands
 # commands and scripts
 from commands.reactions import setup_reactions
-from commands.fun import fun_setup
+from commands.fun import fun_setup, handle_4k
 from commands.melody import melody_setup
-from utils.radio.database import init_db
+from commands.minigames import minigames_setup
+from commands.utils import utils_setup, handle_pin
+from commands.banking.banking import banking_setup
+from utils.radio.database import init_radio_db
+from utils.userbase.database import init_user_db
 
 load_dotenv()
 token = os.getenv("DISCORD_TOKEN")
@@ -32,7 +36,11 @@ async def on_ready():
     await setup_reactions(bot)
     await melody_setup(bot)
     await fun_setup(bot)
-    await init_db()
+    await minigames_setup(bot)
+    await banking_setup(bot)
+    await utils_setup(bot)
+    await init_user_db()
+    await init_radio_db()
     await load_extensions()
     await bot.tree.sync()
     print("Commands synced.")
@@ -41,8 +49,6 @@ async def on_ready():
 async def on_message(message: discord.Message):
     if message.author.bot:
         return
-    from commands.fun import handle_4k
-    from commands.utils import handle_pin
     if await handle_4k(bot, message):
         return
     if await handle_pin(bot, message):

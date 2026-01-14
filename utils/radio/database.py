@@ -3,7 +3,7 @@ import os
 
 DB_PATH = "data/radio.db"
 
-async def init_db():
+async def init_radio_db():
     """Initialize the database with tables"""
     os.makedirs("data", exist_ok=True)
     
