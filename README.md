@@ -4,17 +4,13 @@
 
 ## What is Amber?
 
----
-
-Amber is a Discord bot with a growing set of fun, creative, and utility features.
+Amber is a Discord bot with a growing set of fun, creative, utility, and gaming features.
 The name comes from my pet duck, Amber 🦆.
 New commands and systems are added regularly as the project grows.
 
 ---
 
 ## Commands
-
----
 
 | **/**           | **description**                                                                 | **how I made it?**                                                                     |
 | --------------- | ------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
@@ -38,8 +34,6 @@ New commands and systems are added regularly as the project grows.
 
 ## Banking & Profile System
 
----
-
 A simple economy and profile system powered by `aiosqlite`.
 Each user has dabloons, a bio, and a customizable profile appearance.
 
@@ -48,6 +42,9 @@ Each user has dabloons, a bio, and a customizable profile appearance.
 | **`/register`** | Registers you in the system with starter dabloons.          |
 | **`/profile`**  | Shows your profile with balance, bio, and customization UI. |
 | **`/setbio`**   | Sets a text bio manually.                                   |
+| **`/balance`**  | Check your current dabloons balance.                        |
+| **`/daily`**    | Claim your daily dabloons.                                  |
+| **`/give`**     | Send dabloons to another registered user.                   |
 
 Profile features include:
 
@@ -58,11 +55,33 @@ Profile features include:
 
 ---
 
-## Radio System
+## Games System
+
+Games now integrate with the economy to reward or cost dabloons.
+
+| **/**               | **description**                                   |
+| ------------------- | ------------------------------------------------- |
+| **`/duck_clicker`** | Click ducks to increase score and earn dabloons.  |
+| **`/tic_tac_toe`**  | Play against AI with difficulty levels and costs. |
+
+**Duck Clicker features:**
+
+- Score saved per user in DB
+- Only the initiating user can click
+- Earn 2 dabloons every 5 clicks
+
+**Tic Tac Toe features:**
+
+- Costs dabloons to play (`easy=2`, `medium=4`, `hard=8`)
+- AI difficulty scaling (`easy`, `medium`, `hard`)
+- Win rewards: `easy=4`, `medium=8`, `hard=16`
+- Board updates live with button interactions
 
 ---
 
-a local audio player that pulls your YouTube and Spotify\* playlists
+## Radio System
+
+A local audio player that pulls your YouTube and Spotify\* playlists
 and syncs them locally to play later.
 
 It uses:
@@ -85,8 +104,6 @@ It uses:
 
 ## Message Events
 
----
-
 | trigger     | what it does                                     |
 | ----------- | ------------------------------------------------ |
 | **`4k`**    | Reply with `4k` to quote the referenced message. |
@@ -96,8 +113,6 @@ It uses:
 ---
 
 ## Setup
-
----
 
 1. Clone the repository:
 
@@ -110,7 +125,7 @@ cd amber-bot
 
 ```bash
 python -m venv .venv
-source .venv/bin/activate  # Windows: .venv\\Scripts\\activate
+source .venv/bin/activate  # Windows: .venv\Scripts\activate
 ```
 
 1. Install dependencies:
@@ -145,12 +160,11 @@ python main.py
 
 ## To-Do
 
----
-
 - [x] Duck, cat, rat commands
 - [x] Inkblot generator
 - [x] Melody generator
 - [x] Banking & profile system
+- [x] Games system (Duck Clicker, Tic Tac Toe)
 - [x] Audio downloader
 - [ ] Gambling system
 - [ ] LLM integration
@@ -158,8 +172,6 @@ python main.py
 ---
 
 ## Dependencies
-
----
 
 - discord.py
 - aiohttp
@@ -170,15 +182,13 @@ python main.py
 - aiosqlite
 - spotipy
 - **ffmpeg**:
-  required for audio processing in some commands (like /radio).
-  > for installation instructions, visit the [FFmpeg download page](https://ffmpeg.org/download.html)
-  > and follow the instructions for your operating system.
+  required for audio processing in some commands (like /radio)
+
+  > visit [FFmpeg download page](https://ffmpeg.org/download.html)
 
 ---
 
 ## License
-
----
 
 MIT License
 

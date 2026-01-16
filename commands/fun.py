@@ -507,7 +507,7 @@ async def fun_setup(bot: commands.Bot):
         embed = discord.Embed(
             color=discord.Color.red(),
             title="no!",
-            description=f"{data.get("reason", "no response")}"
+            description=f"{data.get('reason', 'no response')}"
         )
         await interaction.response.send_message(embed=embed)
 

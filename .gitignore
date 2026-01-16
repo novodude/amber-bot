@@ -18,3 +18,4 @@ pyrightconfig.json
 commands/events.py
 commands/__init__.py
 data/
+discloud.config

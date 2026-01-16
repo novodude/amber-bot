@@ -24,11 +24,13 @@ async def init_user_db():
         # games table
         await db.execute("""
             CREATE TABLE IF NOT EXISTS games (
-                user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+                user_id INTEGER PRIMARY KEY,
                 daily_coin_claim TIMESTAMP,
                 last_experience_gain TIMESTAMP,
                 duck_clicker_current_score INTEGER DEFAULT 0,
                 duck_clicker_high_score INTEGER DEFAULT 0,
-                PRIMARY KEY (user_id)
+                ttt_wins INTEGER DEFAULT 0,
+                ttt_streak INTEGER DEFAULT 0,
+                FOREIGN KEY (user_id) REFERENCES user(id) ON DELETE CASCADE
             )
         """)
