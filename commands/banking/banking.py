@@ -113,9 +113,9 @@ class BioEditView(ui.View):
 
 
 class ProfileView(ui.View):
-    def __init__(self, user_id: int):
+    def __init__(self, discord_id: int):
         super().__init__(timeout=None)
-        self.user_id = user_id
+        self.discord_id = discord_id
     
     def get_color(self, color_name: str):
         """Convert color name to discord.Color"""
@@ -134,12 +134,12 @@ class ProfileView(ui.View):
     async def refresh_profile_message(self, interaction: discord.Interaction):
         """Refresh the profile by editing the original message"""
         async with aiosqlite.connect("data/user.db") as db:
-            cursor = await db.execute("SELECT bio, profile_color FROM users WHERE discord_id = ?", (self.user_id,))
+            cursor = await db.execute("SELECT bio, profile_color FROM users WHERE discord_id = ?", (self.discord_id,))
             row = await cursor.fetchone()
             bio = row[0] if row and row[0] else "This user has no bio set."
             color_name = row[1] if row and row[1] else "gold"
         
-        balance = await get_dabloons(self.user_id)
+        balance = await get_dabloons(await get_user_id_from_discord(self.discord_id))
         
         current_hour = datetime.now().hour
         if 5 <= current_hour < 12:
@@ -165,12 +165,13 @@ class ProfileView(ui.View):
     async def refresh_profile(self, interaction: discord.Interaction):
         """Helper method to refresh the profile embed"""
         async with aiosqlite.connect("data/user.db") as db:
-            cursor = await db.execute("SELECT bio, profile_color FROM users WHERE discord_id = ?", (self.user_id,))
+            cursor = await db.execute("SELECT bio, profile_color FROM users WHERE discord_id = ?", (self.discord_id,))  # Use discord_id
             row = await cursor.fetchone()
             bio = row[0] if row and row[0] else "This user has no bio set."
             color_name = row[1] if row and row[1] else "gold"
         
-        balance = await get_dabloons(self.user_id)  # Use utility function!
+        balance = await get_dabloons(await get_user_id_from_discord(self.discord_id))
+       
         
         current_hour = datetime.now().hour
         if 5 <= current_hour < 12:
@@ -198,18 +199,18 @@ class ProfileView(ui.View):
     
     @discord.ui.button(label="Refresh profile", style=discord.ButtonStyle.primary, emoji="🔄")
     async def refresh_balance(self, interaction: discord.Interaction, button: ui.Button):
-        user_id = self.user_id
+        user_id = self.discord_id
         if user_id != interaction.user.id:
             return
         await self.refresh_profile(interaction)
     
     @discord.ui.button(label="Edit Bio", style=discord.ButtonStyle.secondary, emoji="✏️")
     async def edit_bio(self, interaction: discord.Interaction, button: ui.Button):
-        user_id = self.user_id
+        user_id = self.discord_id
         if user_id != interaction.user.id:
             return
         async with aiosqlite.connect("data/user.db") as db:
-            cursor = await db.execute("SELECT bio FROM users WHERE discord_id = ?", (self.user_id,))
+            cursor = await db.execute("SELECT bio FROM users WHERE discord_id = ?", (self.discord_id,))
             row = await cursor.fetchone()
             current_bio = row[0] if row and row[0] else "This user has no bio set."
         
@@ -220,17 +221,17 @@ class ProfileView(ui.View):
         )
         embed.set_footer(text="Click 'Edit Bio' to open the editor")
         
-        view = BioEditView(self.user_id, self)
+        view = BioEditView(self.discord_id, self)
         await interaction.response.edit_message(embed=embed, view=view)
     
     @discord.ui.button(label="Customize", style=discord.ButtonStyle.secondary, emoji="🎨")
     async def customize_profile(self, interaction: discord.Interaction, button: ui.Button):
-        user_id = self.user_id
+        user_id = self.discord_id
         if user_id != interaction.user.id:
             return
         # Fetch current color
         async with aiosqlite.connect("data/user.db") as db:
-            cursor = await db.execute("SELECT profile_color FROM users WHERE discord_id = ?", (self.user_id,))
+            cursor = await db.execute("SELECT profile_color FROM users WHERE discord_id = ?", (self.discord_id,))
             row = await cursor.fetchone()
             current_color = row[0] if row and row[0] else "gold"
         
@@ -253,7 +254,7 @@ class ProfileView(ui.View):
     
     @discord.ui.button(label="Wallet", style=discord.ButtonStyle.success, emoji="💰")
     async def view_wallet(self, interaction: discord.Interaction, button: ui.Button):
-        user_id = self.user_id
+        user_id = self.discord_id
         if user_id != interaction.user.id:
             return
         await interaction.response.send_message(
@@ -397,7 +398,7 @@ async def banking_setup(bot):
         embed.add_field(name="Dabloons Balance", value=f"🪙 {balance} dabloons", inline=False)
         embed.set_footer(text="quacking good!")
 
-        view = ProfileView(user_id)
+        view = ProfileView(discord_id)
         await interaction.response.send_message(embed=embed, view=view)
         @bot.tree.command(name="setbio", description="Set your custom bio")
         @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
