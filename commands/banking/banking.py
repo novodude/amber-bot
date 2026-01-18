@@ -252,15 +252,6 @@ class ProfileView(ui.View):
         
         await interaction.response.edit_message(embed=embed, view=customize_view)
     
-    @discord.ui.button(label="Wallet", style=discord.ButtonStyle.success, emoji="💰")
-    async def view_wallet(self, interaction: discord.Interaction, button: ui.Button):
-        user_id = self.discord_id
-        if user_id != interaction.user.id:
-            return
-        await interaction.response.send_message(
-            "Opening wallet... (This feature is under development.)",
-            ephemeral=True
-        )
 
 
 
