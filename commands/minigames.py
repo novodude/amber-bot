@@ -209,9 +209,9 @@ class Games(app_commands.Group):
         discord_id = interaction.user.id
         user_id = await get_user_id_from_discord(discord_id)
 
-        if user_id == None:
+        if user_id is None:
             await interaction.response.send_message(
-                "You need to register first! Use `/register`",
+                "You are not registered yet! Use `/register`",
                 ephemeral=True
             )
             return
@@ -231,6 +231,16 @@ class Games(app_commands.Group):
         self,
         interaction: discord.Interaction,
         difficulty: Literal["easy", "medium", "hard"]):
+
+        discord_id = interaction.user.id
+        user_id = await get_user_id_from_discord(discord_id)
+
+        if user_id is None:
+            await interaction.response.send_message(
+                "You are not registered yet! Use `/register`",
+                ephemeral=True
+            )
+            return
 
         await interaction.response.defer()
         discord_id = interaction.user.id

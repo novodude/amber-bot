@@ -9,10 +9,11 @@ import statistics
 import discord
 import aiohttp
 import random
+import emoji
 import json
 import os
 import io
-
+import re
 
 class ImageGenerator:
     """Handles image generation and manipulation."""
@@ -163,27 +164,33 @@ class ImageGenerator:
         avatar = Image.open(BytesIO(avatar_bytes)).convert("RGBA").resize((250, 250))
         canvas.paste(avatar, (0, 0), avatar)
         
-        # Add username
-        name_font, wrapped_name, pad = self.fit_text_into_box(
-            draw, f"- @{user.display_name}", str(font_path), 250, 60, 15
-        )
-        draw.text((270 + pad, 210), wrapped_name, font=name_font, fill=(255, 240, 200))
-        
         # Add quote
         quote_font, wrapped_quote, pad = self.fit_text_into_box(
             draw, message, str(font_path), 230, 190, 25
         )
-        draw.text((270 + pad, 30), wrapped_quote, font=quote_font, fill=(200, 200, 200))
         
-        # Add separator line
+        # Calculate quote height for vertical centering
+        quote_bbox = draw.multiline_textbbox((0, 0), wrapped_quote, font=quote_font)
+        quote_height = quote_bbox[3] - quote_bbox[1]
+        
+        available_height = 170
+        quote_y = 30 + (available_height - quote_height) // 2
+        
+        draw.multiline_text((270 + pad, quote_y), wrapped_quote, font=quote_font, fill=(200, 200, 200))
+        
         draw.line((270, 200, 480, 200), fill=(200, 200, 200), width=2)
+        
+        name_font, wrapped_name, pad = self.fit_text_into_box(
+            draw, f"- @{user.display_name}", str(font_path), 250, 60, 15
+        )
+        draw.multiline_text((270 + pad, 210), wrapped_name, font=name_font, fill=(255, 240, 200))
         
         # Save to bytes
         output_bytes = BytesIO()
         canvas.save(output_bytes, format="PNG")
         output_bytes.seek(0)
         return output_bytes
-    
+
     def generate_inkblot(self, width: int = 500, height: int = 700) -> Image.Image:
         """Generate a random Rorschach-style inkblot."""
         half_width = width // 2

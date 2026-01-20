@@ -1,7 +1,7 @@
-import discord
 from discord import Color, app_commands
-import aiohttp
 from typing import Optional, Literal
+import discord
+import aiohttp
 
 ACTIONS = {
     'hug': {
