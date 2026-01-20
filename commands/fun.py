@@ -9,11 +9,9 @@ import statistics
 import discord
 import aiohttp
 import random
-import emoji
 import json
 import os
 import io
-import re
 
 class ImageGenerator:
     """Handles image generation and manipulation."""
