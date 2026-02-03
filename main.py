@@ -14,6 +14,8 @@ from commands.melody import melody_setup
 from commands.minigames import minigames_setup
 from commands.utils import utils_setup, handle_pin
 from commands.banking.banking import banking_setup
+from commands.moderation import moderation_setup
+# databases
 from utils.radio.database import init_radio_db
 from utils.userbase.database import init_user_db
 
@@ -38,6 +40,7 @@ async def on_ready():
     await fun_setup(bot)
     await minigames_setup(bot)
     await banking_setup(bot)
+    await moderation_setup(bot)
     await utils_setup(bot)
     await init_user_db()
     await init_radio_db()
@@ -83,6 +86,11 @@ async def help_command(interaction: discord.Interaction):
         "- `radio_sync`: Sync your radio playlist. :P\n"
     )
 
+    games = (
+        "- `/game tic_tac_toe`: play tic tac toe against AI to gain dabloons\n"
+        "- `/game duck_clicker`: like cookie clicker, tap 5 time to gain **2** dabloons\n"
+    )
+
     bot_events = (
         "keep in mind amber has to be in the server to do these"
         "- reply to a message with `4k` and you will quote it in 4k. :3\n"
@@ -91,7 +99,8 @@ async def help_command(interaction: discord.Interaction):
  
     embed = discord.Embed(title="Quack! Here are some commands you can use:", color=discord.Color.gold())
     embed.add_field(name="Cute Feathered and Furry Friends", value=animals, inline=False)
-    embed.add_field(name="Games and Fun", value=games_n_reactions, inline=False)
+    embed.add_field(name="Fun", value=games_n_reactions, inline=False)
+    embed.add_field(name="Games", value=games, inline=False)
     embed.add_field(name="Radio System", value=radio, inline=False)
     embed.add_field(name="Bot Events", value=bot_events, inline=False)
     embed.set_footer(text="OFC quotes from AMTA discord server 💜")

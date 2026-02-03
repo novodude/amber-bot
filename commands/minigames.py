@@ -74,8 +74,17 @@ class TicTacToe(ui.View):
     
     def make_callback(self, position):
         async def callback(interaction: discord.Interaction):
-            if (not interaction.user or self.board[position] is not None 
-                or self.game_over or self.current_player != self.player_symbol):
+            if interaction.user.id != self.user_id:
+                return
+            
+            is_valid_move = (
+                interaction.user and
+                self.board[position] is None and
+                not self.game_over and
+                self.current_player == self.player_symbol
+            )
+            
+            if not is_valid_move:
                 return
 
             await interaction.response.defer()

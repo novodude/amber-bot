@@ -141,7 +141,7 @@ class ProfileView(ui.View):
         
         balance = await get_dabloons(await get_user_id_from_discord(self.discord_id))
         
-        current_hour = datetime.now().hour
+        current_hour = discord.utils.utcnow().hour
         if 5 <= current_hour < 12:
             greeting_time = "morning"
         elif 12 <= current_hour < 17:
@@ -173,7 +173,7 @@ class ProfileView(ui.View):
         balance = await get_dabloons(await get_user_id_from_discord(self.discord_id))
        
         
-        current_hour = datetime.now().hour
+        current_hour = discord.utils.utcnow().hour
         if 5 <= current_hour < 12:
             greeting_time = "morning"
         elif 12 <= current_hour < 17:
@@ -372,7 +372,7 @@ async def banking_setup(bot):
         bio = row[0] if row and row[0] else "This user has no bio set."
         color_name = row[1] if row and row[1] else "gold"
 
-        current_hour = datetime.now().hour
+        current_hour = discord.utils.utcnow().hour
         greeting_time = (
             "morning" if 5 <= current_hour < 12 else
             "afternoon" if 12 <= current_hour < 17 else

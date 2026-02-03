@@ -5,10 +5,12 @@ import wavesynth as ws
 import tempfile
 import os
 
-
 def generate_melody(mode: str, data: str):
+    """generate the melody for the user"""
     NOTE_LENGTH = 0.4
 
+
+    # takes line like (C,C,B#) and convert it into musical notes
     def parse_notes(s):
         notes = []
         durations = []
@@ -53,6 +55,7 @@ def generate_melody(mode: str, data: str):
                 durations.append(NOTE_LENGTH)
             return notes, durations
 
+    # takes line like (.-..-.._) and convert it into musical beat
     def parse_beats(s):
         mapping = {"_": 0.6, ".": 0.2, "-": 0.4}
         return [mapping.get(ch, 0.4) for ch in s]
