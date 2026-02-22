@@ -440,14 +440,14 @@ class ModerationCog(commands.Cog):
                     .replace("{server}", member.guild.name)
                 await channel.send(message)
 
-    # Assign autorole
-    if row[2]:
-        role = member.guild.get_role(row[2])
-        if role:
-            try:
-                await member.add_roles(role, reason="Autorole")
-            except discord.Forbidden:
-                pass  # Bot lost permission or role was moved above it
+        # Assign autorole
+        if row[2]:
+            role = member.guild.get_role(row[2])
+            if role:
+                try:
+                    await member.add_roles(role, reason="Autorole")
+                except discord.Forbidden:
+                    pass  # Bot lost permission or role was moved above it
 
 
     ##################

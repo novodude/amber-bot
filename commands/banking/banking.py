@@ -5,6 +5,7 @@ from discord.ext import commands
 from datetime import datetime, timedelta
 from discord import app_commands
 from utils.economy import get_dabloons, get_user_id_from_discord, add_dabloons
+from utils.userbase.ensure_registered import ensure_registered
 
 
 class ColorSelect(ui.Select):
@@ -26,6 +27,7 @@ class ColorSelect(ui.Select):
             max_values=1,
             options=options
         )
+
     async def callback(self, interaction: discord.Interaction):
         color_value = self.values[0]
         user_id = interaction.user.id
@@ -48,25 +50,25 @@ class SetBioModal(ui.Modal, title="Set Your Bio"):
         placeholder="Type your bio here...",
         max_length=200,
     )
-    
+
     def __init__(self, profile_view: 'ProfileView'):
         super().__init__()
         self.profile_view = profile_view
-    
+
     async def on_submit(self, interaction: discord.Interaction):
         new_bio = self.bio_input.value
         user_id = interaction.user.id
         async with aiosqlite.connect("data/user.db") as db:
             await db.execute("UPDATE users SET bio = ? WHERE discord_id = ?", (new_bio, user_id))
             await db.commit()
-        
+
         embed = discord.Embed(
             title="Bio Updated",
             description=f"Your bio has been updated to:\n\n{new_bio}",
             color=discord.Color.green()
         )
         await interaction.response.send_message(embed=embed, ephemeral=True)
-        
+
         if self.profile_view:
             await self.profile_view.refresh_profile(interaction)
 
@@ -79,35 +81,35 @@ class BioEditView(ui.View):
 
     @discord.ui.button(label="edit bio", style=discord.ButtonStyle.primary, emoji="✏️")
     async def edit_bio_button(self, interaction: discord.Interaction, button: ui.Button):
-        user_id = self.user_id
-        if user_id != interaction.user.id:
+        if self.user_id != interaction.user.id:
             return
         modal = SetBioModal(self.profile_view)
         await interaction.response.send_modal(modal)
-    
+
     @discord.ui.button(label="clear bio", style=discord.ButtonStyle.danger, emoji="🗑️")
     async def clear_bio_button(self, interaction: discord.Interaction, button: ui.Button):
-        user_id = interaction.user.id
-        if user_id != interaction.user.id:
+        if interaction.user.id != self.user_id:
             return
         async with aiosqlite.connect("data/user.db") as db:
-            await db.execute("UPDATE users SET bio = ? WHERE discord_id = ?", ("This user has no bio set.", user_id))
+            await db.execute(
+                "UPDATE users SET bio = ? WHERE discord_id = ?",
+                ("This user has no bio set.", interaction.user.id)
+            )
             await db.commit()
-        
+
         embed = discord.Embed(
             title="Bio Cleared",
             description="Your bio has been cleared.",
             color=discord.Color.green()
         )
         await interaction.response.send_message(embed=embed, ephemeral=True)
-        
+
         if self.profile_view:
             await self.profile_view.refresh_profile(interaction)
-    
+
     @discord.ui.button(label="back to profile", style=discord.ButtonStyle.secondary, emoji="🔙")
     async def back_to_profile(self, interaction: discord.Interaction, button: ui.Button):
-        user_id = self.user_id
-        if user_id != interaction.user.id:
+        if self.user_id != interaction.user.id:
             return
         await self.profile_view.refresh_profile(interaction)
 
@@ -116,9 +118,8 @@ class ProfileView(ui.View):
     def __init__(self, discord_id: int):
         super().__init__(timeout=None)
         self.discord_id = discord_id
-    
+
     def get_color(self, color_name: str):
-        """Convert color name to discord.Color"""
         colors = {
             "gold": discord.Color.gold(),
             "blue": discord.Color.blue(),
@@ -130,131 +131,126 @@ class ProfileView(ui.View):
             "dark_blue": discord.Color.dark_blue(),
         }
         return colors.get(color_name, discord.Color.gold())
-    
+
     async def refresh_profile_message(self, interaction: discord.Interaction):
-        """Refresh the profile by editing the original message"""
         async with aiosqlite.connect("data/user.db") as db:
-            cursor = await db.execute("SELECT bio, profile_color FROM users WHERE discord_id = ?", (self.discord_id,))
+            cursor = await db.execute(
+                "SELECT bio, profile_color FROM users WHERE discord_id = ?", (self.discord_id,)
+            )
             row = await cursor.fetchone()
             bio = row[0] if row and row[0] else "This user has no bio set."
             color_name = row[1] if row and row[1] else "gold"
-        
+
         balance = await get_dabloons(await get_user_id_from_discord(self.discord_id))
-        
+
         current_hour = discord.utils.utcnow().hour
-        if 5 <= current_hour < 12:
-            greeting_time = "morning"
-        elif 12 <= current_hour < 17:
-            greeting_time = "afternoon"
-        elif 17 <= current_hour < 21:
-            greeting_time = "evening"
-        else:
-            greeting_time = "night"
-        
+        greeting_time = (
+            "morning" if 5 <= current_hour < 12 else
+            "afternoon" if 12 <= current_hour < 17 else
+            "evening" if 17 <= current_hour < 21 else
+            "night"
+        )
+
         embed = discord.Embed(
             title=f"good {greeting_time}, {interaction.user.name}!",
-            description=f"{bio}",
+            description=bio,
             color=self.get_color(color_name)
         )
         embed.set_thumbnail(url=interaction.user.display_avatar.url)
         embed.add_field(name="Dabloons Balance", value=f"🪙 {balance} dabloons", inline=False)
         embed.set_footer(text="quacking good!")
-        
+
         await interaction.message.edit(embed=embed, view=self)
-    
+
     async def refresh_profile(self, interaction: discord.Interaction):
-        """Helper method to refresh the profile embed"""
         async with aiosqlite.connect("data/user.db") as db:
-            cursor = await db.execute("SELECT bio, profile_color FROM users WHERE discord_id = ?", (self.discord_id,))  # Use discord_id
+            cursor = await db.execute(
+                "SELECT bio, profile_color FROM users WHERE discord_id = ?", (self.discord_id,)
+            )
             row = await cursor.fetchone()
             bio = row[0] if row and row[0] else "This user has no bio set."
             color_name = row[1] if row and row[1] else "gold"
-        
+
         balance = await get_dabloons(await get_user_id_from_discord(self.discord_id))
-       
-        
+
         current_hour = discord.utils.utcnow().hour
-        if 5 <= current_hour < 12:
-            greeting_time = "morning"
-        elif 12 <= current_hour < 17:
-            greeting_time = "afternoon"
-        elif 17 <= current_hour < 21:
-            greeting_time = "evening"
-        else:
-            greeting_time = "night"
-        
+        greeting_time = (
+            "morning" if 5 <= current_hour < 12 else
+            "afternoon" if 12 <= current_hour < 17 else
+            "evening" if 17 <= current_hour < 21 else
+            "night"
+        )
+
         embed = discord.Embed(
             title=f"good {greeting_time}, {interaction.user.name}!",
-            description=f"{bio}",
+            description=bio,
             color=self.get_color(color_name)
         )
         embed.set_thumbnail(url=interaction.user.display_avatar.url)
         embed.add_field(name="Dabloons Balance", value=f"🪙 {balance} dabloons", inline=False)
         embed.set_footer(text="quacking good!")
-        
+
         try:
             await interaction.response.edit_message(embed=embed, view=self)
         except discord.errors.InteractionResponded:
             await interaction.message.edit(embed=embed, view=self)
-    
+
     @discord.ui.button(label="Refresh profile", style=discord.ButtonStyle.primary, emoji="🔄")
     async def refresh_balance(self, interaction: discord.Interaction, button: ui.Button):
-        user_id = self.discord_id
-        if user_id != interaction.user.id:
+        if self.discord_id != interaction.user.id:
             return
         await self.refresh_profile(interaction)
-    
+
     @discord.ui.button(label="Edit Bio", style=discord.ButtonStyle.secondary, emoji="✏️")
     async def edit_bio(self, interaction: discord.Interaction, button: ui.Button):
-        user_id = self.discord_id
-        if user_id != interaction.user.id:
+        if self.discord_id != interaction.user.id:
             return
         async with aiosqlite.connect("data/user.db") as db:
-            cursor = await db.execute("SELECT bio FROM users WHERE discord_id = ?", (self.discord_id,))
+            cursor = await db.execute(
+                "SELECT bio FROM users WHERE discord_id = ?", (self.discord_id,)
+            )
             row = await cursor.fetchone()
             current_bio = row[0] if row and row[0] else "This user has no bio set."
-        
+
         embed = discord.Embed(
             title="✏️ Edit Your Bio",
             description=f"**Current Bio:**\n{current_bio}\n\nUse the buttons below to edit or clear your bio.",
             color=discord.Color.blue()
         )
         embed.set_footer(text="Click 'Edit Bio' to open the editor")
-        
+
         view = BioEditView(self.discord_id, self)
         await interaction.response.edit_message(embed=embed, view=view)
-    
+
     @discord.ui.button(label="Customize", style=discord.ButtonStyle.secondary, emoji="🎨")
     async def customize_profile(self, interaction: discord.Interaction, button: ui.Button):
-        user_id = self.discord_id
-        if user_id != interaction.user.id:
+        if self.discord_id != interaction.user.id:
             return
-        # Fetch current color
         async with aiosqlite.connect("data/user.db") as db:
-            cursor = await db.execute("SELECT profile_color FROM users WHERE discord_id = ?", (self.discord_id,))
+            cursor = await db.execute(
+                "SELECT profile_color FROM users WHERE discord_id = ?", (self.discord_id,)
+            )
             row = await cursor.fetchone()
             current_color = row[0] if row and row[0] else "gold"
-        
+
         embed = discord.Embed(
             title="🎨 Customize Your Profile",
-            description=f"**Current Color:** {current_color}\n\nSelect a color from the dropdown below to change your profile theme!",
+            description=f"**Current Color:** {current_color}\n\nSelect a color from the dropdown below!",
             color=self.get_color(current_color)
         )
-        
+
         customize_view = ui.View(timeout=60)
         customize_view.add_item(ColorSelect(self))
-        
+
         back_button = ui.Button(label="Back to Profile", style=discord.ButtonStyle.secondary, emoji="🔙")
+
         async def back_callback(button_interaction: discord.Interaction):
             await self.refresh_profile(button_interaction)
+
         back_button.callback = back_callback
         customize_view.add_item(back_button)
-        
+
         await interaction.response.edit_message(embed=embed, view=customize_view)
-    
-
-
-
 
 
 class Money(app_commands.Group):
@@ -266,18 +262,12 @@ class Money(app_commands.Group):
 
     @app_commands.command(name="daily", description="Claim your daily dabloons!")
     async def daily(self, interaction: Interaction):
-        user_id = await get_user_id_from_discord(interaction.user.id)
-        if user_id is None:
-            await interaction.response.send_message(
-                "You need to register first! Use `/register`",
-                ephemeral=True
-            )
-            return
+        # Auto-register if needed
+        user_id = await ensure_registered(interaction.user.id, str(interaction.user))
 
         async with aiosqlite.connect("data/user.db") as db:
             cursor = await db.execute(
-                "SELECT daily_coin_claim FROM games WHERE user_id = ?",
-                (user_id,)
+                "SELECT daily_coin_claim FROM games WHERE user_id = ?", (user_id,)
             )
             row = await cursor.fetchone()
             now = datetime.now()
@@ -292,7 +282,7 @@ class Money(app_commands.Group):
                     )
                     return
 
-            daily_amount = 10  # you can adjust
+            daily_amount = 10
             await add_dabloons(user_id, daily_amount)
             await db.execute(
                 "UPDATE games SET daily_coin_claim = ? WHERE user_id = ?",
@@ -305,12 +295,13 @@ class Money(app_commands.Group):
     @app_commands.command(name="give", description="Give dabloons to another user")
     @app_commands.describe(target="The user you want to give dabloons to", amount="Amount to give")
     async def give(self, interaction: Interaction, target: discord.User, amount: int):
-        sender_id = await get_user_id_from_discord(interaction.user.id)
+        # Auto-register sender; receiver must opt in themselves (fair play)
+        sender_id = await ensure_registered(interaction.user.id, str(interaction.user))
         receiver_id = await get_user_id_from_discord(target.id)
 
-        if sender_id is None or receiver_id is None:
+        if receiver_id is None:
             await interaction.response.send_message(
-                "Both sender and receiver need to be registered!",
+                f"{target.mention} isn't registered yet — they need to use any economy command first!",
                 ephemeral=True
             )
             return
@@ -331,41 +322,30 @@ class Money(app_commands.Group):
             f"You sent {amount} dabloons to {target.mention}! 🪙"
         )
 
-    # Placeholder for other money commands
     @app_commands.command(name="balance", description="Check your current dabloons balance")
     async def balance(self, interaction: Interaction):
-        user_id = await get_user_id_from_discord(interaction.user.id)
-        if user_id is None:
-            await interaction.response.send_message("You are not registered yet!", ephemeral=True)
-            return
-
+        # Auto-register if needed
+        user_id = await ensure_registered(interaction.user.id, str(interaction.user))
         balance = await get_dabloons(user_id)
         await interaction.response.send_message(f"You have 🪙 {balance} dabloons.")
 
 
-
 async def banking_setup(bot):
     bot.tree.add_command(Money())
+
     @bot.tree.command(name="profile", description="Check your profile.")
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     @app_commands.allowed_installs(guilds=True, users=True)
     async def profile(interaction: discord.Interaction):
+        # Auto-register if needed
         discord_id = interaction.user.id
-        user_id = await get_user_id_from_discord(discord_id)
-
-        if user_id is None:
-            await interaction.response.send_message(
-                "You are not registered yet! Use `/register`",
-                ephemeral=True
-            )
-            return
+        user_id = await ensure_registered(discord_id, str(interaction.user))
 
         balance = await get_dabloons(user_id)
 
         async with aiosqlite.connect("data/user.db") as db:
             cursor = await db.execute(
-                "SELECT bio, profile_color FROM users WHERE id = ?",
-                (user_id,)
+                "SELECT bio, profile_color FROM users WHERE id = ?", (user_id,)
             )
             row = await cursor.fetchone()
 
@@ -391,32 +371,27 @@ async def banking_setup(bot):
 
         view = ProfileView(discord_id)
         await interaction.response.send_message(embed=embed, view=view)
-        @bot.tree.command(name="setbio", description="Set your custom bio")
-        @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
-        @app_commands.allowed_installs(guilds=True, users=True)
-        async def setbio(interaction: discord.Interaction, bio: str):
-            user_id = interaction.user.id
-            async with aiosqlite.connect("data/user.db") as db:
-                cursor = await db.execute("SELECT discord_id FROM users WHERE discord_id = ?", (user_id,))
-                row = await cursor.fetchone()
-                if not row:
-                    embed = discord.Embed(
-                        title="Not Registered",
-                        description=f"{interaction.user.mention} is not registered. Please do `/register` first.",
-                        color=discord.Color.red()
-                    )
-                    await interaction.response.send_message(embed=embed, ephemeral=True)
-                    return
-                
-                await db.execute("UPDATE users SET bio = ? WHERE discord_id = ?", (bio, user_id))
-                await db.commit()
-            
-            embed = discord.Embed(
-                title="Bio Updated",
-                description=f"Your bio has been set to:\n\n{bio}",
-                color=discord.Color.green()
+
+    @bot.tree.command(name="setbio", description="Set your custom bio")
+    @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+    @app_commands.allowed_installs(guilds=True, users=True)
+    async def setbio(interaction: discord.Interaction, bio: str):
+        # Auto-register if needed
+        await ensure_registered(interaction.user.id, str(interaction.user))
+
+        async with aiosqlite.connect("data/user.db") as db:
+            await db.execute(
+                "UPDATE users SET bio = ? WHERE discord_id = ?", (bio, interaction.user.id)
             )
-            await interaction.response.send_message(embed=embed, ephemeral=True)
+            await db.commit()
+
+        embed = discord.Embed(
+            title="Bio Updated",
+            description=f"Your bio has been set to:\n\n{bio}",
+            color=discord.Color.green()
+        )
+        await interaction.response.send_message(embed=embed, ephemeral=True)
+
     @bot.tree.command(name="register", description="Register in the system.")
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     @app_commands.allowed_installs(guilds=True, users=True)
@@ -424,11 +399,10 @@ async def banking_setup(bot):
         user_id = interaction.user.id
         async with aiosqlite.connect("data/user.db") as db:
             cursor = await db.execute(
-                "SELECT discord_id FROM users WHERE discord_id = ?", 
-                (user_id,)
+                "SELECT discord_id FROM users WHERE discord_id = ?", (user_id,)
             )
             row = await cursor.fetchone()
-            
+
             if row:
                 embed = discord.Embed(
                     title="Already Registered",
@@ -437,23 +411,21 @@ async def banking_setup(bot):
                 )
                 await interaction.response.send_message(embed=embed, ephemeral=True)
                 return
-            
+
             cursor = await db.execute(
-                "INSERT INTO users (discord_id, amber_dabloons, username) VALUES (?, ?, ?)", 
+                "INSERT INTO users (discord_id, amber_dabloons, username) VALUES (?, ?, ?)",
                 (user_id, 50, str(interaction.user))
             )
             new_user_id = cursor.lastrowid
-            
+
             await db.execute(
-                "INSERT INTO games (user_id) VALUES (?)",
-                (new_user_id,)
+                "INSERT INTO games (user_id) VALUES (?)", (new_user_id,)
             )
-            
             await db.commit()
-        
+
         embed = discord.Embed(
             title="Registration Successful",
-            description=f"{interaction.user.mention} has been registered in the banking system with a starting balance of 50 dabloons!",
+            description=f"{interaction.user.mention} has been registered with a starting balance of 50 dabloons!",
             color=discord.Color.green()
         )
         await interaction.response.send_message(embed=embed)
