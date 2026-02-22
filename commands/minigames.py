@@ -74,17 +74,8 @@ class TicTacToe(ui.View):
     
     def make_callback(self, position):
         async def callback(interaction: discord.Interaction):
-            if interaction.user.id != self.user_id:
-                return
-            
-            is_valid_move = (
-                interaction.user and
-                self.board[position] is None and
-                not self.game_over and
-                self.current_player == self.player_symbol
-            )
-            
-            if not is_valid_move:
+            if (not interaction.user or self.board[position] is not None 
+                or self.game_over or self.current_player != self.player_symbol):
                 return
 
             await interaction.response.defer()
@@ -276,9 +267,9 @@ class Games(app_commands.Group):
         await add_dabloons(user_id, -cost)
 
         difficulty_mapping = {
-            "easy": 0.2,
-            "medium": 0.5,
-            "hard": 1.5
+            "easy": 0.7,
+            "medium": 0.75,
+            "hard": 0.9
         }
         difficulty_value = difficulty_mapping.get(difficulty, 0.5)
         view = TicTacToe(user_id=user_id, difficulty=difficulty, difficulty_level=difficulty_value)

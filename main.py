@@ -1,6 +1,7 @@
 # other libraries
 import os
 import logging
+import aiosqlite
 from io import BytesIO
 from dotenv import load_dotenv
 # discord library
@@ -22,11 +23,22 @@ from utils.userbase.database import init_user_db
 load_dotenv()
 token = os.getenv("DISCORD_TOKEN")
   
+
+async def get_prefix(bot, message):
+    if not message.guild:
+        return "!"
+    
+    async with aiosqlite.connect("data/user.db") as db:
+        cursor = await db.execute("SELECT prefix FROM guild_config WHERE guild_id = ?", (message.guild.id,))
+        row = await cursor.fetchone()
+        return row[0] if row else "!"
+
+
 handler = logging.FileHandler(filename='bot.log', encoding='utf-8', mode='w')
 intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True
-bot = commands.Bot(command_prefix='!', intents=intents)
+bot = commands.Bot(command_prefix=get_prefix, intents=intents)
 
 async def load_extensions():
     await bot.load_extension('commands.radio.settings')
