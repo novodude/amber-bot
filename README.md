@@ -204,8 +204,6 @@ RAPIDAPI_KEY=optional_key
 python main.py
 ```
 
-> **Note:** The `guild_config` table in `utils/userbase/database.py` uses `auto_role_id` but the moderation cog expects `autorole_id`. Rename the column in `init_user_db()` to fix autorole.
-
 ---
 
 ## To-Do
