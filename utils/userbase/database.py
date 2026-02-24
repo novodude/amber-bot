@@ -73,6 +73,6 @@ async def init_user_db():
             welcome_channel_id INTEGER,
             welcome_message TEXT,
             log_channel_id INTEGER,
-            auto_role_id INTEGER
+            autorole_id INTEGER
             )
         """)
