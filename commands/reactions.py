@@ -1,6 +1,7 @@
 from discord import Color, app_commands
 from typing import Optional, Literal
 import discord
+from datetime import datetime
 import aiohttp
 
 ACTIONS = {
@@ -314,11 +315,44 @@ REACTION = {
     }
 }
 
-def build_title(action: str, action_data: dict, author_name: str, target_name: str = None, everyone: bool = False) -> str:
+class React_back(discord.ui.View):
+    def __init__(self, author: discord.User, user: Optional[discord.User], action: str, show_button: bool = True):
+        super().__init__(timeout=60)
+        self.author = author
+        self.action = action
+        self.user = user
+        if show_button:
+            self.react_back_button.label = f"{ACTIONS[action]['emoji']} {action} them back!"
+        else:
+            self.remove_item(self.react_back_button)
+
+    @discord.ui.button(label="React back!", style=discord.ButtonStyle.secondary, custom_id="react_back_button")
+    async def react_back_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if self.user and interaction.user != self.user:
+            await interaction.response.send_message(f"Only {self.user.display_name} can react back!", ephemeral=True)
+            return
+        if not self.user:
+            button.disabled = True
+            await interaction.response.edit_message(view=self)
+            return
+        action_data = ACTIONS[self.action]
+        embed = discord.Embed(color=action_data['color'])
+        embed.title = build_title(self.action, action_data, self.author.display_name, interaction.user.display_name, react_back=True)
+        embed.description = action_data['desc_other'].format(user=self.user, author=interaction.user)
+        embed.set_image(url=await get_gif_url(self.action))
+        embed.set_footer(text=datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+        await interaction.response.send_message(embed=embed)
+
+
+
+def build_title(action: str, action_data: dict, author_name: str, target_name: str = None, everyone: bool = False, react_back: bool = False) -> str:
     emoji = action_data['emoji']
     act = action_data['act']
     link = action_data['link']
     
+    if react_back:
+            return f"**{emoji} {target_name} {act} {author_name} back! {emoji}**"
+
     if action == 'baka':
         if everyone:
             return f"**{emoji} {author_name} {link[0]} everyone {link[1]} {act} {emoji}**"
@@ -344,6 +378,13 @@ def build_title(action: str, action_data: dict, author_name: str, target_name: s
     return f"**{emoji} {author_name} {act} {target_name} {emoji}**"
 
 
+async def get_gif_url(action: str) -> str:
+    async with aiohttp.ClientSession() as session:
+        async with session.get(f"https://nekos.best/api/v2/{action}") as response:
+            data = await response.json()
+            gif_url = data['results'][0]['url']
+            
+        return gif_url
 
 
 
@@ -360,24 +401,23 @@ async def setup_reactions(bot):
     async def do_action(
         interaction: discord.Interaction,
         action: Literal[
-            'hug', 'kiss', 'pat', 'poke', 'cuddle', 'bite', 'kick',
-            'punch', 'feed', 'highfive', 'dance', 'sleep', 'cry',
-            'smile', 'wave', 'laugh', 'yeet', 'baka', 'facepalm', 'think',
-            'nom', 'shoot', 'run', 'stare', 'thumbsup'
+            'hug', 'kiss', 'pat', 'poke', 'cuddle', 'bite', 'kick', 'punch',
+            'feed', 'highfive', 'dance', 'sleep', 'cry', 'smile', 'think',
+            'wave', 'laugh', 'yeet', 'facepalm', 'baka', 'nom', 'shoot',
+            'run', 'stare', 'thumbsup'
         ],
         user: Optional[discord.User] = None,
         everyone: Optional[bool] = False
     ):
-        await interaction.response.defer()
         try:
-            async with aiohttp.ClientSession() as session:
-                async with session.get(f"https://nekos.best/api/v2/{action}") as response:
-                    data = await response.json()
-                    gif_url = data['results'][0]['url']
-            
+            await interaction.response.defer()
+        except discord.errors.NotFound:
+            return
+
+        try:
             action_data = ACTIONS[action]
             embed = discord.Embed(color=action_data['color'])
-            embed.set_image(url=gif_url)
+            embed.set_image(url=await get_gif_url(action))
             
             target_name = user.display_name if user else None
             embed.title = build_title(action, action_data, interaction.user.display_name, target_name, everyone)
@@ -390,8 +430,10 @@ async def setup_reactions(bot):
                 embed.description = action_data['desc_other'].format(user=user, author=interaction.user)
             else:
                 embed.description = action_data['desc_self'].format(user=interaction.user, author=interaction.user)
-
-            await interaction.followup.send(embed=embed)
+            
+            view = React_back(interaction.user, user, action, show_button=not everyone and user != interaction.user and user is not None)
+            embed.set_footer(text=datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+            await interaction.followup.send(embed=embed, view=view)
         except Exception as e:
             embed = discord.Embed(
                 title="Error",
@@ -414,13 +456,9 @@ async def setup_reactions(bot):
     ):
         await interaction.response.defer()
         try:
-            async with aiohttp.ClientSession() as session:
-                async with session.get(f"https://nekos.best/api/v2/{reaction}") as response:
-                    data = await response.json()
-                    gif_url = data['results'][0]['url']
             reaction_data = REACTION[reaction]
             embed = discord.Embed(color=reaction_data['color'])
-            embed.set_image(url=gif_url)
+            embed.set_image(url=await get_gif_url(reaction))
             embed.title = reaction_data['title'].format(author=interaction.user)
             embed.description = reaction_data['description'].format(author=interaction.user)
             await interaction.followup.send(embed=embed)
