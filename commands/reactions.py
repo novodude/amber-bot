@@ -4,6 +4,18 @@ import discord
 from datetime import datetime
 import aiohttp
 
+# ── Action definitions ────────────────────────────────────────────────────────
+# Each action has:
+#   act          - verb used in the embed title
+#   color        - embed sidebar color
+#   emoji        - displayed in title and button
+#   lone         - if True, action can be done alone (uses 'link' when paired)
+#   link         - preposition used between actor and target (e.g. "with", "at")
+#                  baka uses a list: [verb for others, verb for self]
+#   desc_everyone - description when targeting everyone
+#   desc_self     - description when targeting yourself
+#   desc_other    - description when targeting another user
+#                  supports {user} and {author} format placeholders
 ACTIONS = {
     'hug': {
         'act': 'hugs',
@@ -200,7 +212,7 @@ ACTIONS = {
         'color': discord.Color.brand_green(),
         'emoji': '🦆',
         'lone': False,
-        'link': ['said', 'is'],
+        'link': ['said', 'is'],  # link[0] = "said" (others), link[1] = "is" (self)
         'desc_everyone': '{author.display_name} included :P',
         'desc_self': "mybe you're but you are the special kind of stoopid :3",
         'desc_other': '{author.display_name} said that not me ._.'
@@ -257,6 +269,9 @@ ACTIONS = {
     },
 }
 
+# ── Standalone reaction definitions ──────────────────────────────────────────
+# Used by /look — no target, just the author expressing a feeling.
+# Supports {author} format placeholder in title and description.
 REACTION = {
     'blush': {
         'title': '{author.display_name} is blushing',
@@ -315,44 +330,55 @@ REACTION = {
     }
 }
 
+
+# ── React back button view ────────────────────────────────────────────────────
 class React_back(discord.ui.View):
     def __init__(self, author: discord.User, user: Optional[discord.User], action: str, show_button: bool = True):
         super().__init__(timeout=60)
-        self.author = author
+        self.author = author  # the user who ran /do
         self.action = action
-        self.user = user
+        self.user = user      # the user who was targeted
+
         if show_button:
-            self.react_back_button.label = f"{ACTIONS[action]['emoji']} {action} them back!"
+            # Update label to reflect the actual action and its emoji
+            self.react_back_button.label = f"{ACTIONS[action]['emoji']} {ACTIONS[action]['act']} them back!"
         else:
+            # Hide the button entirely for self-actions and everyone actions
             self.remove_item(self.react_back_button)
 
     @discord.ui.button(label="React back!", style=discord.ButtonStyle.secondary, custom_id="react_back_button")
     async def react_back_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        # Only the targeted user can react back
         if self.user and interaction.user != self.user:
             await interaction.response.send_message(f"Only {self.user.display_name} can react back!", ephemeral=True)
             return
-        if not self.user:
-            button.disabled = True
-            await interaction.response.edit_message(view=self)
-            return
+
         action_data = ACTIONS[self.action]
+
+        # Build the react-back embed: clicker -> original author
         embed = discord.Embed(color=action_data['color'])
         embed.title = build_title(self.action, action_data, self.author.display_name, interaction.user.display_name, react_back=True)
         embed.description = action_data['desc_other'].format(user=self.user, author=interaction.user)
         embed.set_image(url=await get_gif_url(self.action))
         embed.set_footer(text=datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+
+        # Disable the button after use so it can't be spammed
+        button.disabled = True
         await interaction.response.send_message(embed=embed)
+        await interaction.message.edit(view=self)
 
 
-
+# ── Title builder ─────────────────────────────────────────────────────────────
 def build_title(action: str, action_data: dict, author_name: str, target_name: str = None, everyone: bool = False, react_back: bool = False) -> str:
     emoji = action_data['emoji']
     act = action_data['act']
     link = action_data['link']
-    
-    if react_back:
-            return f"**{emoji} {target_name} {act} {author_name} back! {emoji}**"
 
+    # React-back titles are always "[clicker] [act] [original author] back!"
+    if react_back:
+        return f"**{emoji} {target_name} {act} {author_name} back! {emoji}**"
+
+    # baka has unique grammar: "X said Y is stoopid" / "X is stoopid"
     if action == 'baka':
         if everyone:
             return f"**{emoji} {author_name} {link[0]} everyone {link[1]} {act} {emoji}**"
@@ -362,34 +388,38 @@ def build_title(action: str, action_data: dict, author_name: str, target_name: s
             return f"**{emoji} {author_name} {link[1]} {act} {emoji}**"
         else:
             return f"**{emoji} {author_name} {link[0]} {target_name} {link[1]} {act} {emoji}**"
-    
+
+    # Everyone target
     if everyone:
         if action_data['lone']:
             return f"**{emoji} {author_name} {act} {link} everyone {emoji}**"
         return f"**{emoji} {author_name} {act} everyone {emoji}**"
-    
+
+    # No target or self-target
     if not target_name or target_name == author_name:
         if action_data['lone']:
             return f"**{emoji} {author_name} {act} {link} themselves {emoji}**"
         return f"**{emoji} {author_name} {act} themselves {emoji}**"
-    
+
+    # Targeting another user
     if action_data['lone']:
         return f"**{emoji} {author_name} {act} {link} {target_name} {emoji}**"
     return f"**{emoji} {author_name} {act} {target_name} {emoji}**"
 
 
+# ── GIF fetcher ───────────────────────────────────────────────────────────────
 async def get_gif_url(action: str) -> str:
+    # Fetch a random GIF URL for the given action from nekos.best.
     async with aiohttp.ClientSession() as session:
         async with session.get(f"https://nekos.best/api/v2/{action}") as response:
             data = await response.json()
-            gif_url = data['results'][0]['url']
-            
-        return gif_url
+            return data['results'][0]['url']
 
 
-
+# ── Command setup ─────────────────────────────────────────────────────────────
 async def setup_reactions(bot):
-    # the all mighty /do command(first command i coded :P)
+
+    # /do — perform an action on a user, yourself, or everyone
     @bot.tree.command(name="do", description="Perform an action with a GIF!")
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     @app_commands.allowed_installs(guilds=True, users=True)
@@ -409,19 +439,21 @@ async def setup_reactions(bot):
         user: Optional[discord.User] = None,
         everyone: Optional[bool] = False
     ):
+        # Defer early to avoid the 3-second interaction timeout
         try:
             await interaction.response.defer()
         except discord.errors.NotFound:
-            return
+            return  # Interaction expired before we could acknowledge it
 
         try:
             action_data = ACTIONS[action]
             embed = discord.Embed(color=action_data['color'])
             embed.set_image(url=await get_gif_url(action))
-            
+
             target_name = user.display_name if user else None
             embed.title = build_title(action, action_data, interaction.user.display_name, target_name, everyone)
-            
+
+            # Pick the right description based on who is being targeted
             if everyone:
                 embed.description = action_data['desc_everyone'].format(user=interaction.user, author=interaction.user)
             elif user and user == interaction.user:
@@ -430,10 +462,14 @@ async def setup_reactions(bot):
                 embed.description = action_data['desc_other'].format(user=user, author=interaction.user)
             else:
                 embed.description = action_data['desc_self'].format(user=interaction.user, author=interaction.user)
-            
-            view = React_back(interaction.user, user, action, show_button=not everyone and user != interaction.user and user is not None)
+
+            # Only show the react-back button when targeting another user
+            show_button = not everyone and user != interaction.user and user is not None
+            view = React_back(interaction.user, user, action, show_button=show_button)
+
             embed.set_footer(text=datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
             await interaction.followup.send(embed=embed, view=view)
+
         except Exception as e:
             embed = discord.Embed(
                 title="Error",
@@ -442,7 +478,7 @@ async def setup_reactions(bot):
             )
             await interaction.followup.send(embed=embed, ephemeral=True)
 
-# /look commmand
+    # /look — express a reaction with a GIF, no target needed
     @bot.tree.command(name="look", description="Give a reaction with a GIF!")
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     @app_commands.allowed_installs(guilds=True, users=True)
@@ -450,7 +486,7 @@ async def setup_reactions(bot):
     async def do_reaction(
         interaction: discord.Interaction,
         reaction: Literal[
-            'blush', 'shrug', 'yawn','angry', 'bored', 'happy',
+            'blush', 'shrug', 'yawn', 'angry', 'bored', 'happy',
             'nope', 'smug', 'lurk', 'pout', 'nod'
         ]
     ):
@@ -462,6 +498,7 @@ async def setup_reactions(bot):
             embed.title = reaction_data['title'].format(author=interaction.user)
             embed.description = reaction_data['description'].format(author=interaction.user)
             await interaction.followup.send(embed=embed)
+
         except Exception as e:
             embed = discord.Embed(
                 title="**Error**",
