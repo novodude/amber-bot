@@ -1,7 +1,8 @@
-from discord import Color, app_commands
+from asyncio import sleep
+from discord import Color, app_commands, user
 from typing import Optional, Literal
 import discord
-from datetime import datetime
+from datetime import date, datetime
 import aiohttp
 
 # ── Action definitions ────────────────────────────────────────────────────────
@@ -285,7 +286,7 @@ REACTION = {
     },
     'yawn': {
         'title': '{author.display_name} yawned',
-        'description': 'eppy {author.display_name} *pet*',
+        'description': 'eepy {author.display_name} *pet*',
         'color': discord.Color.pink()
     },
     'angry': {
@@ -334,14 +335,16 @@ REACTION = {
 # ── React back button view ────────────────────────────────────────────────────
 class React_back(discord.ui.View):
     def __init__(self, author: discord.User, user: Optional[discord.User], action: str, show_button: bool = True):
-        super().__init__(timeout=60)
+        super().__init__()
+        self.message: discord.WebhookMessage | None = None
         self.author = author  # the user who ran /do
         self.action = action
         self.user = user      # the user who was targeted
+        self.action_data = ACTIONS[self.action]
 
         if show_button:
             # Update label to reflect the actual action and its emoji
-            self.react_back_button.label = f"{ACTIONS[action]['emoji']} {ACTIONS[action]['act']} them back!"
+            self.react_back_button.label = button_text(self.action, self.action_data)
         else:
             # Hide the button entirely for self-actions and everyone actions
             self.remove_item(self.react_back_button)
@@ -353,19 +356,18 @@ class React_back(discord.ui.View):
             await interaction.response.send_message(f"Only {self.user.display_name} can react back!", ephemeral=True)
             return
 
-        action_data = ACTIONS[self.action]
 
         # Build the react-back embed: clicker -> original author
-        embed = discord.Embed(color=action_data['color'])
-        embed.title = build_title(self.action, action_data, self.author.display_name, interaction.user.display_name, react_back=True)
-        embed.description = action_data['desc_other'].format(user=self.user, author=interaction.user)
-        embed.set_image(url=await get_gif_url(self.action))
-        embed.set_footer(text=datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+        title = build_title(self.action, self.action_data, self.author.display_name, interaction.user.display_name, react_back=True)
+        description = self.action_data['desc_other'].format(user=self.user, author=interaction.user)
+        embed = await build_embed(self.action_data['color'], title, description, self.action, author=interaction.user)
 
         # Disable the button after use so it can't be spammed
         button.disabled = True
-        await interaction.response.send_message(embed=embed)
-        await interaction.message.edit(view=self)
+        await interaction.response.defer()
+        await interaction.followup.send(embed=embed)
+        if self.message:
+            await self.message.edit(view=self)
 
 
 # ── Title builder ─────────────────────────────────────────────────────────────
@@ -374,9 +376,14 @@ def build_title(action: str, action_data: dict, author_name: str, target_name: s
     act = action_data['act']
     link = action_data['link']
 
-    # React-back titles are always "[clicker] [act] [original author] back!"
+    # React-back titles, same as normal but with "back!" at the end
     if react_back:
-        return f"**{emoji} {target_name} {act} {author_name} back! {emoji}**"
+        if action == 'baka':
+            return f"**{emoji} {target_name} {link[0]} {author_name} {link[1]} {act} back! {emoji}**"
+        elif action_data['lone']:
+            return f"**{emoji} {target_name} {act} {link} {author_name} back! {emoji}**"
+        else:
+            return f"**{emoji} {target_name} {act} {author_name} back! {emoji}**"
 
     # baka has unique grammar: "X said Y is stoopid" / "X is stoopid"
     if action == 'baka':
@@ -406,6 +413,24 @@ def build_title(action: str, action_data: dict, author_name: str, target_name: s
         return f"**{emoji} {author_name} {act} {link} {target_name} {emoji}**"
     return f"**{emoji} {author_name} {act} {target_name} {emoji}**"
 
+# ── Button text ───────────────────────────────────────────────────────────────
+def button_text(action : str, action_data: dict) -> str:
+    if action_data["lone"]:
+        return f"{ACTIONS[action]["emoji"]} {action} with them"
+    elif action == "nom":
+        return f"{ACTIONS[action]["emoji"]} {action} on them"
+    elif action == "baka":
+        return f"{ACTIONS[action]["emoji"]} call {action} back"
+    return  f"{ACTIONS[action]['emoji']} {action} them back!"
+        
+# ── building the embed ───────────────────────────────────────────────────────────────
+async def build_embed(color: discord.Color, title: str, description: str, action: str, author: discord.User) -> discord.Embed:
+    embed = discord.Embed(color=color, title=title, description=description)
+    embed.set_image(url=await get_gif_url(action))
+    embed.set_author(name=author.display_name, icon_url=author.display_avatar.url)
+    embed.set_footer(text="quack quack quack")
+    embed.timestamp = datetime.now()
+    return embed
 
 # ── GIF fetcher ───────────────────────────────────────────────────────────────
 async def get_gif_url(action: str) -> str:
@@ -447,28 +472,24 @@ async def setup_reactions(bot):
 
         try:
             action_data = ACTIONS[action]
-            embed = discord.Embed(color=action_data['color'])
-            embed.set_image(url=await get_gif_url(action))
-
             target_name = user.display_name if user else None
-            embed.title = build_title(action, action_data, interaction.user.display_name, target_name, everyone)
+            title = build_title(action, action_data, interaction.user.display_name, target_name, everyone)
 
-            # Pick the right description based on who is being targeted
             if everyone:
-                embed.description = action_data['desc_everyone'].format(user=interaction.user, author=interaction.user)
+                description = action_data['desc_everyone'].format(user=interaction.user, author=interaction.user)
             elif user and user == interaction.user:
-                embed.description = action_data['desc_self'].format(user=interaction.user, author=interaction.user)
+                description = action_data['desc_self'].format(user=interaction.user, author=interaction.user)
             elif user:
-                embed.description = action_data['desc_other'].format(user=user, author=interaction.user)
+                description = action_data['desc_other'].format(user=user, author=interaction.user)
             else:
-                embed.description = action_data['desc_self'].format(user=interaction.user, author=interaction.user)
+                description = action_data['desc_self'].format(user=interaction.user, author=interaction.user)
 
+            embed = await build_embed(action_data['color'], title, description, action, author=interaction.user)
             # Only show the react-back button when targeting another user
             show_button = not everyone and user != interaction.user and user is not None
-            view = React_back(interaction.user, user, action, show_button=show_button)
 
-            embed.set_footer(text=datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
-            await interaction.followup.send(embed=embed, view=view)
+            view = React_back(interaction.user, user, action, show_button=show_button)
+            view.message = await interaction.followup.send(embed=embed, view=view)
 
         except Exception as e:
             embed = discord.Embed(
@@ -493,10 +514,9 @@ async def setup_reactions(bot):
         await interaction.response.defer()
         try:
             reaction_data = REACTION[reaction]
-            embed = discord.Embed(color=reaction_data['color'])
-            embed.set_image(url=await get_gif_url(reaction))
-            embed.title = reaction_data['title'].format(author=interaction.user)
-            embed.description = reaction_data['description'].format(author=interaction.user)
+            title = reaction_data['title'].format(author=interaction.user)
+            description = reaction_data['description'].format(author=interaction.user)
+            embed = await build_embed(reaction_data['color'], title, description, reaction, author=interaction.user)
             await interaction.followup.send(embed=embed)
 
         except Exception as e:
