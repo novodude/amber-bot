@@ -31,6 +31,8 @@ async def init_user_db():
                 duck_clicker_high_score INTEGER DEFAULT 0,
                 ttt_wins INTEGER DEFAULT 0,
                 ttt_streak INTEGER DEFAULT 0,
+                action_use_count INTEGER DEFAULT 0,   -- total /do + /look uses for dabloon tracking
+                next_reward_threshold INTEGER DEFAULT 0, -- next milestone to reward at
                 FOREIGN KEY (user_id) REFERENCES user(id) ON DELETE CASCADE
             )
         """)
@@ -54,7 +56,6 @@ async def init_user_db():
             )
         """)
 
-        
         await db.execute("""
             CREATE TABLE IF NOT EXISTS warnings (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -76,3 +77,32 @@ async def init_user_db():
             autorole_id INTEGER
             )
         """)
+
+        # ── Action counts ─────────────────────────────────────────────────────
+        # Tracks how many times each action has been performed.
+        #   actor_id   - internal user ID of whoever ran /do or /look
+        #   target_id  - internal user ID of the target (NULL for /look or @everyone)
+        #   action     - action/reaction name e.g. 'hug', 'kiss', 'blush'
+        #   count      - number of times this actor->target->action combo has occurred
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS action_counts (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                actor_id INTEGER NOT NULL,
+                target_id INTEGER,
+                action TEXT NOT NULL,
+                count INTEGER DEFAULT 0,
+                UNIQUE(actor_id, target_id, action)
+            )
+        """)
+
+        # Migrate existing games rows that are missing the new columns
+        try:
+            await db.execute("ALTER TABLE games ADD COLUMN action_use_count INTEGER DEFAULT 0")
+        except Exception:
+            pass  # column already exists
+        try:
+            await db.execute("ALTER TABLE games ADD COLUMN next_reward_threshold INTEGER DEFAULT 0")
+        except Exception:
+            pass  # column already exists
+
+        await db.commit()

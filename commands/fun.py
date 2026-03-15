@@ -474,13 +474,39 @@ async def fun_setup(bot: commands.Bot):
     @app_commands.allowed_installs(guilds=True, users=True)
     async def eight_ball(interaction: discord.Interaction, question: str):
         answers = [
+            # ── Original 20 ──────────────────────────────────────────
             "It is certain", "It is decidedly so", "Without a doubt",
             "Yes, definitely", "You may rely on it", "As I see it, yes",
             "Most likely", "Outlook good", "Yes", "Signs point to yes",
             "Reply hazy, try again", "Ask again later", "Better not tell you now",
             "Cannot predict now", "Concentrate and ask again",
             "Don't count on it", "My reply is no", "My sources say no",
-            "Outlook not so good", "Very doubtful"
+            "Outlook not so good", "Very doubtful",
+
+            # ── Positive / yes ───────────────────────────────────────
+            "Bestie yes", "Slay, go for it", "No cap, absolutely",
+            "It's giving yes", "The universe said yes bestie",
+            "Real and true", "Bet", "Understood, yes",
+            "We are so back", "This is your sign fr",
+            "Main character behavior, do it", "Rent free in the yes zone",
+            "Periodt", "Ate and left no crumbs, yes",
+
+            # ── Negative / no ────────────────────────────────────────
+            "Nope, not today", "That's a hard no from me",
+            "Ick. No.", "We are so not doing this",
+            "No and I said what I said", "The audacity... no",
+            "It's giving no", "Understood, no, goodbye",
+            "Delulu behavior, stop", "Touch grass first then ask again",
+            "This is not it chief", "Sending no thoughts your way",
+
+            # ── Vague / try again ────────────────────────────────────
+            "Idk bestie idk", "That's so real but also unclear",
+            "The vibes are mixed", "Say less... actually say more",
+            "Big maybe energy", "My roman empire is uncertainty",
+            "Not giving you an answer rn", "Living rent free in the maybe zone",
+            "Manifestation pending", "The lore is still unfolding",
+            "Ask again after you eat something", "I'm in my flop era, try later",
+            "This is so real but also who knows", "Understood the assignment, unclear on the answer",
         ]
         
         embed = discord.Embed(title="🎱 The Magic 8 Ball 🎱", color=discord.Color.blurple())

@@ -6,8 +6,18 @@ from datetime import datetime, timedelta
 from discord import app_commands
 from utils.economy import get_dabloons, get_user_id_from_discord, add_dabloons
 from utils.userbase.ensure_registered import ensure_registered
+from utils.action_counts import get_total_actions_performed, get_top_received_actions
 
-
+ACTION_EMOJI = {
+    'hug': '🤗', 'kiss': '💓', 'pat': '🫳', 'poke': '👉', 'cuddle': '🫂',
+    'bite': '😬', 'kick': '🦵', 'punch': '👊', 'feed': '🍰', 'highfive': '✋',
+    'dance': '💃', 'sleep': '😴', 'cry': '😢', 'smile': '😊', 'think': '🤔',
+    'wave': '👋', 'laugh': '😂', 'yeet': '🥏', 'facepalm': '🤦', 'baka': '🦆',
+    'nom': '😋', 'shoot': '🔫', 'run': '🏃', 'stare': '👁️', 'thumbsup': '👍',
+    'blush': '🌸', 'shrug': '🤷', 'yawn': '😪', 'angry': '😠', 'bored': '😑',
+    'happy': '😊', 'nope': '🙅', 'smug': '😏', 'lurk': '👀', 'pout': '😤', 'nod': '👍',
+}
+ 
 class ColorSelect(ui.Select):
     def __init__(self, profile_view: 'ProfileView'):
         self.profile_view = profile_view
@@ -181,14 +191,14 @@ class ProfileView(ui.View):
             "night"
         )
 
-        embed = discord.Embed(
-            title=f"good {greeting_time}, {interaction.user.name}!",
-            description=bio,
-            color=self.get_color(color_name)
+        embed = await build_profile_embed(
+            discord_id=self.discord_id,
+            user=interaction.user,
+            balance=balance,
+            bio=bio,
+            color=self.get_color(color_name),
+            greeting_time=greeting_time,
         )
-        embed.set_thumbnail(url=interaction.user.display_avatar.url)
-        embed.add_field(name="Dabloons Balance", value=f"🪙 {balance} dabloons", inline=False)
-        embed.set_footer(text="quacking good!")
 
         try:
             await interaction.response.edit_message(embed=embed, view=self)
@@ -329,6 +339,50 @@ class Money(app_commands.Group):
         balance = await get_dabloons(user_id)
         await interaction.response.send_message(f"You have 🪙 {balance} dabloons.")
 
+async def build_profile_embed(
+    discord_id: int,
+    user: discord.User,
+    balance: int,
+    bio: str,
+    color: discord.Color,
+    greeting_time: str,
+) -> discord.Embed:
+    """Build the full profile embed including action stats."""
+ 
+    embed = discord.Embed(
+        title=f"good {greeting_time}, {user.name}!",
+        description=bio,
+        color=color,
+    )
+    embed.set_thumbnail(url=user.display_avatar.url)
+    embed.add_field(name="Dabloons Balance", value=f"🪙 {balance} dabloons", inline=False)
+ 
+    # ── Action stats ──────────────────────────────────────────────────────────
+    total = await get_total_actions_performed(discord_id)
+    top = await get_top_received_actions(discord_id, limit=3)
+ 
+    embed.add_field(
+        name="🎭 Total Actions Performed",
+        value=str(total) if total > 0 else "none yet!",
+        inline=True,
+    )
+ 
+    if top:
+        top_lines = []
+        for action, count in top:
+            emoji = ACTION_EMOJI.get(action, '✨')
+            times = f'{count} time' if count == 1 else f'{count} times'
+            top_lines.append(f'{emoji} {action}: {times}')
+        embed.add_field(
+            name="💝 Most Received",
+            value='\n'.join(top_lines),
+            inline=True,
+        )
+    else:
+        embed.add_field(name="💝 Most Received", value="none yet!", inline=True)
+ 
+    embed.set_footer(text="quacking good!")
+    return embed
 
 async def banking_setup(bot):
     bot.tree.add_command(Money())
@@ -360,14 +414,14 @@ async def banking_setup(bot):
             "night"
         )
 
-        embed = discord.Embed(
-            title=f"good {greeting_time}, {interaction.user.name}!",
-            description=bio,
-            color=ProfileView(user_id).get_color(color_name)
+        embed = await build_profile_embed(
+            discord_id=discord_id,
+            user=interaction.user,
+            balance=balance,
+            bio=bio,
+            color=ProfileView(discord_id).get_color(color_name),
+            greeting_time=greeting_time,
         )
-        embed.set_thumbnail(url=interaction.user.display_avatar.url)
-        embed.add_field(name="Dabloons Balance", value=f"🪙 {balance} dabloons", inline=False)
-        embed.set_footer(text="quacking good!")
 
         view = ProfileView(discord_id)
         await interaction.response.send_message(embed=embed, view=view)
