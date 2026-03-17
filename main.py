@@ -17,6 +17,7 @@ from commands.utils import utils_setup, handle_pin
 from commands.banking.banking import banking_setup
 from commands.moderation import moderation_setup
 from commands.helper import help_setup
+from commands.mimic import Mimic, mimic_setup
 # databases
 from utils.radio.database import init_radio_db
 from utils.userbase.database import init_user_db
@@ -56,6 +57,7 @@ async def on_ready():
     await moderation_setup(bot)
     await utils_setup(bot)
     await help_setup(bot)
+    await mimic_setup(bot)
     await init_user_db()
     await init_radio_db()
     await load_extensions()
@@ -70,6 +72,9 @@ async def on_message(message: discord.Message):
         return
     if await handle_pin(bot, message):
         return
+    mimic_cog = bot.get_cog("Mimic")
+    if mimic_cog:
+        await mimic_cog.handle_mimic(message)
     await bot.process_commands(message)
 
 @bot.tree.command(name="ping", description="Check the bot's latency.")

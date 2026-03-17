@@ -466,7 +466,7 @@ async def fun_setup(bot: commands.Bot):
             file=discord.File(img_dir / img),
             embed=embed
         )
-    
+
     # ==================== Games ====================
     @bot.tree.command(name="8ball", description="Ask the magic 8 ball a question")
     @app_commands.describe(question="Your question for the magic 8 ball")

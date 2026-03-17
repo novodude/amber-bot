@@ -19,6 +19,7 @@ COMMANDS = {
         ("/yes",                       "Get a random agreement reason"),
         ("/rate [user]",               "Get a detailed rating breakdown across 6 categories"),
         ("/download [url]",            "Download audio from a YouTube URL and upload to Catbox"),
+        ("/mimic [user]",              "Activate mimic mode to mimic a list of users."),
     ],
     "🐾 Animals": [
         ("/duck",   "Random duck GIF 🦆"),

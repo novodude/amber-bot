@@ -30,6 +30,7 @@ New commands and systems are added regularly as the project grows.
 | **`/yes`**                       | Random agreement reasons.                                                                                                                                                                 | Static response pool from `assets/fun/yes.json`.                                                       |
 | **`/rate [user]`**               | Rates you or another user across 6 categories.                                                                                                                                            | Random scoring with description tiers from `assets/fun/rating.json`.                                   |
 | **`/download [url]`**            | Downloads audio from YouTube and uploads it to Catbox.                                                                                                                                    | Multiple fallback APIs + Catbox upload. Spotify links return metadata only.                            |
+| **`/mimic start [@user]`**       | Makes Amber repeat the target user's messages, with a 30% chance of sending one of their last 5 messages instead.                                                                         | Admin only. Mirrors text, attachments, and stickers.                                                   |
 
 ---
 
