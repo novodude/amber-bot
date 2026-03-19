@@ -27,10 +27,8 @@ class Mimic(commands.Cog):
         # Maps (guild_id, user_id) -> deque of _Snap
         self._history: dict[tuple[int, int], deque[_Snap]] = {}
 
-    # ------------------------------------------------------------------ #
-    #  Helpers                                                           #
-    # ------------------------------------------------------------------ #
 
+    # ── helpers ────────────────────────────────────────────────
     def _is_mimicked(self, guild_id: int, user_id: int) -> bool:
         return user_id in self._targets.get(guild_id, set())
 
@@ -59,9 +57,7 @@ class Mimic(commands.Cog):
             return None
         return random.choice(list(history))
 
-    # ------------------------------------------------------------------ #
-    #  Admin check                                                       #
-    # ------------------------------------------------------------------ #
+    # ── helpers ────────────────────────────────────────────────
 
     @staticmethod
     def _invoker_is_admin(interaction: discord.Interaction) -> bool:
@@ -71,9 +67,7 @@ class Mimic(commands.Cog):
         return member.guild_permissions.administrator
         return True
 
-    # ------------------------------------------------------------------ #
-    #  /mimic start                                                      #
-    # ------------------------------------------------------------------ #
+    # ── mimic start ────────────────────────────────────────────────
 
     mimic_group = app_commands.Group(
         name="mimic",
@@ -119,10 +113,8 @@ class Mimic(commands.Cog):
             ephemeral=True,
         )
 
-    # ------------------------------------------------------------------ #
-    #  /mimic stop                                                       #
-    # ------------------------------------------------------------------ #
 
+    # ── mimic stop ────────────────────────────────────────────────
     @mimic_group.command(name="stop", description="Stop mimicking a user.")
     @app_commands.describe(target="The member to stop mimicking.")
     async def mimic_stop(
@@ -145,10 +137,7 @@ class Mimic(commands.Cog):
                 f"ℹ️ **{target.display_name}** wasn't being mimicked.", ephemeral=True
             )
 
-    # ------------------------------------------------------------------ #
-    #  /mimic list                                                       #
-    # ------------------------------------------------------------------ #
-
+    # ── mimic list ────────────────────────────────────────────────
     @mimic_group.command(name="list", description="List all currently mimicked users.")
     async def mimic_list(self, interaction: discord.Interaction) -> None:
         if not self._invoker_is_admin(interaction):
@@ -175,10 +164,8 @@ class Mimic(commands.Cog):
             "**Currently mimicking:**\n" + "\n".join(lines), ephemeral=True
         )
 
-    # ------------------------------------------------------------------ #
-    #  handle_mimic —                                                    #
-    # ------------------------------------------------------------------ #
 
+    # ── mimic handler ────────────────────────────────────────────────
     async def handle_mimic(self, message: discord.Message) -> None:
         if (
             not message.guild
@@ -226,10 +213,6 @@ class Mimic(commands.Cog):
                     files=files or [],
                 )
 
-
-# ------------------------------------------------------------------ #
-#  Setup                                                             #
-# ------------------------------------------------------------------ #
 
 async def mimic_setup(bot: commands.Bot) -> None:
     await bot.add_cog(Mimic(bot))

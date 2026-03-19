@@ -12,7 +12,7 @@ New commands and systems are added regularly as the project grows.
 
 ## Commands
 
-### 🎭 Fun & Reactions
+### General
 
 | **/**                            | **description**                                                                                                                                                                           | **how I made it?**                                                                                     |
 | -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
@@ -31,6 +31,8 @@ New commands and systems are added regularly as the project grows.
 | **`/rate [user]`**               | Rates you or another user across 6 categories.                                                                                                                                            | Random scoring with description tiers from `assets/fun/rating.json`.                                   |
 | **`/download [url]`**            | Downloads audio from YouTube and uploads it to Catbox.                                                                                                                                    | Multiple fallback APIs + Catbox upload. Spotify links return metadata only.                            |
 | **`/mimic start [@user]`**       | Makes Amber repeat the target user's messages, with a 30% chance of sending one of their last 5 messages instead.                                                                         | Admin only. Mirrors text, attachments, and stickers.                                                   |
+| **`/say embed [message]`**       | Makes Amber an embed message                                                                                                                                                              | Can text and attachments.                                                                              |
+| **`/say text [message]`**        | Makes Amber say a text message                                                                                                                                                            | Can send text and attachments.                                                                         |
 
 ---
 

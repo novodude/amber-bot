@@ -8,18 +8,16 @@ COMMANDS = {
     "🎭 Fun": [
         ("/do [action] [user]",        "Anime action GIF — hug, kiss, pat, kick, yeet, baka and more"),
         ("/look [reaction]",           "Anime reaction GIF — blush, shrug, angry, happy and more"),
-        ("/rarch",                     "Generate a random Rorschach inkblot image"),
-        ("/ofc [type]",                "Random out-of-context image (SFW or NSFW channels only)"),
         ("/wanted [user] [amount]",    "Create a wanted poster for someone"),
         ("/misquote [user] [message]", "Put words in someone's mouth"),
-        ("/melody",                    "Generate a short WAV melody — notes or beats mode"),
         ("/8ball [question]",          "Ask the magic 8 ball"),
         ("/coinflip",                  "Flip a coin"),
         ("/no",                        "Get a random rejection reason"),
         ("/yes",                       "Get a random agreement reason"),
         ("/rate [user]",               "Get a detailed rating breakdown across 6 categories"),
-        ("/download [url]",            "Download audio from a YouTube URL and upload to Catbox"),
-        ("/mimic [user]",              "Activate mimic mode to mimic a list of users."),
+        ("/mimic start [user]",        "Activate mimic mode to a users."),
+        ("/mimic stop [user]",         "stop mimic mode to a users."),
+        ("/mimic list",                "List of users that amber mimic."),
     ],
     "🐾 Animals": [
         ("/duck",   "Random duck GIF 🦆"),
@@ -33,6 +31,16 @@ COMMANDS = {
         ("/money balance",               "Check your current dabloons balance"),
         ("/money daily",                 "Claim your daily dabloons (24h cooldown)"),
         ("/money give [user] [amount]",  "Send dabloons to another registered user"),
+    ],
+    "⚙️ Utils": [
+        ("/say embed [message]",     "Make amber say your message in embed"),
+        ("/say text [message]",      "Make amber say your message in text")
+    ],
+    "🖼️ Media & Images": [
+        ("/rarch",          "Random Rorschach inkblot"),
+        ("/ofc [type]",     "Out-of-context image"),
+        ("/download [url]", "Download audio from YouTube"),
+        ("/melody",         "Generate a short WAV melody"),
     ],
     "🎮 Games": [
         ("/games duck_clicker",              "Click ducks to earn dabloons — 2 per 5 clicks"),
@@ -80,14 +88,15 @@ COMMANDS = {
 }
 
 CATEGORY_COLORS = {
-    "🎭 Fun":     discord.Color.from_rgb(255, 100, 130),
-    "🐾 Animals": discord.Color.from_rgb(80, 200, 120),
-    "💰 Economy": discord.Color.from_rgb(255, 195, 40),
-    "🎮 Games":   discord.Color.from_rgb(130, 100, 255),
-    "📻 Radio":   discord.Color.from_rgb(40, 175, 255),
-    "🛡️ Admin":   discord.Color.from_rgb(255, 100, 50),
-    "⚙️ Server":  discord.Color.from_rgb(140, 140, 255),
-    "💬 Events":  discord.Color.from_rgb(180, 180, 180),
+    "🎭 Fun":            discord.Color.from_rgb(255, 100, 130),
+    "🖼️ Media & Images": discord.Color.from_rgb(120, 170, 255),
+    "🐾 Animals":        discord.Color.from_rgb(80, 200, 120),
+    "💰 Economy":        discord.Color.from_rgb(255, 195, 40),
+    "🎮 Games":          discord.Color.from_rgb(130, 100, 255),
+    "📻 Radio":          discord.Color.from_rgb(40, 175, 255),
+    "🛡️ Admin":          discord.Color.from_rgb(255, 100, 50),
+    "⚙️ Server":         discord.Color.from_rgb(140, 140, 255),
+    "💬 Events":         discord.Color.from_rgb(180, 180, 180),
 }
 
 

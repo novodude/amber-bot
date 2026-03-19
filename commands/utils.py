@@ -1,4 +1,7 @@
+from typing import Literal, Optional
+from datetime import datetime
 import discord
+from discord import app_commands
 import aiohttp
 import spotipy
 import asyncio
@@ -8,7 +11,160 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+async def download_and_upload(interaction, session, download_url, title, status_msg):
+    """Download file and upload to Catbox"""
+    try:
+        await status_msg.edit(content="⬇️ Downloading audio file...")
+        
+        async with session.get(download_url, timeout=180) as file_response:
+            if file_response.status != 200:
+                await status_msg.edit(content=f"❌ Download failed: HTTP {file_response.status}")
+                return
+            
+            file_data = await file_response.read()
+            file_size_mb = len(file_data) / (1024 * 1024)
+            
+            if file_size_mb > 200:
+                await status_msg.edit(content=f"❌ File too large: {file_size_mb:.1f}MB (max 200MB)")
+                return
+            
+            await status_msg.edit(content=f"☁️ Uploading to Catbox ({file_size_mb:.1f}MB)...")
+            
+            safe_title = "".join(c for c in title if c.isalnum() or c in (' ', '-', '_'))[:50]
+            
+            form = aiohttp.FormData()
+            form.add_field('reqtype', 'fileupload')
+            form.add_field('fileToUpload', file_data, filename=f"{safe_title}.mp3", content_type='audio/mpeg')
+            
+            async with session.post('https://catbox.moe/user/api.php', data=form, timeout=180) as upload_response:
+                if upload_response.status != 200:
+                    await status_msg.edit(content=f"❌ Upload failed: HTTP {upload_response.status}")
+                    return
+                
+                catbox_url = (await upload_response.text()).strip()
+                
+                if catbox_url.startswith('http'):
+                    embed = discord.Embed(
+                        title="✅ Download Complete!",
+                        description=f"**{title[:100]}**\n\n[📥 Click to Download]({catbox_url})\n\n📊 Size: {file_size_mb:.1f}MB",
+                        color=discord.Color.green()
+                    )
+                    embed.set_footer(text="Permanent link • Hosted on Catbox.moe")
+                    await status_msg.edit(content=None, embed=embed)
+                else:
+                    await status_msg.edit(content=f"❌ Catbox upload error: {catbox_url}")
+    
+    except asyncio.TimeoutError:
+        await status_msg.edit(content="❌ Download timed out. File may be too large or server is slow.")
+    except Exception as e:
+        await status_msg.edit(content=f"❌ Error during download/upload: {str(e)}")
+
+
+def extract_youtube_id(url):
+    """Extract YouTube video ID from various URL formats"""
+    patterns = [
+        r'(?:v=|\/)([0-9A-Za-z_-]{11}).*',
+        r'youtu\.be\/([0-9A-Za-z_-]{11})',
+        r'embed\/([0-9A-Za-z_-]{11})',
+        r'watch\?v=([0-9A-Za-z_-]{11})',
+    ]
+    
+    for pattern in patterns:
+        match = re.search(pattern, url)
+        if match:
+            return match.group(1)
+    
+    return None
+
+class SayCommands(app_commands.Group):
+    def __init__(self):
+        super().__init__(name="say", description="make amber say something")
+
+
+    @app_commands.command(name="embed", description="say what you want in embed")
+    @app_commands.describe(
+        timestamp="add a timestamp",
+        show_author="add your name",
+        image="image url",
+        color="embed color"
+    )
+    @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True) 
+    @app_commands.allowed_installs(guilds=True, users=True)
+    async def say_embed(
+        self,
+        interaction: discord.Interaction,
+        name: str,
+        description: str,
+        footer: str,
+        timestamp: bool = True,
+        show_author: bool = False,
+        image: Optional[discord.Attachment] = None,
+        color: Literal["blue", "red", "green", "yellow", "purple", "random"] = "blue"
+    ):
+        # color map
+        COLORS = {
+            "blue": discord.Color.blue(),
+            "red": discord.Color.red(),
+            "green": discord.Color.green(),
+            "yellow": discord.Color.yellow(),
+            "purple": discord.Color.purple(),
+            "random": discord.Color.random(),
+        }
+
+        embed = discord.Embed(
+            title=name,
+            description=description,
+            color=COLORS[color]
+        )
+
+        if timestamp:
+            embed.timestamp = datetime.now()
+
+        embed.set_footer(text=footer)
+
+        if show_author:
+            embed.set_author(
+                name=interaction.user.name,
+                icon_url=interaction.user.display_avatar.url
+            )
+
+        if image:
+            embed.set_image(url=image.url)
+
+        await interaction.response.send_message(embed=embed)
+
+
+    @app_commands.command(name="text", description="say what you want in embed")
+    @app_commands.describe(
+        message=      "message to send",
+        show_author=  "add your name",
+        image=        "image url",
+    )
+    @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True) 
+    @app_commands.allowed_installs(guilds=True, users=True)
+    async def say_text(
+        self,
+        interaction: discord.Interaction,
+        message: str,
+        show_author: bool = False,
+        image: Optional[discord.Attachment] = None,
+    ):
+
+        content = message
+        if show_author:
+            content += f"-# - {interaction.user.display_name}"
+
+        if image:
+            await interaction.response.send_message(content, file=await image.to_file())
+        else:
+            await interaction.response.send_message(content)
+
+
 async def utils_setup(bot):
+    # ── say commands ────────────────────────────────────────────────
+    bot.tree.add_command(SayCommands())
+
+    # ── download command ────────────────────────────────────────────────
     @bot.tree.command(name="download", description="Download audio from a URL.")
     @discord.app_commands.describe(url="The URL of the audio to download.")
     @discord.app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
@@ -173,73 +329,6 @@ async def utils_setup(bot):
         
         except Exception as e:
             await interaction.followup.send(f"❌ Error: {str(e)}")
-
-
-async def download_and_upload(interaction, session, download_url, title, status_msg):
-    """Download file and upload to Catbox"""
-    try:
-        await status_msg.edit(content="⬇️ Downloading audio file...")
-        
-        async with session.get(download_url, timeout=180) as file_response:
-            if file_response.status != 200:
-                await status_msg.edit(content=f"❌ Download failed: HTTP {file_response.status}")
-                return
-            
-            file_data = await file_response.read()
-            file_size_mb = len(file_data) / (1024 * 1024)
-            
-            if file_size_mb > 200:
-                await status_msg.edit(content=f"❌ File too large: {file_size_mb:.1f}MB (max 200MB)")
-                return
-            
-            await status_msg.edit(content=f"☁️ Uploading to Catbox ({file_size_mb:.1f}MB)...")
-            
-            safe_title = "".join(c for c in title if c.isalnum() or c in (' ', '-', '_'))[:50]
-            
-            form = aiohttp.FormData()
-            form.add_field('reqtype', 'fileupload')
-            form.add_field('fileToUpload', file_data, filename=f"{safe_title}.mp3", content_type='audio/mpeg')
-            
-            async with session.post('https://catbox.moe/user/api.php', data=form, timeout=180) as upload_response:
-                if upload_response.status != 200:
-                    await status_msg.edit(content=f"❌ Upload failed: HTTP {upload_response.status}")
-                    return
-                
-                catbox_url = (await upload_response.text()).strip()
-                
-                if catbox_url.startswith('http'):
-                    embed = discord.Embed(
-                        title="✅ Download Complete!",
-                        description=f"**{title[:100]}**\n\n[📥 Click to Download]({catbox_url})\n\n📊 Size: {file_size_mb:.1f}MB",
-                        color=discord.Color.green()
-                    )
-                    embed.set_footer(text="Permanent link • Hosted on Catbox.moe")
-                    await status_msg.edit(content=None, embed=embed)
-                else:
-                    await status_msg.edit(content=f"❌ Catbox upload error: {catbox_url}")
-    
-    except asyncio.TimeoutError:
-        await status_msg.edit(content="❌ Download timed out. File may be too large or server is slow.")
-    except Exception as e:
-        await status_msg.edit(content=f"❌ Error during download/upload: {str(e)}")
-
-
-def extract_youtube_id(url):
-    """Extract YouTube video ID from various URL formats"""
-    patterns = [
-        r'(?:v=|\/)([0-9A-Za-z_-]{11}).*',
-        r'youtu\.be\/([0-9A-Za-z_-]{11})',
-        r'embed\/([0-9A-Za-z_-]{11})',
-        r'watch\?v=([0-9A-Za-z_-]{11})',
-    ]
-    
-    for pattern in patterns:
-        match = re.search(pattern, url)
-        if match:
-            return match.group(1)
-    
-    return None
-
 
 
 async def handle_pin(bot, message):
