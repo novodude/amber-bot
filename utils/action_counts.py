@@ -19,7 +19,11 @@ async def increment_action_count(actor_discord_id: int, target_discord_id: int |
 
     target_id = None
     if target_discord_id is not None:
+        # Register them if they haven't been yet — this is the fix for count always being 0/1
         target_id = await get_user_id_from_discord(target_discord_id)
+        if target_id is None:
+            await ensure_registered(target_discord_id, str(target_discord_id))
+            target_id = await get_user_id_from_discord(target_discord_id)
 
     async with aiosqlite.connect(DB_PATH) as db:
         await db.execute("""

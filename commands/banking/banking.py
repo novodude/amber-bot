@@ -6,18 +6,8 @@ from datetime import datetime, timedelta
 from discord import app_commands
 from utils.economy import get_dabloons, get_user_id_from_discord, add_dabloons
 from utils.userbase.ensure_registered import ensure_registered
-from utils.action_counts import get_total_actions_performed, get_top_received_actions
+from utils.action_counts import get_total_actions_performed, get_received_count
 
-ACTION_EMOJI = {
-    'hug': '🤗', 'kiss': '💓', 'pat': '🫳', 'poke': '👉', 'cuddle': '🫂',
-    'bite': '😬', 'kick': '🦵', 'punch': '👊', 'feed': '🍰', 'highfive': '✋',
-    'dance': '💃', 'sleep': '😴', 'cry': '😢', 'smile': '😊', 'think': '🤔',
-    'wave': '👋', 'laugh': '😂', 'yeet': '🥏', 'facepalm': '🤦', 'baka': '🦆',
-    'nom': '😋', 'shoot': '🔫', 'run': '🏃', 'stare': '👁️', 'thumbsup': '👍',
-    'blush': '🌸', 'shrug': '🤷', 'yawn': '😪', 'angry': '😠', 'bored': '😑',
-    'happy': '😊', 'nope': '🙅', 'smug': '😏', 'lurk': '👀', 'pout': '😤', 'nod': '👍',
-}
- 
 class ColorSelect(ui.Select):
     def __init__(self, profile_view: 'ProfileView'):
         self.profile_view = profile_view
@@ -359,28 +349,23 @@ async def build_profile_embed(
  
     # ── Action stats ──────────────────────────────────────────────────────────
     total = await get_total_actions_performed(discord_id)
-    top = await get_top_received_actions(discord_id, limit=3)
- 
+    hugs = await get_received_count(discord_id, 'hug')
+    pats = await get_received_count(discord_id, 'pat')
+
     embed.add_field(
         name="🎭 Total Actions Performed",
         value=str(total) if total > 0 else "none yet!",
         inline=True,
     )
- 
-    if top:
-        top_lines = []
-        for action, count in top:
-            emoji = ACTION_EMOJI.get(action, '✨')
-            times = f'{count} time' if count == 1 else f'{count} times'
-            top_lines.append(f'{emoji} {action}: {times}')
-        embed.add_field(
-            name="💝 Most Received",
-            value='\n'.join(top_lines),
-            inline=True,
-        )
-    else:
-        embed.add_field(name="💝 Most Received", value="none yet!", inline=True)
- 
+
+    hug_text = f"{'1 time' if hugs == 1 else f'{hugs} times'}" if hugs > 0 else "none yet!"
+    pat_text = f"{'1 time' if pats == 1 else f'{pats} times'}" if pats > 0 else "none yet!"
+
+    embed.add_field(
+        name="💝 Hugs & Pats",
+        value=f"🤗 hugged: {hug_text}\n🫳 patted: {pat_text}",
+        inline=True,
+    )
     embed.set_footer(text="quacking good!")
     return embed
 

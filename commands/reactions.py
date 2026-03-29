@@ -800,26 +800,69 @@ REACTION = {
     }
 }
 
+# for the counter text
+ACTION_PAST_TENSE = {
+    'hug':      'hugged',
+    'kiss':     'kissed',
+    'pat':      'patted',
+    'poke':     'poked',
+    'cuddle':   'cuddled',
+    'bite':     'bitten',
+    'kick':     'kicked',
+    'punch':    'punched',
+    'feed':     'fed',
+    'highfive': 'high-fived',
+    'dance':    'danced with',
+    'sleep':    'slept with',
+    'cry':      'cried with',
+    'smile':    'smiled at',
+    'think':    'thought about',
+    'wave':     'waved at',
+    'laugh':    'laughed with',
+    'yeet':     'yeeted',
+    'facepalm': 'facepalmed at',
+    'baka':     'baka\'d at',
+    'nom':      'nommed on',
+    'shoot':    'shot',
+    'run':      'ran with',
+    'stare':    'stared at',
+    'thumbsup': 'given a thumbs up to',
+    # reactions (/look)
+    'blush':    'blushed',
+    'shrug':    'shrugged',
+    'yawn':     'yawned',
+    'angry':    'been angry',
+    'bored':    'been bored',
+    'happy':    'been happy',
+    'nope':     'noped out',
+    'smug':     'looked smug',
+    'lurk':     'lurked',
+    'pout':     'pouted',
+    'nod':      'nodded',
+}
+
 # Actions that use private counter format: "{author} kissed {user} X times"
 PRIVATE_COUNTER_ACTIONS = {'kiss'}
 
 
 # ── Counter text builder ──────────────────────────────────────────────────────
 def build_counter_text(action: str, count: int, author_name: str, target_name: str | None, is_look: bool = False) -> str:
-    """Build the -# counter line shown at the bottom of the embed description."""
     if count <= 0:
         return ''
 
+    past = ACTION_PAST_TENSE.get(action, f'{action}ed')  # fallback just in case
     times = f'{count} time' if count == 1 else f'{count} times'
 
     if is_look:
-        return f'-# {author_name} {action}ed {times}'
+        return f'-# {author_name} {past} {times}'
 
     if action in PRIVATE_COUNTER_ACTIONS and target_name:
-        return f'-# {author_name} {action}ed {target_name} {times}'
+        # e.g. "Nova kissed Amber 3 times"
+        return f'-# {author_name} {past} {target_name} {times}'
 
     if target_name:
-        return f'-# {target_name} got {action}ed {times}'
+        # e.g. "Amber got hugged 5 times"  /  "Amber got high-fived 2 times"
+        return f'-# {target_name} got {past} {times}'
 
     return ''
 
