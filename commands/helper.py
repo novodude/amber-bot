@@ -19,6 +19,10 @@ COMMANDS = {
         ("/mimic stop [user]",         "stop mimic mode to a users."),
         ("/mimic list",                "List of users that amber mimic."),
     ],
+    "🦆 amber": [
+        ("/quests",                     "View your daily quests and claim rewards"),
+        ("/level",                        "Check your current level and XP progress"),
+    ],
     "🐾 Animals": [
         ("/duck",   "Random duck GIF 🦆"),
         ("/cat",    "Random cat GIF 🐱"),
@@ -31,6 +35,7 @@ COMMANDS = {
         ("/money balance",               "Check your current dabloons balance"),
         ("/money daily",                 "Claim your daily dabloons (24h cooldown)"),
         ("/money give [user] [amount]",  "Send dabloons to another registered user"),
+        ("/money leaderboard",                  "See the top 10 users by dabloon balance"),
     ],
     "⚙️ Utils": [
         ("/say embed [message]",     "Make amber say your message in embed"),
@@ -89,6 +94,7 @@ COMMANDS = {
 
 CATEGORY_COLORS = {
     "🎭 Fun":            discord.Color.from_rgb(255, 100, 130),
+    "🦆 amber":          discord.Color.from_rgb(255, 170, 0),
     "🖼️ Media & Images": discord.Color.from_rgb(120, 170, 255),
     "🐾 Animals":        discord.Color.from_rgb(80, 200, 120),
     "💰 Economy":        discord.Color.from_rgb(255, 195, 40),

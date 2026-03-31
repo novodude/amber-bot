@@ -59,6 +59,7 @@ Each user has dabloons, a bio, and a customizable profile appearance.
 | **`/money balance`**              | Check your current dabloons balance.                        |
 | **`/money daily`**                | Claim your daily dabloons (24h cooldown).                   |
 | **`/money give [user] [amount]`** | Send dabloons to another registered user.                   |
+| **`/money leaderboard`**          | Show the top 10 users globally balance.                     |
 
 Profile features include:
 
@@ -106,6 +107,41 @@ Uses `yt_dlp` for downloads, `spotipy` for Spotify metadata, and `aiosqlite` for
 | **`/radio_sync [id]`**        | Re-download songs from the playlist's source URL.                                   |
 | **`/radio_songs [id]`**       | View all songs in a playlist (paginated, 10 per page).                              |
 | **`/radio_stop`**             | Stop playback and disconnect from voice.                                            |
+
+---
+
+### 📋 Daily Quests
+
+A dynamic daily quest system that encourages interaction across the bot’s features.
+Quests refresh every day and scale with your level.
+
+| **/**         | **what it does**                           |
+| ------------- | ------------------------------------------ |
+| **`/quests`** | View your current daily quests.            |
+| **`/level`**  | View your level and needed xp to level up. |
+
+**How it works:**
+
+- Each day, a shared pool of quests is generated
+- You unlock more quests as your level increases (up to 5)
+- Progress is tracked automatically as you use the bot
+
+**Quest types include:**
+
+- Emoji usage — send a specific emoji multiple times
+- Word usage — repeat a specific word in chat
+- Tic Tac Toe — win games against the AI
+- Duck Clicker — reach a click target based on your level
+
+**Features:**
+
+- Daily random target word and emoji
+- Level-based scaling for difficulty and rewards
+- Per-user progress tracking stored in the database
+- Interactive claim buttons for completed quests
+- Rewards include dabloons and XP
+
+Quests are designed to be slightly chaotic, sometimes embarrassing, and always fun.
 
 ---
 

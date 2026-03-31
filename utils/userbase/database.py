@@ -95,6 +95,44 @@ async def init_user_db():
             )
         """)
 
+
+    # ── Daily quests ──────────────────────────────────────────────────────────────
+    # Stores today's randomly picked quests (shared for all users).
+    #   quest_index  - index into QUEST_POOL in utils/quests.py
+    #   date         - ISO date string e.g. '2025-01-01'
+    #   target_word  - the daily word for word_use quests (NULL for other types)
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS daily_quests (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                quest_index INTEGER NOT NULL,
+                date TEXT NOT NULL,
+                target_value TEXT
+            )
+        """)
+        
+    # ── User quest progress ───────────────────────────────────────────────────────
+    # Tracks each user's progress on today's quests.
+    #   user_id         - internal user ID (references users.id)
+    #   daily_quest_id  - references daily_quests.id
+    #   progress        - current progress toward the target
+    #   completed       - 1 if progress >= target
+    #   claimed         - 1 if reward has been collected
+    #   target_override - used instead of QUEST_POOL target for duck_clicks
+    #                     (personalized per user based on their level)
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS user_quests (
+                user_id INTEGER NOT NULL,
+                daily_quest_id INTEGER NOT NULL,
+                progress INTEGER DEFAULT 0,
+                completed INTEGER DEFAULT 0,
+                claimed INTEGER DEFAULT 0,
+                target_override INTEGER,
+                PRIMARY KEY (user_id, daily_quest_id),
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+                FOREIGN KEY (daily_quest_id) REFERENCES daily_quests(id) ON DELETE CASCADE
+            )
+        """)
+
         # Migrate existing games rows that are missing the new columns
         try:
             await db.execute("ALTER TABLE games ADD COLUMN action_use_count INTEGER DEFAULT 0")

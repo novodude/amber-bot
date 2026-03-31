@@ -3,15 +3,17 @@ import random
 import aiosqlite
 from typing import Literal
 import discord.ui as ui
-from utils.economy import add_dabloons, get_user_id_from_discord, get_dabloons
+from utils.economy import add_dabloons, add_xp, get_user_id_from_discord, get_dabloons
 from utils.userbase.ensure_registered import ensure_registered
+from utils.quests import increment_quest_progress
 from discord import app_commands
 
 
 class DuckClicker(ui.View):
     def __init__(self, user_id: int, discord_id: int):
         super().__init__(timeout=None)
-        self.click_count = 0
+        self.click_count = 0        # total all-time score
+        self.session_clicks = 0     # clicks this session (for quest tracking)
         self.user_id = user_id
         self.discord_id = discord_id
 
@@ -31,26 +33,43 @@ class DuckClicker(ui.View):
             )
             await db.commit()
 
-    @discord.ui.button(label="increase", style=discord.ButtonStyle.primary)
+    @discord.ui.button(label="🦆 quack!", style=discord.ButtonStyle.primary, row=0)
     async def click_button(self, interaction: discord.Interaction, button: ui.Button):
         if interaction.user.id != self.discord_id:
+            await interaction.response.send_message("This isn't your duck clicker!", ephemeral=True)
             return
 
         self.click_count += 1
+        self.session_clicks += 1
         await self.save_score()
-        message = f"{self.click_count} duck quacked! 🦆"
+
+        # ── quest progress ────────────────────────────────────────────────────
+        await increment_quest_progress(self.discord_id, "duck_clicks", amount=1)
+
+        message = f"**{self.click_count}** ducks quacked! 🦆"
 
         if self.click_count % 5 == 0:
             await add_dabloons(self.user_id, 2)
-            message += "\n ✨ **+2 dabloons!** keep on clicking :D"
+            message += "\n✨ **+2 dabloons!** keep on clicking :D"
 
         await interaction.response.edit_message(content=message, view=self)
 
+    @discord.ui.button(label="🛒 Shop", style=discord.ButtonStyle.secondary, row=0)
+    async def shop_button(self, interaction: discord.Interaction, button: ui.Button):
+        embed = discord.Embed(
+            title="🛒 Duck Clicker Shop",
+            description="Upgrades are coming soon!\nCheck back later for ways to quack faster 🦆",
+            color=discord.Color.gold()
+        )
+        embed.set_footer(text="quacking good!")
+        await interaction.response.send_message(embed=embed, ephemeral=True)
+
 
 class TicTacToe(ui.View):
-    def __init__(self, user_id: int, difficulty: str, difficulty_level: float):
+    def __init__(self, user_id: int, discord_id: int, difficulty: str, difficulty_level: float):
         super().__init__(timeout=None)
         self.user_id = user_id
+        self.discord_id = discord_id
         self.difficulty = difficulty
         self.difficulty_level = difficulty_level
         self.board = [None] * 9
@@ -107,6 +126,11 @@ class TicTacToe(ui.View):
                 rewards = {"easy": 4, "medium": 8, "hard": 16}
                 reward = rewards[self.difficulty]
                 await add_dabloons(self.user_id, reward)
+                await add_xp(self.user_id, reward * 10, None)
+
+                # ── quest progress ────────────────────────────────────────────
+                await increment_quest_progress(self.discord_id, "ttt_win", amount=1)
+
                 content = f"You win! 🎉 +{reward} dabloons"
             elif winner == "Tie":
                 content = "It's a tie!"
@@ -196,13 +220,12 @@ class Games(app_commands.Group):
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     @app_commands.allowed_installs(guilds=True, users=True)
     async def duck_clicker(self, interaction: discord.Interaction):
-        # Auto-register if needed
         user_id = await ensure_registered(interaction.user.id, str(interaction.user))
 
         view = DuckClicker(user_id, interaction.user.id)
         await view.load_score()
         await interaction.response.send_message(
-            f"{view.click_count} ducks quacked! 🦆",
+            f"**{view.click_count}** ducks quacked! 🦆",
             view=view
         )
 
@@ -217,7 +240,6 @@ class Games(app_commands.Group):
     ):
         await interaction.response.defer()
 
-        # Auto-register if needed
         user_id = await ensure_registered(interaction.user.id, str(interaction.user))
 
         balance = await get_dabloons(user_id)
@@ -235,7 +257,12 @@ class Games(app_commands.Group):
 
         difficulty_mapping = {"easy": 0.7, "medium": 0.75, "hard": 0.9}
         difficulty_value = difficulty_mapping[difficulty]
-        view = TicTacToe(user_id=user_id, difficulty=difficulty, difficulty_level=difficulty_value)
+        view = TicTacToe(
+            user_id=user_id,
+            discord_id=interaction.user.id,
+            difficulty=difficulty,
+            difficulty_level=difficulty_value
+        )
         await interaction.followup.send("Tic Tac Toe! You are ❌'s!", view=view)
 
 

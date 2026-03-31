@@ -1,9 +1,11 @@
 import datetime
 import traceback
-import discord
+
 import aiosqlite
-from discord.ext import commands
+import discord
 from discord import app_commands
+from discord.ext import commands
+
 from utils.userbase.database import DB_PATH
 
 
@@ -29,7 +31,7 @@ class WelcomeMessageModal(discord.ui.Modal, title="Set Welcome Message"):
                 ON CONFLICT(guild_id) DO UPDATE SET
                     welcome_channel_id=excluded.welcome_channel_id,
                     welcome_message=excluded.welcome_message
-            """, (interaction.guild_id, self.channel.id, str(self.message)))
+            """, (interaction.guild_id, self.channel.id, str(self.message.value)))
             await db.commit()
 
         await interaction.response.send_message(
@@ -103,7 +105,7 @@ class ModerationCog(commands.Cog):
         member: discord.Member,
         interaction: discord.Interaction,
         title: str,
-        reason: str = None,
+        reason: str | None,
         color: discord.Color = discord.Color.red()
     ) -> discord.Embed:
         today = discord.utils.utcnow()
@@ -189,9 +191,7 @@ class ModerationCog(commands.Cog):
     server = app_commands.Group(name="server", description="Collection of server management commands")
 
 
-    ##################
-    # Server Commands #
-    ##################
+# ── Server commands ─────────────────────────────────────────────────────────────
 
     @server.command(name="info", description="Get information about the server")
     @app_commands.guild_only()
@@ -423,7 +423,7 @@ class ModerationCog(commands.Cog):
     async def on_member_join(self, member: discord.Member):
         async with aiosqlite.connect(DB_PATH) as db:
             cursor = await db.execute(
-                "SELECT welcome_channel_id, welcome_message, autorole_id FROM guild_config WHERE guild_id = ?",
+                "SELECT welcome_channel_id, welcome_message FROM guild_config WHERE guild_id = ?",
                 (member.guild.id,)
             )
             row = await cursor.fetchone()
@@ -435,6 +435,7 @@ class ModerationCog(commands.Cog):
         if row[0]:
             channel = member.guild.get_channel(row[0])
             if channel:
+                print(f"found welcome channel: {channel.name}")
                 message = (row[1] or "Welcome {user} to {server}!") \
                     .replace("{user}", member.mention) \
                     .replace("{server}", member.guild.name)
@@ -450,9 +451,7 @@ class ModerationCog(commands.Cog):
                     pass  # Bot lost permission or role was moved above it
 
 
-    ##################
-    # Admin Commands #
-    ##################
+# ── Admin commands ─────────────────────────────────────────────────────────────
 
     @admin.command(name="kick", description="Kick a member from the server")
     @app_commands.describe(member="Member to kick", reason="Reason for the kick")

@@ -1,6 +1,7 @@
 # other libraries
 import os
 import logging
+import re
 import aiosqlite
 from io import BytesIO
 from dotenv import load_dotenv
@@ -14,13 +15,14 @@ from commands.fun import fun_setup, handle_4k
 from commands.melody import melody_setup
 from commands.minigames import minigames_setup
 from commands.utils import utils_setup, handle_pin
-from commands.banking.banking import banking_setup
+from commands.banking import banking_setup, message_xp_handler
 from commands.moderation import moderation_setup
 from commands.helper import help_setup
 from commands.mimic import Mimic, mimic_setup
 # databases
 from utils.radio.database import init_radio_db
 from utils.userbase.database import init_user_db
+from utils.quests import message_quest_handler
 
 load_dotenv()
 token = os.getenv("DISCORD_TOKEN")
@@ -45,6 +47,7 @@ bot = commands.Bot(command_prefix=get_prefix, intents=intents)
 async def load_extensions():
     await bot.load_extension('commands.radio.settings')
     await bot.load_extension('commands.radio.player')
+    await bot.load_extension('commands.quests')
 
 @bot.event
 async def on_ready():
@@ -68,10 +71,11 @@ async def on_ready():
 async def on_message(message: discord.Message):
     if message.author.bot:
         return
-    if await handle_4k(bot, message):
-        return
-    if await handle_pin(bot, message):
-        return
+    await handle_4k(bot, message)
+    await handle_pin(bot, message)
+    await message_xp_handler(message)
+    await message_quest_handler(message)
+
     mimic_cog = bot.get_cog("Mimic")
     if mimic_cog:
         await mimic_cog.handle_mimic(message)
