@@ -1,6 +1,5 @@
 """commands/pet.py — pet system cog"""
 import discord
-import asyncio
 import random
 import aiosqlite
 from datetime import datetime, timedelta
@@ -9,14 +8,13 @@ from discord.ext import commands, tasks
 
 from utils.userbase.database import DB_PATH
 from utils.userbase.ensure_registered import ensure_registered
-from utils.economy import get_user_id_from_discord
 from utils.pet import (
     get_pet, create_pet, update_pet, add_pet_xp, feed_pet,
     equip_accessory, touch_owner_activity,
     get_unlocked_slots, get_hat_emoji, get_toy_style,
     xp_to_next_level, apply_decay, SLOT_LABELS,
 )
-from utils.cat_model import build_check_in_message, pick_style, STYLE_INSTRUCTIONS
+from utils.cat_model import build_check_in_message
 
 
 # ── Inactivity threshold before the cat checks in ─────────────────────────────
@@ -49,18 +47,16 @@ class PetCog(commands.Cog):
         async with aiosqlite.connect(DB_PATH) as db:
             db.row_factory = aiosqlite.Row
             cursor = await db.execute("""
-                SELECT p.*, u.discord_id, gc.pet_channel_id
+                SELECT p.*, u.discord_id
                 FROM pets p
                 JOIN users u ON u.id = p.user_id
-                LEFT JOIN guild_config gc ON 1=1
                 WHERE p.last_owner_activity IS NOT NULL
             """)
             rows = await cursor.fetchall()
 
         for row in rows:
             pet = dict(row)
-            discord_id    = pet["discord_id"]
-            pet_channel_id = pet.get("pet_channel_id")
+            discord_id = pet["discord_id"]
 
             # Check inactivity window
             last_active = datetime.fromisoformat(pet["last_owner_activity"]) if pet["last_owner_activity"] else now
@@ -72,7 +68,6 @@ class PetCog(commands.Cog):
             if (now - last_msg).total_seconds() < MIN_MSG_INTERVAL * 3600:
                 continue
 
-            # Find a DM or a configured pet channel
             try:
                 user = await self.bot.fetch_user(discord_id)
             except Exception:
@@ -91,26 +86,13 @@ class PetCog(commands.Cog):
                 toy_style=toy_style,
             )
 
-            # Send to configured pet channel or fall back to DM
-            sent = False
-            if pet_channel_id:
-                ch = self.bot.get_channel(pet_channel_id)
-                if ch:
-                    try:
-                        await ch.send(f"{user.mention} {message}")
-                        sent = True
-                    except Exception:
-                        pass
-
-            if not sent:
-                try:
-                    await user.send(message)
-                    sent = True
-                except Exception:
-                    pass
-
-            if sent:
+            # Send via DM (no per-guild user mapping exists in the DB to pick
+            # a specific guild channel, so DM is the only safe delivery path)
+            try:
+                await user.send(message)
                 await update_pet(pet["user_id"], last_message_sent=now.isoformat())
+            except Exception:
+                pass
 
     @check_in_loop.before_loop
     async def before_loop(self):
@@ -137,7 +119,7 @@ class PetCog(commands.Cog):
             await interaction.response.send_message("Name must be 32 characters or less!", ephemeral=True)
             return
 
-        pet = await create_pet(user_id, name)
+        await create_pet(user_id, name)
         embed = discord.Embed(
             title="🐱 A new cat has arrived!",
             description=(
@@ -316,7 +298,6 @@ class PetCog(commands.Cog):
         await touch_owner_activity(user_id)
 
         toy_style = get_toy_style(pet.get("slot_toy"))
-        instruction = STYLE_INSTRUCTIONS.get(toy_style if toy_style != "default" else "play", "Ask to play")
         cat_says = build_check_in_message(
             pet["name"], new_happiness, hunger, toy_style,
             owner_context="want to play?"
@@ -407,7 +388,7 @@ class PetCog(commands.Cog):
         ok = await equip_accessory(user_id, slot_key, item)
         if not ok:
             await interaction.response.send_message(
-                f"That slot is locked! Level up your pet to unlock more slots.", ephemeral=True
+                "That slot is locked! Level up your pet to unlock more slots.", ephemeral=True
             )
             return
 

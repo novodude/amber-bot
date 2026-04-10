@@ -1,6 +1,8 @@
 import discord
 import aiohttp
+import random
 from datetime import datetime
+from typing import Optional
 from utils.action_counts import (
     increment_action_count,
     maybe_reward_dabloons,
