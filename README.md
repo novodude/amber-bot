@@ -30,9 +30,9 @@ New commands and systems are added regularly as the project grows.
 | **`/yes`**                       | Random agreement reasons.                                                                                                                                                                 | Static response pool from `assets/fun/yes.json`.                                                       |
 | **`/rate [user]`**               | Rates you or another user across 6 categories.                                                                                                                                            | Random scoring with description tiers from `assets/fun/rating.json`.                                   |
 | **`/download [url]`**            | Downloads audio from YouTube and uploads it to Catbox.                                                                                                                                    | Multiple fallback APIs + Catbox upload. Spotify links return metadata only.                            |
-| **`/mimic start [@user]`**       | Makes Amber repeat the target user's messages, with a 30% chance of sending one of their last 5 messages instead.                                                                         | Admin only. Mirrors text, attachments, and stickers.                                                   |
-| **`/say embed [message]`**       | Makes Amber an embed message                                                                                                                                                              | Can text and attachments.                                                                              |
-| **`/say text [message]`**        | Makes Amber say a text message                                                                                                                                                            | Can send text and attachments.                                                                         |
+| **`/mimic start [@user]`**       | Makes Amber repeat the target user's messages, with a 30% chance of sending one of their last 15 messages instead.                                                                        | Admin only. Mirrors text, attachments, and stickers.                                                   |
+| **`/say embed [message]`**       | Makes Amber send an embed message.                                                                                                                                                        | Supports text, timestamps, author display, image attachments, and 6 color options.                     |
+| **`/say text [message]`**        | Makes Amber say a text message.                                                                                                                                                           | Can send text and attachments.                                                                         |
 
 ---
 
@@ -59,14 +59,80 @@ Each user has dabloons, a bio, and a customizable profile appearance.
 | **`/money balance`**              | Check your current dabloons balance.                        |
 | **`/money daily`**                | Claim your daily dabloons (24h cooldown).                   |
 | **`/money give [user] [amount]`** | Send dabloons to another registered user.                   |
-| **`/money leaderboard`**          | Show the top 10 users globally balance.                     |
+| **`/money leaderboard`**          | Show the top 10 users globally by balance.                  |
 
 Profile features include:
 
 - Editable bio (modal-based, via profile buttons)
-- Color theme selection (8 colors: gold, blue, red, green, purple, orange, pink, dark blue)
-- Balance display
+- Color theme selection — 8 default colors plus unlockable shop themes (cyan, rose, midnight) and full custom hex color support
+- Balance and action stats display
 - Interactive buttons (refresh, edit bio, customize)
+
+---
+
+### 🛒 Shop
+
+A full item shop where you spend dabloons on upgrades, pet supplies, and cosmetics.
+
+| **/**                   | **what it does**                                          |
+| ----------------------- | --------------------------------------------------------- |
+| **`/shop browse`**      | Browse all shop categories with a dropdown selector.      |
+| **`/shop buy [item]`**  | Purchase an item by name.                                 |
+| **`/shop inventory`**   | View consumables and accessories you currently own.       |
+| **`/shop mypurchases`** | View your permanent unlocks (colors, game upgrades, etc.) |
+
+**Categories:**
+
+| Category          | Items                                                                                 |
+| ----------------- | ------------------------------------------------------------------------------------- |
+| 🎮 Games          | Auto Clicker, Double Points, Custom X/O symbols for Tic Tac Toe                       |
+| 🍖 Pet Food       | Kibble, Tuna Can, Fancy Feast, Treat Bag                                              |
+| 🎀 Accessories    | Collars (XP boost), Bows (dabloon boost), Hats (cosmetic), Toys (affect pet messages) |
+| 🍬 Pet Candy      | XP Candy, Rare Candy, Mega Candy — level up your pet fast                             |
+| 🎨 Profile Colors | Cyan, Rose, Midnight themes + Custom hex color unlock                                 |
+
+---
+
+### 🐱 Pet System
+
+Adopt a cat companion powered by **domesticated-LLM** — a fine-tuned 135M language model trained to speak in cat noises, broken words, and chaotic emotes.
+
+| **/**                          | **what it does**                                                         |
+| ------------------------------ | ------------------------------------------------------------------------ |
+| **`/pet adopt [name]`**        | Adopt your cat and give it a name.                                       |
+| **`/pet status`**              | Check your cat's hunger, happiness, level, XP, and equipped accessories. |
+| **`/pet feed [item]`**         | Feed your cat using food from your inventory.                            |
+| **`/pet play`**                | Play with your cat to boost happiness and earn pet XP (1h cooldown).     |
+| **`/pet candy [item]`**        | Use candy to give your pet a direct XP boost.                            |
+| **`/pet equip [slot] [item]`** | Equip an accessory to a slot (collar, bow, hat, toy, extra1, extra2).    |
+| **`/pet unequip [slot]`**      | Remove the item from a slot.                                             |
+| **`/pet rename [name]`**       | Give your cat a new name.                                                |
+
+**How it works:**
+
+- Your cat has **hunger** and **happiness** stats that decay over time
+- Hunger drops 5 points per hour. Happiness drops if hunger falls below 30
+- Feed and play with your cat to keep it happy
+- Happy cats generate more playful and varied messages
+- Your cat will **message you or your server's pet channel** when you've been inactive for 4+ hours — it checks on you using the AI model, responding based on its current mood, hunger, and equipped toy
+- The cat won't spam — there's a 6h cooldown between check-in messages per owner
+
+**Accessories & effects:**
+
+| Slot    | Effect                                                                                               |
+| ------- | ---------------------------------------------------------------------------------------------------- |
+| Collar  | XP boost — Red Collar +10%, Gold Collar +25%                                                         |
+| Bow     | Dabloon drop boost — Silk Bow +10%, Diamond Bow +25%                                                 |
+| Hat     | Cosmetic — shown as an emoji on `/pet status`                                                        |
+| Toy     | Changes the cat's message style — Yarn Ball (happy), Laser Pointer (zoomies), Feather Wand (hunting) |
+| Extra 1 | Unlocks at level 5                                                                                   |
+| Extra 2 | Unlocks at level 10                                                                                  |
+
+**Pet leveling:**
+
+- Pet gains XP from playing and eating candy
+- Leveling up unlocks new accessory slots
+- Use Mega Candy for big XP jumps
 
 ---
 
@@ -83,13 +149,15 @@ Games integrate with the economy to reward or cost dabloons.
 
 - Score saved per user in the database
 - Only the initiating user can click
-- Earn 2 dabloons every 5 clicks
+- Earn 2 dabloons every 5 clicks (4 with Double Points upgrade)
+- Auto Clicker upgrade clicks automatically every 60s
 
 **Tic Tac Toe:**
 
 - Costs to play: `easy=2`, `medium=4`, `hard=8` dabloons
 - Win rewards: `easy=4`, `medium=8`, `hard=16` dabloons
 - Board updates live with button interactions
+- Custom X/O symbols purchasable from the shop
 
 ---
 
@@ -112,13 +180,13 @@ Uses `yt_dlp` for downloads, `spotipy` for Spotify metadata, and `aiosqlite` for
 
 ### 📋 Daily Quests
 
-A dynamic daily quest system that encourages interaction across the bot’s features.
+A dynamic daily quest system that encourages interaction across the bot's features.
 Quests refresh every day and scale with your level.
 
 | **/**         | **what it does**                           |
 | ------------- | ------------------------------------------ |
 | **`/quests`** | View your current daily quests.            |
-| **`/level`**  | View your level and needed xp to level up. |
+| **`/level`**  | View your level and needed XP to level up. |
 
 **How it works:**
 
@@ -200,6 +268,38 @@ All moderation actions are automatically logged to the configured log channel.
 
 ## Setup
 
+The easiest way to get started is with `amber.py` — it handles everything automatically.
+
+```bash
+git clone https://github.com/novodude/amber-bot.git
+cd amber-bot
+python amber.py
+```
+
+`amber.py` will:
+
+1. Pull the latest changes from GitHub
+2. Create and activate a virtual environment
+3. Install all dependencies
+4. Download the `domesticated-LLM` model from HuggingFace
+5. Check that all required files are present
+6. Prompt you for API keys and save them to `.env`
+7. Launch the bot
+
+To update at any time, run:
+
+```bash
+python update.py
+```
+
+This checks for new commits, pulls them, updates dependencies if `requirements.txt` changed, and tells you to run `main.py`.
+
+---
+
+### Manual Setup
+
+If you prefer to set things up yourself:
+
 1. Clone the repository:
 
 ```bash
@@ -207,27 +307,38 @@ git clone https://github.com/novodude/amber-bot.git
 cd amber-bot
 ```
 
-1. Create and activate a virtual environment:
+2. Create and activate a virtual environment:
 
 ```bash
 python -m venv .venv
 source .venv/bin/activate  # Windows: .venv\Scripts\activate
 ```
 
-1. Install dependencies:
+3. Install dependencies:
 
 ```bash
 pip install -r requirements.txt
+pip install torch transformers accelerate
 ```
 
-1. Get required API keys:
+4. Download the model:
+
+```python
+from transformers import AutoTokenizer, AutoModelForCausalLM
+model = AutoModelForCausalLM.from_pretrained("Novodude/domesticated-LLM")
+tokenizer = AutoTokenizer.from_pretrained("Novodude/domesticated-LLM")
+model.save_pretrained("domesticated-LLM")
+tokenizer.save_pretrained("domesticated-LLM")
+```
+
+5. Get required API keys:
 
 - Discord bot: [Discord Developer Portal](https://discord.com/developers/applications)
 - Spotify API: [Spotify Developer Dashboard](https://developer.spotify.com/dashboard)
 - Giphy API: [Giphy Developers](https://developers.giphy.com/dashboard/)
 - RapidAPI (optional, for `/download`): [RapidAPI](https://rapidapi.com/)
 
-1. Create a `.env` file:
+6. Create a `.env` file:
 
 ```bash
 DISCORD_TOKEN=your_bot_token
@@ -237,7 +348,7 @@ SPOTIFY_CLIENT_SECRET=your_spotify_secret
 RAPIDAPI_KEY=optional_key
 ```
 
-1. Run the bot:
+7. Run the bot:
 
 ```bash
 python main.py
@@ -258,8 +369,21 @@ python main.py
 - [x] Welcome messages with custom modal
 - [x] Autorole system
 - [x] Custom server prefix
+- [x] Shop system with upgrades, food, accessories, colors
+- [x] Pet system — cat companion powered by domesticated-LLM
+- [x] LLM integration (domesticated-LLM — cat-speak fine-tune of SmolLM2-135M)
+- [x] Auto setup script (amber.py) and updater (update.py)
 - [ ] Gambling system
-- [ ] LLM integration
+
+---
+
+## The Model — domesticated-LLM
+
+The pet system uses **domesticated-LLM**, a fine-tuned version of `SmolLM2-135M-Instruct` trained on 20,000 synthetic cat-speak examples across 8 behavior styles (food, play, sleep, affection, grooming, alarm, boredom, comfort).
+
+Given an instruction and a context (the owner's last message), it generates a response like a small chaotic cat would. The model lives locally at `./domesticated-LLM/` and is loaded lazily on first use.
+
+Full model card: [novodude/domesticated-LLM](https://huggingface.co/novodude/domesticated-LLM)
 
 ---
 
@@ -273,6 +397,9 @@ python main.py
 - yt-dlp
 - aiosqlite
 - spotipy
+- torch
+- transformers
+- accelerate
 - **ffmpeg** — required for audio processing in `/radio`
   > Download at [ffmpeg.org/download.html](https://ffmpeg.org/download.html)
 

@@ -6,3 +6,6 @@ requests
 yt-dlp
 aiosqlite
 spotipy
+torch
+transformers
+accelerate
