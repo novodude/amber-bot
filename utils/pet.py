@@ -1,6 +1,6 @@
 """utils/pet.py — pet helpers used by commands/pet.py and the background task"""
 import aiosqlite
-from datetime import datetime, timedelta
+from datetime import datetime
 from utils.userbase.database import DB_PATH
 
 # ── Level → slot unlock table ─────────────────────────────────────────────────
