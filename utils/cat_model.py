@@ -17,7 +17,7 @@ def _load():
     _tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH)
     _model     = AutoModelForCausalLM.from_pretrained(
         MODEL_PATH,
-        torch_dtype=torch.float32,
+        dtype=torch.float32,
         device_map="auto",
     )
     _model.eval()

@@ -29,7 +29,7 @@ HUNGER_DECAY_PER_HOUR   = 5   # lose 5 hunger per hour
 HAPPINESS_DECAY_PER_HOUR = 3  # lose 3 happiness per hour if hunger < 30
 
 def apply_decay(hunger: int, happiness: int, last_fed: datetime, last_played: datetime) -> tuple[int, int]:
-    now = datetime.utcnow()
+    now = datetime.now()
     hours_since_fed   = max(0, (now - last_fed).total_seconds() / 3600)
     hours_since_played = max(0, (now - last_played).total_seconds() / 3600)
 
@@ -117,8 +117,8 @@ async def feed_pet(user_id: int, effect: str) -> tuple[int, int]:
     if not pet:
         return 0, 0
 
-    last_fed   = datetime.fromisoformat(pet["last_fed"])   if pet["last_fed"]   else datetime.utcnow()
-    last_played = datetime.fromisoformat(pet["last_played"]) if pet["last_played"] else datetime.utcnow()
+    last_fed   = datetime.fromisoformat(pet["last_fed"])   if pet["last_fed"]   else datetime.now()
+    last_played = datetime.fromisoformat(pet["last_played"]) if pet["last_played"] else datetime.now()
     hunger, happiness = apply_decay(pet["hunger"], pet["happiness"], last_fed, last_played)
 
     # Parse effect string like "hunger_50" or "hunger_100_hap_10"
@@ -138,7 +138,7 @@ async def feed_pet(user_id: int, effect: str) -> tuple[int, int]:
             i += 1
 
     await update_pet(user_id, hunger=hunger, happiness=happiness,
-                     last_fed=datetime.utcnow().isoformat())
+                     last_fed=datetime.now().isoformat())
     return hunger, happiness
 
 async def equip_accessory(user_id: int, slot: str, item_name: str | None) -> bool:
@@ -156,6 +156,6 @@ async def touch_owner_activity(user_id: int):
     async with aiosqlite.connect(DB_PATH) as db:
         await db.execute(
             "UPDATE pets SET last_owner_activity = ? WHERE user_id = ?",
-            (datetime.utcnow().isoformat(), user_id)
+            (datetime.now().isoformat(), user_id)
         )
         await db.commit()

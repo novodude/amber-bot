@@ -43,7 +43,7 @@ class PetCog(commands.Cog):
     @tasks.loop(minutes=30)
     async def check_in_loop(self):
         """Every 30 min, scan for pets whose owners have been inactive long enough."""
-        now = datetime.utcnow()
+        now = datetime.now()
         async with aiosqlite.connect(DB_PATH) as db:
             db.row_factory = aiosqlite.Row
             cursor = await db.execute("""
@@ -146,8 +146,8 @@ class PetCog(commands.Cog):
             )
             return
 
-        last_fed    = datetime.fromisoformat(pet["last_fed"])    if pet["last_fed"]    else datetime.utcnow()
-        last_played = datetime.fromisoformat(pet["last_played"]) if pet["last_played"] else datetime.utcnow()
+        last_fed    = datetime.fromisoformat(pet["last_fed"])    if pet["last_fed"]    else datetime.now()
+        last_played = datetime.fromisoformat(pet["last_played"]) if pet["last_played"] else datetime.now()
         hunger, happiness = apply_decay(pet["hunger"], pet["happiness"], last_fed, last_played)
 
         hat_emoji  = get_hat_emoji(pet.get("slot_hat"))
@@ -272,8 +272,8 @@ class PetCog(commands.Cog):
 
         last_played = datetime.fromisoformat(pet["last_played"]) if pet["last_played"] else datetime.min
         cooldown    = timedelta(hours=1)
-        if datetime.utcnow() - last_played < cooldown:
-            remaining = cooldown - (datetime.utcnow() - last_played)
+        if datetime.now() - last_played < cooldown:
+            remaining = cooldown - (datetime.now() - last_played)
             mins = int(remaining.total_seconds() / 60)
             await interaction.response.send_message(
                 f"{pet['name']} is tired! Play again in **{mins} minutes**.", ephemeral=True
@@ -283,7 +283,7 @@ class PetCog(commands.Cog):
         happiness_gain = random.randint(10, 25)
         xp_gain        = random.randint(10, 20)
 
-        last_fed_dt = datetime.fromisoformat(pet["last_fed"]) if pet["last_fed"] else datetime.utcnow()
+        last_fed_dt = datetime.fromisoformat(pet["last_fed"]) if pet["last_fed"] else datetime.now()
         hunger, happiness = apply_decay(
             pet["hunger"], pet["happiness"], last_fed_dt, last_played
         )
@@ -293,7 +293,7 @@ class PetCog(commands.Cog):
             user_id,
             happiness=new_happiness,
             hunger=hunger,
-            last_played=datetime.utcnow().isoformat()
+            last_played=datetime.now().isoformat()
         )
         levelled = await add_pet_xp(user_id, xp_gain)
         await touch_owner_activity(user_id)
