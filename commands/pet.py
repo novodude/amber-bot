@@ -214,36 +214,37 @@ class PetCog(commands.Cog):
             return
 
         async with aiosqlite.connect(DB_PATH) as db:
-            # Check inventory
+            # Resolve canonical item name and validate it's pet food
             cursor = await db.execute(
-                "SELECT quantity FROM inventory WHERE user_id = ? AND item_name = ?",
-                (user_id, item)
-            )
-            row = await cursor.fetchone()
-            if not row or row[0] < 1:
-                await interaction.response.send_message(
-                    f"You don't have any **{item}** in your inventory! Buy some from `/shop`.",
-                    ephemeral=True
-                )
-                return
-
-            # Get item effect
-            cursor = await db.execute(
-                "SELECT effect, category FROM shop WHERE item_name = ?", (item,)
+                "SELECT item_name, effect, category FROM shop WHERE LOWER(item_name) = LOWER(?)", (item,)
             )
             shop_row = await cursor.fetchone()
-            if not shop_row or shop_row[1] != "pet_food":
+            if not shop_row or shop_row[2] != "pet_food":
                 await interaction.response.send_message(
                     f"**{item}** isn't pet food!", ephemeral=True
                 )
                 return
 
-            effect = shop_row[0]
+            canonical_name = shop_row[0]
+            effect = shop_row[1]
+
+            # Check inventory using canonical name
+            cursor = await db.execute(
+                "SELECT quantity FROM inventory WHERE user_id = ? AND item_name = ?",
+                (user_id, canonical_name)
+            )
+            row = await cursor.fetchone()
+            if not row or row[0] < 1:
+                await interaction.response.send_message(
+                    f"You don't have any **{canonical_name}** in your inventory! Buy some from `/shop`.",
+                    ephemeral=True
+                )
+                return
 
             # Deduct from inventory
             await db.execute(
                 "UPDATE inventory SET quantity = quantity - 1 WHERE user_id = ? AND item_name = ?",
-                (user_id, item)
+                (user_id, canonical_name)
             )
             await db.commit()
 
@@ -251,7 +252,7 @@ class PetCog(commands.Cog):
         await touch_owner_activity(user_id)
 
         embed = discord.Embed(
-            title=f"🍽️ {pet['name']} ate {item}!",
+            title=f"🍽️ {pet['name']} ate {canonical_name}!",
             color=discord.Color.green()
         )
         embed.add_field(name="🍖 Hunger",    value=hunger_bar(new_hunger),    inline=False)
@@ -372,20 +373,21 @@ class PetCog(commands.Cog):
 
         user_id = await ensure_registered(interaction.user.id, str(interaction.user))
 
-        # Check inventory
+        # Check inventory (case-insensitive match to get canonical item name)
         async with aiosqlite.connect(DB_PATH) as db:
             cursor = await db.execute(
-                "SELECT quantity FROM inventory WHERE user_id = ? AND item_name = ?",
+                "SELECT item_name, quantity FROM inventory WHERE user_id = ? AND LOWER(item_name) = LOWER(?)",
                 (user_id, item)
             )
             row = await cursor.fetchone()
-            if not row or row[0] < 1:
+            if not row or row[1] < 1:
                 await interaction.response.send_message(
                     f"You don't have **{item}** in your inventory!", ephemeral=True
                 )
                 return
+            canonical_name = row[0]
 
-        ok = await equip_accessory(user_id, slot_key, item)
+        ok = await equip_accessory(user_id, slot_key, canonical_name)
         if not ok:
             await interaction.response.send_message(
                 "That slot is locked! Level up your pet to unlock more slots.", ephemeral=True
@@ -393,7 +395,7 @@ class PetCog(commands.Cog):
             return
 
         await interaction.response.send_message(
-            f"Equipped **{item}** to your cat's **{slot}** slot! 🎀"
+            f"Equipped **{canonical_name}** to your cat's **{slot}** slot! 🎀"
         )
 
     # ── /pet unequip ──────────────────────────────────────────────────────────
@@ -431,11 +433,13 @@ class PetCog(commands.Cog):
             "Rare Candy": 200,
             "Mega Candy": 500,
         }
-        if item not in CANDY_MAP:
+        canonical_candy = next((k for k in CANDY_MAP if k.lower() == item.lower()), None)
+        if canonical_candy is None:
             await interaction.response.send_message(
                 f"Unknown candy `{item}`. Valid: {', '.join(CANDY_MAP.keys())}", ephemeral=True
             )
             return
+        item = canonical_candy
 
         user_id = await ensure_registered(interaction.user.id, str(interaction.user))
         pet = await get_pet(user_id)
