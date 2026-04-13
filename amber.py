@@ -3,6 +3,9 @@
 amber.py — Amber bot setup & launcher
 Run this once to set everything up, then use it to start the bot.
 Run update.py any time to pull the latest changes.
+
+The domesticated-LLM is optional. If skipped or unavailable, the bot
+uses the built-in synthesis engine for cat messages instead.
 """
 
 import os
@@ -39,8 +42,12 @@ def ask(prompt: str, default: str = "") -> str:
     value = input(f"  {prompt} [{default}]: ").strip()
     return value if value else default
 
-def yesno(prompt: str) -> bool:
-    return input(f"  {prompt} [y/N]: ").strip().lower() in ("y", "yes")
+def yesno(prompt: str, default_yes: bool = False) -> bool:
+    hint = "[Y/n]" if default_yes else "[y/N]"
+    answer = input(f"  {prompt} {hint}: ").strip().lower()
+    if not answer:
+        return default_yes
+    return answer in ("y", "yes")
 
 
 # ── Steps ─────────────────────────────────────────────────────────────────────
@@ -74,21 +81,33 @@ def step_install():
     if code != 0:
         print("  ❌ pip install failed. Check your internet connection.")
         sys.exit(1)
-
-    # Install transformers + torch for the model
-    run([VENV_PIP, "install", "torch", "transformers", "accelerate", "--quiet"])
     print("  ✅ Dependencies installed.")
 
 
 def step_model():
-    banner("4/7 — Downloading domesticated-LLM")
+    banner("4/7 — domesticated-LLM (optional)")
+
+    # Already downloaded — nothing to decide
     if MODEL_DIR.exists() and any(MODEL_DIR.iterdir()):
         print(f"  ✅ Model already present at {MODEL_DIR}/")
+        print("  ℹ️  Cat messages will use the LLM.")
         return
 
-    print(f"  Downloading from HuggingFace: {HF_MODEL_ID}")
-    print("  This may take a minute...")
+    print("  The domesticated-LLM generates AI cat messages.")
+    print("  Without it, Amber uses the built-in synthesis engine instead —")
+    print("  cat messages will still work, just without the neural flair.\n")
+    print("  Requirements: ~500 MB disk, torch + transformers, decent CPU/GPU.")
 
+    if not yesno("Download the model now?", default_yes=False):
+        print("  ⏭️  Skipping model download — synthesis engine will be used.")
+        print("  ℹ️  You can download it later by re-running amber.py.")
+        return
+
+    print(f"\n  Downloading from HuggingFace: {HF_MODEL_ID}")
+    print("  Installing torch + transformers...")
+    run([VENV_PIP, "install", "torch", "transformers", "accelerate", "--quiet"])
+
+    print("  Downloading model weights (this may take a minute)...")
     script = f"""
 from transformers import AutoTokenizer, AutoModelForCausalLM
 model = AutoModelForCausalLM.from_pretrained("{HF_MODEL_ID}")
@@ -99,16 +118,18 @@ print("Model saved to domesticated-LLM/")
 """
     code = run([VENV_PYTHON, "-c", script])
     if code != 0:
-        print("  ❌ Model download failed. Check your connection and HuggingFace availability.")
-        sys.exit(1)
-    print("  ✅ Model ready.")
+        print("  ❌ Download failed — Amber will fall back to the synthesis engine.")
+        print("  ℹ️  Check your connection and try again by re-running amber.py.")
+        # Don't exit — bot still works without the model
+    else:
+        print("  ✅ Model ready. Cat messages will use the LLM.")
 
 
 def step_check_files():
     banner("5/7 — Checking required files")
-    required = ["main.py", "requirements.txt"]
+    required      = ["main.py", "requirements.txt"]
     required_dirs = ["commands", "utils"]
-    all_ok = True
+    all_ok        = True
 
     for f in required:
         if Path(f).exists():
@@ -141,11 +162,11 @@ def step_env():
                 existing[k.strip()] = v.strip()
 
     keys = {
-        "DISCORD_TOKEN":        ("Discord bot token", True),
-        "GIPHY_API":            ("Giphy API key", False),
-        "SPOTIFY_CLIENT_ID":    ("Spotify client ID", False),
-        "SPOTIFY_CLIENT_SECRET":("Spotify client secret", False),
-        "RAPIDAPI_KEY":         ("RapidAPI key (optional, for /download)", False),
+        "DISCORD_TOKEN":         ("Discord bot token", True),
+        "GIPHY_API":             ("Giphy API key", False),
+        "SPOTIFY_CLIENT_ID":     ("Spotify client ID", False),
+        "SPOTIFY_CLIENT_SECRET": ("Spotify client secret", False),
+        "RAPIDAPI_KEY":          ("RapidAPI key (optional, for /download)", False),
     }
 
     changed = False
@@ -153,8 +174,8 @@ def step_env():
         if key in existing:
             print(f"  ✅ {key} already set")
             continue
-        tag     = " (required)" if required else " (optional, press Enter to skip)"
-        value   = ask(f"{label}{tag}")
+        tag   = " (required)" if required else " (optional, press Enter to skip)"
+        value = ask(f"{label}{tag}")
         if value:
             existing[key] = value
             changed = True
@@ -172,6 +193,13 @@ def step_env():
 
 def step_run():
     banner("7/7 — Starting Amber")
+
+    # Remind user which message engine is active
+    if MODEL_DIR.exists() and any(MODEL_DIR.iterdir()):
+        print("  🧠 Cat message engine: domesticated-LLM")
+    else:
+        print("  🐱 Cat message engine: synthesis (no model downloaded)")
+
     print("  Launching main.py inside the virtual environment...\n")
     os.execv(VENV_PYTHON, [VENV_PYTHON, "main.py"])
 

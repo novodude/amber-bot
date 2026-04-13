@@ -1,9 +1,11 @@
+from asyncio import sleep
 import discord
 import random
+import requests
 import aiosqlite
 from typing import Literal
 import discord.ui as ui
-from utils.economy import add_dabloons, add_xp, get_user_id_from_discord, get_dabloons
+from utils.economy import add_dabloons, add_xp, get_dabloons
 from utils.userbase.ensure_registered import ensure_registered
 from utils.quests import increment_quest_progress
 from discord import app_commands
@@ -212,6 +214,8 @@ class TicTacToe(ui.View):
             button.disabled = True
 
 
+
+
 class Games(app_commands.Group):
     def __init__(self):
         super().__init__(name="games", description="games commands")
@@ -264,6 +268,43 @@ class Games(app_commands.Group):
             difficulty_level=difficulty_value
         )
         await interaction.followup.send("Tic Tac Toe! You are ❌'s!", view=view)
+
+    @app_commands.command(name="trivia", description="Answer trivia questions and win dabloons!")
+    @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+    @app_commands.allowed_installs(guilds=True, users=True)
+    async def trivia(self, interaction: discord.Interaction):
+        res = requests.get("https://opentdb.com/api.php?amount=1")
+        data = res.json()
+
+        question = data["results"][0]
+        category = question["category"]
+        difficulty = question["difficulty"]
+        question_text = question["question"]
+        correct_answer = question["correct_answer"]
+
+        options = question["incorrect_answers"] + [correct_answer]
+        random.shuffle(options)
+
+        embed = discord.Embed(
+            title=f"Trivia - {category} ({difficulty})",
+            description=f"{question_text}?",
+            color=discord.Color.blue()
+        )
+        for idx, option in enumerate(options):
+            embed.add_field(name=f"Option {idx + 1}", value=option, inline=False)
+        embed.set_footer(text="You have 20 seconds before the correct answer is revealed!")
+
+        await interaction.response.send_message(embed=embed)
+        await sleep(20)
+        correct_answer = discord.Embed(
+            title=f"{question_text}?",
+            description=f"⏰ Time's up! The correct answer was: **{correct_answer}**",
+            color=discord.Color.blue()
+        )
+        await interaction.edit_original_response(embed=correct_answer)
+
+
+
 
 
 async def minigames_setup(bot):
