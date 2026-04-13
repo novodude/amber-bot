@@ -162,6 +162,23 @@ async def init_user_db():
             )
         """)
 
+        # ── migrations in case the db is old ───────────────────────────────────
+        migrations = [
+            "ALTER TABLE games ADD COLUMN action_use_count INTEGER DEFAULT 0",
+            "ALTER TABLE games ADD COLUMN next_reward_threshold INTEGER DEFAULT 0",
+            "ALTER TABLE users ADD COLUMN custom_hex_color TEXT",
+            "ALTER TABLE guild_config ADD COLUMN pet_channel_id INTEGER",
+            # shop columns added in later versions
+            "ALTER TABLE shop ADD COLUMN category TEXT DEFAULT 'misc'",
+            "ALTER TABLE shop ADD COLUMN effect TEXT",
+            "ALTER TABLE shop ADD COLUMN emoji TEXT DEFAULT '📦'",
+        ]
+        for sql in migrations:
+            try:
+                await db.execute(sql)
+            except Exception:
+                pass
+
         # ── Seed shop items ───────────────────────────────────────────────────
         shop_items = [
             # Games
@@ -200,17 +217,5 @@ async def init_user_db():
             VALUES (?, ?, ?, ?, ?, ?)
         """, shop_items)
 
-        # ── Safe migrations (won't crash if column already exists) ────────────
-        migrations = [
-            "ALTER TABLE games ADD COLUMN action_use_count INTEGER DEFAULT 0",
-            "ALTER TABLE games ADD COLUMN next_reward_threshold INTEGER DEFAULT 0",
-            "ALTER TABLE users ADD COLUMN custom_hex_color TEXT",
-            "ALTER TABLE guild_config ADD COLUMN pet_channel_id INTEGER",
-        ]
-        for sql in migrations:
-            try:
-                await db.execute(sql)
-            except Exception:
-                pass
 
         await db.commit()
