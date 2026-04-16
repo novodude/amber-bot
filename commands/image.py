@@ -358,6 +358,16 @@ class ImageGenerator:
 
         return new_img
 
+    def grayscale_image(self, image: Image.Image) -> Image.Image:
+        """Convert an image to grayscale."""
+        return image.convert("L").convert("RGBA")
+    
+    def blur(self, image: Image.Image) -> Image.Image:
+        """blur an image using box blur"""
+        return image.filter(ImageFilter.BoxBlur(radius=5))
+
+
+
 
 
 @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
@@ -371,20 +381,43 @@ class ImageCommands(app_commands.Group):
         )
 
     img_gen = ImageGenerator(ROOT_DIR)
+
+    async def fetch_image(self, attachment: discord.Attachment) -> Image.Image:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(attachment.url) as resp:
+                image_bytes = await resp.read()
+        return Image.open(BytesIO(image_bytes)).convert("RGBA")
     
+    async def send_image(
+        self,
+        interaction: discord.Interaction,
+        image: Image.Image,
+        filename: str = "image.png"
+    ):
+        with io.BytesIO() as buffer:
+            image.save(buffer, format="PNG")
+            buffer.seek(0)
+            file = discord.File(fp=buffer, filename=filename)
+            await interaction.followup.send(file=file)
+
+    async def run_image_command(self, interaction: discord.Interaction, func):
+        await interaction.response.defer()
+        try:
+            await func()
+        except Exception as e:
+            await interaction.followup.send(f"An error occurred:\n```\n{e}\n```")
+
     @app_commands.command(name="wanted", description="Create a wanted poster!")
     @app_commands.describe(
         user="The criminal you want the poster for.",
         amount="The bounty amount."
     )
     async def wanted(self, interaction: discord.Interaction, user: discord.User, amount: int):
-        await interaction.response.defer(thinking=True)
-        try:
+        async def logic():
             output_bytes = await self.img_gen.create_wanted_poster(user, amount)
             file = discord.File(output_bytes, filename=f"wanted_{user.name}.png")
             await interaction.followup.send(file=file)
-        except Exception as e:
-            await interaction.followup.send(f"An error occurred:\n ```\n{str(e)}\n```")
+        await self.run_image_command(interaction, logic)
     
     @app_commands.command(name="misquote", description="Create a fake quote image")
     @app_commands.describe(
@@ -392,13 +425,12 @@ class ImageCommands(app_commands.Group):
         user="Who said it?"
     )
     async def misquote(self, interaction: discord.Interaction, user: discord.User, message: str):
-        await interaction.response.defer()
-        try:
+
+        async def logic():
             output_bytes = await self.img_gen.create_quote_image(user, message)
             file = discord.File(output_bytes, filename=f"quote_{user.name}.png")
             await interaction.followup.send(file=file)
-        except Exception as e:
-            await interaction.followup.send(f"An error occurred:\n ```\n{str(e)}\n```")
+        await self.run_image_command(interaction, logic)
     
     @app_commands.command(name="rarch", description="Generate an inkblot image")
     async def rarch(self, interaction: discord.Interaction):
@@ -419,22 +451,13 @@ class ImageCommands(app_commands.Group):
         image_url="The URL of the image to caption."
     )
     async def caption(self, interaction: discord.Interaction, caption: str, image_url: discord.Attachment):
-        await interaction.response.defer()
-        try:
-            async with aiohttp.ClientSession() as session:
-                async with session.get(image_url.url) as resp:
-                    image_bytes = await resp.read()
-            
-            image = Image.open(BytesIO(image_bytes)).convert("RGBA")
-            captioned_image = self.img_gen.caption_image(image, caption)
-            
-            with io.BytesIO() as output_bytes:
-                captioned_image.save(output_bytes, format='PNG')
-                output_bytes.seek(0)
-                file = discord.File(fp=output_bytes, filename='captioned_image.png')
-                await interaction.followup.send(file=file)
-        except Exception as e:
-            await interaction.followup.send(f"An error occurred:\n ```\n{str(e)}\n```")
+
+        async def logic():
+            img = await self.fetch_image(image_url)
+            result = self.img_gen.caption_image(img, caption)
+            await self.send_image(interaction, result, "caption.png")
+
+        await self.run_image_command(interaction, logic)
 
     @app_commands.command(name="meme", description="Apply a meme-style filter to an image")
     @app_commands.describe(
@@ -443,23 +466,39 @@ class ImageCommands(app_commands.Group):
         bottom="Whether to place the caption at the bottom (default is top)."
     )
     async def meme(self, interaction: discord.Interaction, caption: str, image: discord.Attachment, bottom: bool = False):
-        await interaction.response.defer()
-        try:
-            async with aiohttp.ClientSession() as session:
-                async with session.get(image.url) as resp:
-                    image_bytes = await resp.read()
-            
-            img = Image.open(BytesIO(image_bytes)).convert("RGBA")
-            meme_image = self.img_gen.memeify_image(img, bottom, caption)
-            
-            with io.BytesIO() as output_bytes:
-                meme_image.save(output_bytes, format='PNG')
-                output_bytes.seek(0)
-                file = discord.File(fp=output_bytes, filename='meme_image.png')
-                await interaction.followup.send(file=file)
-        except Exception as e:
-            await interaction.followup.send(f"An error occurred:\n ```\n{str(e)}\n```")
 
+        async def logic():
+            img = await self.fetch_image(image)
+            result = self.img_gen.memeify_image(img, bottom, caption)
+            await self.send_image(interaction, result, "meme.png")
+
+        await self.run_image_command(interaction, logic)
+
+    @app_commands.command(name="grayscale", description="Convert an image to grayscale")
+    @app_commands.describe(
+        image="The image to convert to grayscale."
+    )
+    async def grayscale(self, interaction: discord.Interaction, image: discord.Attachment):
+
+        async def logic():
+            img = await self.fetch_image(image)
+            result = self.img_gen.grayscale_image(img)
+            await self.send_image(interaction, result, "gray.png")
+
+        await self.run_image_command(interaction, logic)
+
+    @app_commands.command(name="blur", description="Apply a blur effect to an image")
+    @app_commands.describe(
+        image="The image to blur."
+    )
+    async def blur(self, interaction: discord.Interaction, image: discord.Attachment):
+
+        async def logic():
+            img = await self.fetch_image(image)
+            result = self.img_gen.blur(img)
+            await self.send_image(interaction, result, "blur.png")
+
+        await self.run_image_command(interaction, logic)
 
 async def image_setup(bot):
     bot.tree.add_command(ImageCommands())
