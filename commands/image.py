@@ -287,7 +287,7 @@ class ImageGenerator:
         font_path = self.font_dir / "caption.ttf"
 
         try:
-            font = self.get_fitting_font(str(font_path), caption, width - 20, 40)
+            font = self.get_fitting_font(str(font_path), caption, width - 20, 60)
         except OSError:
             font = ImageFont.load_default()
 
@@ -298,7 +298,7 @@ class ImageGenerator:
 
         # Center horizontally, small padding from top
         text_x = (width - text_width) // 2
-        text_y = height - caption_height + (caption_height - text_height) // 2
+        text_y = (height - caption_height + (caption_height - text_height) // 2) - 20
 
         draw.text(
             (text_x, text_y),
@@ -306,6 +306,53 @@ class ImageGenerator:
             font=font,
             fill=(255, 255, 255),
             stroke_width=4,
+            stroke_fill=(0, 0, 0)
+        )
+
+        return new_img
+
+    def memeify_image(self, image: Image.Image, bottom: bool, caption: str) -> Image.Image:
+        width, height = image.size
+        padding = 200
+
+        # Create canvas
+        new_img = Image.new("RGBA", (width, height + padding), "black")
+
+        if bottom:
+            new_img.paste(image, (0, 0))          # caption at bottom
+            text_area_y = height
+        else:
+            new_img.paste(image, (0, padding))    # caption at top
+            text_area_y = 0
+
+        draw = ImageDraw.Draw(new_img)
+        font_path = self.font_dir / "caption.ttf"  # use a bold meme font
+
+        # Fit text to full width
+        font, wrapped_text = self.fit_text_into_box(
+            draw,
+            caption.upper(),              # memes = uppercase
+            str(font_path),
+            width - 40,
+            padding - 20,
+            80
+        )
+
+        # Center text in the padding area
+        text_bbox = draw.multiline_textbbox((0, 0), wrapped_text, font=font)
+        text_width = text_bbox[2] - text_bbox[0]
+        text_height = text_bbox[3] - text_bbox[1]
+
+        text_x = (width - text_width) // 2
+        text_y = text_area_y + (padding - text_height) // 2
+
+        draw.multiline_text(
+            (text_x, text_y),
+            wrapped_text,
+            font=font,
+            fill=(255, 255, 255),
+            align="center",
+            stroke_width=5,
             stroke_fill=(0, 0, 0)
         )
 
@@ -385,6 +432,30 @@ class ImageCommands(app_commands.Group):
                 captioned_image.save(output_bytes, format='PNG')
                 output_bytes.seek(0)
                 file = discord.File(fp=output_bytes, filename='captioned_image.png')
+                await interaction.followup.send(file=file)
+        except Exception as e:
+            await interaction.followup.send(f"An error occurred:\n ```\n{str(e)}\n```")
+
+    @app_commands.command(name="meme", description="Apply a meme-style filter to an image")
+    @app_commands.describe(
+        caption="The caption text to add to the image.",
+        image="the image to memeify.",
+        bottom="Whether to place the caption at the bottom (default is top)."
+    )
+    async def meme(self, interaction: discord.Interaction, caption: str, image: discord.Attachment, bottom: bool = False):
+        await interaction.response.defer()
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(image.url) as resp:
+                    image_bytes = await resp.read()
+            
+            img = Image.open(BytesIO(image_bytes)).convert("RGBA")
+            meme_image = self.img_gen.memeify_image(img, bottom, caption)
+            
+            with io.BytesIO() as output_bytes:
+                meme_image.save(output_bytes, format='PNG')
+                output_bytes.seek(0)
+                file = discord.File(fp=output_bytes, filename='meme_image.png')
                 await interaction.followup.send(file=file)
         except Exception as e:
             await interaction.followup.send(f"An error occurred:\n ```\n{str(e)}\n```")
