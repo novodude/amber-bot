@@ -38,13 +38,32 @@ New commands and systems are added regularly as the project grows.
 
 ### 🐾 Animals
 
-| **/**        | **description**                       |
-| ------------ | ------------------------------------- |
-| **`/duck`**  | Random duck GIF from `random-d.uk` 🦆 |
-| **`/cat`**   | Random cat GIF from TheCatAPI 🐱      |
-| **`/rotta`** | Random rat GIF from Giphy 🐀          |
+A unified `/animal` command group with multiple subcommands for different animals. Uses multiple APIs (random-d.uk, TheCatAPI, TheDogAPI, some-random-api, etc.) with async fetching and embed responses.
+
+| **/**                  | **description**                       |
+| ---------------------- | ------------------------------------- |
+| **`/animal duck`**     | Random duck GIF from `random-d.uk` 🦆 |
+| **`/animal cat`**      | Random cat GIF + fact 🐱              |
+| **`/animal dog`**      | Random dog GIF 🐶                     |
+| **`/animal rotta`**    | Random rat GIF from Giphy 🐀          |
+| **`/animal fox`**      | Random fox image 🦊                   |
+| **`/animal bird`**     | Random bird image + fact 🐦           |
+| **`/animal panda`**    | Random panda image + fact 🐼          |
+| **`/animal redpanda`** | Random red panda image + fact 🦊      |
+| **`/animal koala`**    | Random koala image + fact 🐨          |
+| **`/animal kangaroo`** | Random kangaroo image + fact 🦘       |
+| **`/animal bunny`**    | Random bunny image/GIF 🐰             |
+
+**Implementation notes:**
+
+- Centralized helper methods for sending embeds and handling errors
+- Multiple API integrations
+- Uses `aiohttp` for async requests
+- Works in guilds and DMs
 
 ---
+
+## (rest of README unchanged)
 
 ### 💰 Economy & Profile
 
@@ -307,21 +326,21 @@ git clone https://github.com/novodude/amber-bot.git
 cd amber-bot
 ```
 
-2. Create and activate a virtual environment:
+1. Create and activate a virtual environment:
 
 ```bash
 python -m venv .venv
 source .venv/bin/activate  # Windows: .venv\Scripts\activate
 ```
 
-3. Install dependencies:
+1. Install dependencies:
 
 ```bash
 pip install -r requirements.txt
 pip install torch transformers accelerate
 ```
 
-4. Download the model:
+1. Download the model:
 
 ```python
 from transformers import AutoTokenizer, AutoModelForCausalLM
@@ -331,14 +350,14 @@ model.save_pretrained("domesticated-LLM")
 tokenizer.save_pretrained("domesticated-LLM")
 ```
 
-5. Get required API keys:
+1. Get required API keys:
 
 - Discord bot: [Discord Developer Portal](https://discord.com/developers/applications)
 - Spotify API: [Spotify Developer Dashboard](https://developer.spotify.com/dashboard)
 - Giphy API: [Giphy Developers](https://developers.giphy.com/dashboard/)
 - RapidAPI (optional, for `/download`): [RapidAPI](https://rapidapi.com/)
 
-6. Create a `.env` file:
+1. Create a `.env` file:
 
 ```bash
 DISCORD_TOKEN=your_bot_token
@@ -348,7 +367,7 @@ SPOTIFY_CLIENT_SECRET=your_spotify_secret
 RAPIDAPI_KEY=optional_key
 ```
 
-7. Run the bot:
+1. Run the bot:
 
 ```bash
 python main.py

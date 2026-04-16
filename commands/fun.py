@@ -1,7 +1,6 @@
 from PIL import Image, ImageDraw, ImageFont, ImageFilter
-from discord import app_commands, embeds
+from discord import app_commands
 from discord.ext import commands
-from os.path import pathsep
 from typing import Optional
 from pathlib import Path
 from io import BytesIO
@@ -292,7 +291,6 @@ async def fun_setup(bot: commands.Bot):
     OFC_SFW = ROOT_DIR / "assets" / "ofc" / "sfw"
     OFC_NSFW = ROOT_DIR / "assets" / "ofc" / "nsfw"
     img_gen = ImageGenerator(ROOT_DIR)
-    api_key = os.getenv('GIPHY_API')
     
     # ==================== Wanted Poster ====================
     @bot.tree.command(name="wanted", description="Create a wanted poster!")
@@ -344,100 +342,6 @@ async def fun_setup(bot: commands.Bot):
             embed.set_image(url="attachment://inkblot.png")
             await interaction.response.send_message(embed=embed, file=file)
     
-    # ==================== Animal Commands ====================
-    @bot.tree.command(name="duck", description="Get a random duck image")
-    @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
-    @app_commands.allowed_installs(guilds=True, users=True)
-    async def duck(interaction: discord.Interaction):
-        try:
-            async with aiohttp.ClientSession() as session:
-                async with session.get("https://random-d.uk/api/v2/list") as resp:
-                    data = await resp.json()
-                    gifs = data.get("gifs", [])
-                    gif_url = (f"https://random-d.uk/api/{random.choice(gifs)}" 
-                              if gifs else "https://random-d.uk/api/random")
-            
-            embed = discord.Embed(title="Random Duck!")
-            embed.set_image(url=gif_url)
-            await interaction.response.send_message(embed=embed)
-        except Exception as e:
-            await interaction.response.send_message(
-                embed=discord.Embed(
-                    title="Error",
-                    description=f"```log\nError:\n{str(e)}\n```",
-                    color=discord.Color.red()
-                )
-            )
-    
-    @bot.tree.command(name="rotta", description="Get a random rat gif")
-    @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
-    @app_commands.allowed_installs(guilds=True, users=True)
-    async def rat(interaction: discord.Interaction):
-        await interaction.response.defer()
-        
-        rat_url = f"https://api.giphy.com/v1/gifs/random?api_key={api_key}&tag=rat&rating=G"
-        
-        try:
-            async with aiohttp.ClientSession() as session:
-                async with session.get(rat_url) as resp:
-                    if resp.status == 200:
-                        data = await resp.json()
-                        gif_url = data['data']['images']['original']['url']
-                        
-                        embed = discord.Embed(title="Random Rat!", color=discord.Color.dark_green())
-                        embed.set_image(url=gif_url)
-                        await interaction.followup.send(embed=embed)
-                    else:
-                        await interaction.followup.send(
-                            embed=discord.Embed(
-                                title="Error",
-                                description=f"Could not fetch a rat gif. (Status: {resp.status})",
-                                color=discord.Color.red()
-                            )
-                        )
-        except Exception as e:
-            await interaction.followup.send(
-                embed=discord.Embed(
-                    title="Error",
-                    description=f"```log\nError:\n{str(e)}\n```",
-                    color=discord.Color.red()
-                )
-            )
-    
-    @bot.tree.command(name="cat", description="Get a random cat gif")
-    @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
-    @app_commands.allowed_installs(guilds=True, users=True)
-    async def cat(interaction: discord.Interaction):
-        cat_url = "https://api.thecatapi.com/v1/images/search?mime_types=gif"
-        colors = [discord.Color.orange(), 0xFFFFFF, discord.Color.pink(), 
-                 discord.Color.from_rgb(0, 0, 0)]
-        
-        try:
-            async with aiohttp.ClientSession() as session:
-                async with session.get(cat_url) as resp:
-                    if resp.status == 200:
-                        data = await resp.json()
-                        gif_url = data[0]['url']
-                        
-                        embed = discord.Embed(title="Random Cat!", color=random.choice(colors))
-                        embed.set_image(url=gif_url)
-                        await interaction.response.send_message(embed=embed)
-                    else:
-                        await interaction.response.send_message(
-                            embed=discord.Embed(
-                                title="Error",
-                                description=f"Could not fetch a cat gif. (Status: {resp.status})",
-                                color=discord.Color.red()
-                            )
-                        )
-        except Exception as e:
-            await interaction.followup.send(
-                embed=discord.Embed(
-                    title="Error",
-                    description=f"```log\nError:\n{str(e)}\n```",
-                    color=discord.Color.red()
-                )
-            )
     
     # ==================== Out of Context ====================
     @bot.tree.command(name="ofc", description="Get a random out of context image")
@@ -596,7 +500,7 @@ async def fun_setup(bot: commands.Bot):
             embed.add_field(name="Rizz", value=f"**{ratings['Rizz']}%** 😗", inline=True)
             embed.add_field(name="Hot", value=f"**{ratings['Hot']}%** 🔥", inline=True)
             embed.add_field(name="Cute", value=f"**{ratings['cute']}%** 🫶", inline=True)
-            embed.add_field(name="gay", value=f"**{ratings['gay']}%** 🏳️‍🌈", inline=True)
+            embed.add_field(name="Gay", value=f"**{ratings['gay']}%** 🏳️‍🌈", inline=True)
             
             await interaction.followup.send(embed=embed)
             

@@ -85,11 +85,24 @@ COMMANDS = {
         ("/server set_autorole_off",        "Disable autorole  ·  Admin"),
         ("/server set_log [channel]",       "Set the moderation log channel  ·  Admin"),
     ],
+    "🐾 Animals": [
+        ("/animal duck",     "Get a random duck image 🦆"),
+        ("/animal cat",      "Get a random cat gif + fact 🐱"),
+        ("/animal dog",      "Get a random dog gif 🐶"),
+        ("/animal fox",      "Get a random fox image 🦊"),
+        ("/animal rotta",    "Get a random rat gif 🐀"),
+        ("/animal bird",     "Random bird image + fact 🐦"),
+        ("/animal panda",    "Random panda image + fact 🐼"),
+        ("/animal redpanda", "Random red panda image + fact 🦊"),
+        ("/animal koala",    "Random koala image + fact 🐨"),
+        ("/animal kangaroo", "Random kangaroo image + fact 🦘"),
+        ("/animal bunny",    "Get a random bunny image 🐰"),
+    ],
     "💬 Events": [
         ("Reply with `4k`",    "Quote the replied message as an image"),
         ("Reply with `pin`",   "Pin the replied message"),
         ("Reply with `unpin`", "Unpin the replied message"),
-    ],
+    ]
 }
 
 CATEGORY_COLORS = {
@@ -103,6 +116,7 @@ CATEGORY_COLORS = {
     "🛡️ Admin":          discord.Color.from_rgb(255, 100, 50),
     "⚙️ Server":         discord.Color.from_rgb(140, 140, 255),
     "💬 Events":         discord.Color.from_rgb(180, 180, 180),
+    "🐾 Animals": discord.Color.from_rgb(80, 200, 120)
 }
 
 
