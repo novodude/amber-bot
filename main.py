@@ -22,6 +22,7 @@ from commands.mimic import mimic_setup
 from commands.pet import pet_setup
 from commands.shop import shop_setup
 from commands.animals import animal_setup
+from commands.image import image_setup
 # databases
 from utils.radio.database import init_radio_db
 from utils.userbase.database import init_user_db
@@ -74,6 +75,7 @@ async def on_ready():
     await pet_setup(bot)
     await shop_setup(bot)
     await animal_setup(bot)
+    await image_setup(bot)
     await load_extensions()
     await bot.tree.sync()
     print("Commands synced.")

@@ -36,6 +36,41 @@ New commands and systems are added regularly as the project grows.
 
 ---
 
+### 🖼️ Image Commands
+
+A unified `/image` command group for manipulating images. Accepts both uploaded attachments and direct URLs. Powered by Pillow.
+
+| **/**                                      | **what it does**                                      |
+| ------------------------------------------ | ----------------------------------------------------- |
+| **`/image wanted [user] [amount]`**        | Create a wanted poster for a user.                    |
+| **`/image misquote [user] [message]`**     | Generate a fake quote image.                          |
+| **`/image rarch`**                         | Generate a random Rorschach inkblot image.            |
+| **`/image caption [caption] [image/url]`** | Add a caption above an image.                         |
+| **`/image meme [caption] [image/url]`**    | Add a meme-style caption to an image (top or bottom). |
+| **`/image grayscale [image/url]`**         | Convert an image to grayscale.                        |
+| **`/image blur [image/url]`**              | Apply a blur effect.                                  |
+| **`/image rotate [angle] [image/url]`**    | Rotate an image — 90°, 180°, or 360°.                 |
+| **`/image flip [axis] [image/url]`**       | Flip an image horizontally, vertically, or both.      |
+| **`/image invert [image/url]`**            | Invert the colors of an image.                        |
+| **`/image pixelate [image/url]`**          | Pixelate an image.                                    |
+| **`/image deepfry [image/url]`**           | Apply a deep fry effect.                              |
+| **`/image edgedetect [image/url]`**        | Apply an edge detection filter.                       |
+| **`/image rainbow [image/url]`**           | Overlay a rainbow gradient.                           |
+| **`/image sepia [image/url]`**             | Apply a sepia tone.                                   |
+| **`/image emboss [image/url]`**            | Apply an emboss effect.                               |
+| **`/image solarize [image/url]`**          | Apply a solarize effect.                              |
+| **`/image posterize [image/url]`**         | Apply a posterize effect.                             |
+| **`/image glitch [image/url]`**            | Apply a glitch effect.                                |
+| **`/image swirl [image/url]`**             | Apply a swirl/warp effect.                            |
+
+**Implementation notes:**
+
+- All filter commands accept either a file attachment or a `url` string — both optional, one required
+- Alpha channel is preserved correctly across all filters
+- Built with Pillow — filters include custom implementations of deepfry, glitch, swirl, sepia, and posterize
+
+---
+
 ### 🐾 Animals
 
 A unified `/animal` command group with multiple subcommands for different animals. Uses multiple APIs (random-d.uk, TheCatAPI, TheDogAPI, some-random-api, etc.) with async fetching and embed responses.
