@@ -1,10 +1,12 @@
-from PIL import Image, ImageDraw, ImageFont, ImageFilter
+from PIL import Image, ImageDraw, ImageFont, ImageFilter, ImageEnhance
 from discord import app_commands
 from pathlib import Path
 from io import BytesIO
+from typing import Literal
 import aiohttp
 import discord
 import random
+import math
 import io
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
@@ -326,12 +328,12 @@ class ImageGenerator:
             text_area_y = 0
 
         draw = ImageDraw.Draw(new_img)
-        font_path = self.font_dir / "caption.ttf"  # use a bold meme font
+        font_path = self.font_dir / "caption.ttf"
 
         # Fit text to full width
-        font, wrapped_text = self.fit_text_into_box(
+        font, wrapped_text, _ = self.fit_text_into_box(
             draw,
-            caption.upper(),              # memes = uppercase
+            caption.upper(),
             str(font_path),
             width - 40,
             padding - 20,
@@ -358,16 +360,167 @@ class ImageGenerator:
 
         return new_img
 
-    def grayscale_image(self, image: Image.Image) -> Image.Image:
-        """Convert an image to grayscale."""
+    def grayscale(self, image: Image.Image) -> Image.Image:
         return image.convert("L").convert("RGBA")
     
     def blur(self, image: Image.Image) -> Image.Image:
-        """blur an image using box blur"""
         return image.filter(ImageFilter.BoxBlur(radius=5))
+    
+    def rotate(self, image: Image.Image, angle: int) -> Image.Image:
+        return image.rotate(angle)
 
+    def flip(self, image: Image.Image, axis) -> Image.Image:
+        if axis == "top bottom":
+            return image.transpose(Image.Transpose.FLIP_TOP_BOTTOM)
+        elif axis == "left right":
+            return image.transpose(Image.Transpose.FLIP_LEFT_RIGHT)
 
+        new_img = image.transpose(Image.Transpose.FLIP_LEFT_RIGHT)
+        return new_img.transpose(Image.Transpose.FLIP_TOP_BOTTOM)
+    
+    def invert(self, image: Image.Image) -> Image.Image:
+        if image.mode == "RGBA":
+            r, g, b, a = image.split()
+            rgb = Image.merge("RGB", (r, g, b))
+            inverted = Image.eval(rgb, lambda x: 255 - x)
+            inverted.putalpha(a)
+            return inverted
+        return Image.eval(image, lambda x: 255 - x)
+    
+    def pixelate(self, image: Image.Image, pixel_size: int = 10) -> Image.Image:
+        small = image.resize(
+            (image.width // pixel_size, image.height // pixel_size),
+            resample=Image.Resampling.BILINEAR
+        )
+        return small.resize(image.size, Image.Resampling.NEAREST)
+    
+    def edge_detect(self, image: Image.Image) -> Image.Image:
+        if image.mode == "RGBA":
+            alpha = image.split()[3]
+            rgb = image.convert("RGB").filter(ImageFilter.FIND_EDGES)
+            rgb.putalpha(alpha)
+            return rgb
+        return image.filter(ImageFilter.FIND_EDGES)
+    
+    def deepfry(self, image: Image.Image) -> Image.Image:
+        img = image.copy().convert("RGB")
 
+        # Boost saturation aggressively
+        img = ImageEnhance.Color(img).enhance(3.0)
+
+        # Blow out the contrast and brightness
+        img = ImageEnhance.Contrast(img).enhance(3.0)
+        img = ImageEnhance.Brightness(img).enhance(1.2)
+
+        # Sharpen multiple times for that crunchy look
+        for _ in range(5):
+            img = img.filter(ImageFilter.SHARPEN)
+
+        # Simulate JPEG compression artifacts by round-tripping through low quality JPEG
+        buffer = BytesIO()
+        img.save(buffer, format="JPEG", quality=10)
+        buffer.seek(0)
+        img = Image.open(buffer).copy()
+
+        return img
+    def rainbowify(self, image: Image.Image) -> Image.Image:
+        img = image.copy().convert("RGBA")
+        width, height = img.size
+        
+        # Create a rainbow gradient
+        gradient = Image.new("RGBA", (width, height), (0, 0, 0, 0))
+        draw = ImageDraw.Draw(gradient)
+        
+        for y in range(height):
+            r = int(255 * (y / height))
+            g = int(255 * ((height - y) / height))
+            b = 128
+            draw.line([(0, y), (width, y)], fill=(r, g, b, 128))
+        
+        # Overlay the gradient onto the original image
+        return Image.alpha_composite(img, gradient)
+
+    def sepia(self, image: Image.Image) -> Image.Image:
+        alpha = image.split()[3] if image.mode == "RGBA" else None
+        img = image.convert("RGB")
+        
+        r, g, b = img.split()
+        new_r = r.point(lambda x: min(255, int(x * 0.393 + x * 0.769 + x * 0.189)))
+        new_g = g.point(lambda x: min(255, int(x * 0.349 + x * 0.686 + x * 0.168)))
+        new_b = b.point(lambda x: min(255, int(x * 0.272 + x * 0.534 + x * 0.131)))
+        
+        result = Image.merge("RGB", (new_r, new_g, new_b))
+        if alpha:
+            result.putalpha(alpha)
+        return result
+
+    def emboss(self, image: Image.Image) -> Image.Image:
+        return image.filter(ImageFilter.EMBOSS)
+    
+    def solarize(self, image: Image.Image, threshold: int = 128) -> Image.Image:
+        if image.mode == "RGBA":
+            alpha = image.split()[3]
+            rgb = image.convert("RGB").point(lambda x: 255 - x if x < threshold else x)
+            rgb.putalpha(alpha)
+            return rgb
+        return image.point(lambda x: 255 - x if x < threshold else x)
+    
+    def posterize(self, image: Image.Image, bits: int = 4) -> Image.Image:
+        if image.mode == "RGBA":
+            alpha = image.split()[3]
+            rgb = image.convert("RGB").point(lambda x: (x >> (8 - bits)) << (8 - bits))
+            rgb.putalpha(alpha)
+            return rgb
+        return image.point(lambda x: (x >> (8 - bits)) << (8 - bits))
+    
+    def glitch(self, image: Image.Image) -> Image.Image:
+        img = image.copy().convert("RGBA")
+        width, height = img.size
+        
+        for _ in range(60):
+            y1 = random.randint(0, height - 1)
+            slice_height = random.randint(5, 40)
+            y2 = min(y1 + slice_height, height)
+            
+            shift_x = random.randint(-150, 150)
+            
+            strip = img.crop((0, y1, width, y2))
+            
+            # wrap the strip around instead of going out of bounds
+            if shift_x >= 0:
+                visible = strip.crop((0, 0, width - shift_x, y2 - y1))
+                img.paste(visible, (shift_x, y1))
+            else:
+                visible = strip.crop((-shift_x, 0, width, y2 - y1))
+                img.paste(visible, (0, y1))
+        
+        return img
+
+    def swirl(self, image: Image.Image, strength: float = 1.0) -> Image.Image:
+        img = image.copy().convert("RGBA")
+        width, height = img.size
+        center_x, center_y = width / 2, height / 2
+        
+        pixels = img.load()
+        
+        for x in range(width):
+            for y in range(height):
+                dx = x - center_x
+                dy = y - center_y
+                distance = (dx**2 + dy**2) ** 0.5
+                
+                if distance > 0:
+                    angle = strength * distance / max(center_x, center_y)
+                    cos_angle = math.cos(angle)
+                    sin_angle = math.sin(angle)
+                    
+                    new_x = int(center_x + cos_angle * dx - sin_angle * dy)
+                    new_y = int(center_y + sin_angle * dx + cos_angle * dy)
+                    
+                    if 0 <= new_x < width and 0 <= new_y < height:
+                        pixels[x, y] = img.getpixel((new_x, new_y))
+        
+        return img
 
 
 @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
@@ -382,12 +535,20 @@ class ImageCommands(app_commands.Group):
 
     img_gen = ImageGenerator(ROOT_DIR)
 
-    async def fetch_image(self, attachment: discord.Attachment) -> Image.Image:
+    async def fetch_image(self, source) -> Image.Image:
+        url = source.url if isinstance(source, discord.Attachment) else source
         async with aiohttp.ClientSession() as session:
-            async with session.get(attachment.url) as resp:
+            async with session.get(url) as resp:
                 image_bytes = await resp.read()
         return Image.open(BytesIO(image_bytes)).convert("RGBA")
-    
+
+    async def resolve_image(self, image, url):
+        if image:
+            return await self.fetch_image(image)
+        elif url:
+            return await self.fetch_image(url)
+        return None
+
     async def send_image(
         self,
         interaction: discord.Interaction,
@@ -400,7 +561,10 @@ class ImageCommands(app_commands.Group):
             file = discord.File(fp=buffer, filename=filename)
             await interaction.followup.send(file=file)
 
-    async def run_image_command(self, interaction: discord.Interaction, func):
+    async def run_image_command(self, interaction: discord.Interaction, func, image=None, url=None):
+        if image is None and url is None:
+            await interaction.response.send_message("please provide an image or a url!", ephemeral=True)
+            return
         await interaction.response.defer()
         try:
             await func()
@@ -418,29 +582,26 @@ class ImageCommands(app_commands.Group):
             file = discord.File(output_bytes, filename=f"wanted_{user.name}.png")
             await interaction.followup.send(file=file)
         await self.run_image_command(interaction, logic)
-    
+
     @app_commands.command(name="misquote", description="Create a fake quote image")
     @app_commands.describe(
         message="What did they say?",
         user="Who said it?"
     )
     async def misquote(self, interaction: discord.Interaction, user: discord.User, message: str):
-
         async def logic():
             output_bytes = await self.img_gen.create_quote_image(user, message)
             file = discord.File(output_bytes, filename=f"quote_{user.name}.png")
             await interaction.followup.send(file=file)
         await self.run_image_command(interaction, logic)
-    
+
     @app_commands.command(name="rarch", description="Generate an inkblot image")
     async def rarch(self, interaction: discord.Interaction):
         inkblot_image = self.img_gen.generate_inkblot()
-        
         with io.BytesIO() as image_binary:
             inkblot_image.save(image_binary, 'PNG')
             image_binary.seek(0)
             file = discord.File(fp=image_binary, filename='inkblot.png')
-            
             embed = discord.Embed(title="What do you see?")
             embed.set_image(url="attachment://inkblot.png")
             await interaction.response.send_message(embed=embed, file=file)
@@ -448,57 +609,212 @@ class ImageCommands(app_commands.Group):
     @app_commands.command(name="caption", description="Add a caption to an image")
     @app_commands.describe(
         caption="The caption text to add to the image.",
-        image_url="The URL of the image to caption."
+        image="The image to caption.",
+        url="Or provide an image URL instead."
     )
-    async def caption(self, interaction: discord.Interaction, caption: str, image_url: discord.Attachment):
-
+    async def caption(self, interaction: discord.Interaction, caption: str, image: discord.Attachment = None, url: str = None):
         async def logic():
-            img = await self.fetch_image(image_url)
+            img = await self.resolve_image(image, url)
             result = self.img_gen.caption_image(img, caption)
             await self.send_image(interaction, result, "caption.png")
-
-        await self.run_image_command(interaction, logic)
+        await self.run_image_command(interaction, logic, image, url)
 
     @app_commands.command(name="meme", description="Apply a meme-style filter to an image")
     @app_commands.describe(
         caption="The caption text to add to the image.",
-        image="the image to memeify.",
+        image="The image to memeify.",
+        url="Or provide an image URL instead.",
         bottom="Whether to place the caption at the bottom (default is top)."
     )
-    async def meme(self, interaction: discord.Interaction, caption: str, image: discord.Attachment, bottom: bool = False):
-
+    async def meme(self, interaction: discord.Interaction, caption: str, image: discord.Attachment = None, url: str = None, bottom: bool = False):
         async def logic():
-            img = await self.fetch_image(image)
+            img = await self.resolve_image(image, url)
             result = self.img_gen.memeify_image(img, bottom, caption)
             await self.send_image(interaction, result, "meme.png")
-
-        await self.run_image_command(interaction, logic)
+        await self.run_image_command(interaction, logic, image, url)
 
     @app_commands.command(name="grayscale", description="Convert an image to grayscale")
     @app_commands.describe(
-        image="The image to convert to grayscale."
+        image="The image to convert to grayscale.",
+        url="Or provide an image URL instead."
     )
-    async def grayscale(self, interaction: discord.Interaction, image: discord.Attachment):
-
+    async def grayscale(self, interaction: discord.Interaction, image: discord.Attachment = None, url: str = None):
         async def logic():
-            img = await self.fetch_image(image)
-            result = self.img_gen.grayscale_image(img)
+            img = await self.resolve_image(image, url)
+            result = self.img_gen.grayscale(img)
             await self.send_image(interaction, result, "gray.png")
-
-        await self.run_image_command(interaction, logic)
+        await self.run_image_command(interaction, logic, image, url)
 
     @app_commands.command(name="blur", description="Apply a blur effect to an image")
     @app_commands.describe(
-        image="The image to blur."
+        image="The image to blur.",
+        url="Or provide an image URL instead."
     )
-    async def blur(self, interaction: discord.Interaction, image: discord.Attachment):
-
+    async def blur(self, interaction: discord.Interaction, image: discord.Attachment = None, url: str = None):
         async def logic():
-            img = await self.fetch_image(image)
+            img = await self.resolve_image(image, url)
             result = self.img_gen.blur(img)
             await self.send_image(interaction, result, "blur.png")
+        await self.run_image_command(interaction, logic, image, url)
 
-        await self.run_image_command(interaction, logic)
+    @app_commands.command(name="rotate", description="Rotate an image by a specified angle")
+    @app_commands.describe(
+        image="The image to rotate.",
+        url="Or provide an image URL instead.",
+        angle="The angle to rotate the image"
+    )
+    async def rotate(self, interaction: discord.Interaction, angle: Literal[90, 180, 360], image: discord.Attachment = None, url: str = None):
+        async def logic():
+            img = await self.resolve_image(image, url)
+            result = self.img_gen.rotate(img, angle)
+            await self.send_image(interaction, result, "rotate.png")
+        await self.run_image_command(interaction, logic, image, url)
+
+    @app_commands.command(name="flip", description="Flip an image along a specified axis")
+    @app_commands.describe(
+        image="The image to flip.",
+        url="Or provide an image URL instead.",
+        axis="The axis to flip the image (top bottom, left right, or both)."
+    )
+    async def flip(self, interaction: discord.Interaction, axis: Literal["top bottom", "left right", "both"], image: discord.Attachment = None, url: str = None):
+        async def logic():
+            img = await self.resolve_image(image, url)
+            result = self.img_gen.flip(img, axis)
+            await self.send_image(interaction, result, "flip.png")
+        await self.run_image_command(interaction, logic, image, url)
+
+    @app_commands.command(name="invert", description="Invert the colors of an image")
+    @app_commands.describe(
+        image="The image to invert.",
+        url="Or provide an image URL instead."
+    )
+    async def invert(self, interaction: discord.Interaction, image: discord.Attachment = None, url: str = None):
+        async def logic():
+            img = await self.resolve_image(image, url)
+            result = self.img_gen.invert(img)
+            await self.send_image(interaction, result, "invert.png")
+        await self.run_image_command(interaction, logic, image, url)
+
+    @app_commands.command(name="pixelate", description="Pixelate an image")
+    @app_commands.describe(
+        image="The image to pixelate.",
+        url="Or provide an image URL instead."
+    )
+    async def pixelate(self, interaction: discord.Interaction, image: discord.Attachment = None, url: str = None):
+        async def logic():
+            img = await self.resolve_image(image, url)
+            result = self.img_gen.pixelate(img)
+            await self.send_image(interaction, result, "pixelate.png")
+        await self.run_image_command(interaction, logic, image, url)
+
+    @app_commands.command(name="deepfry", description="Apply a deep fry effect to an image")
+    @app_commands.describe(
+        image="The image to deep fry.",
+        url="Or provide an image URL instead."
+    )
+    async def deepfry(self, interaction: discord.Interaction, image: discord.Attachment = None, url: str = None):
+        async def logic():
+            img = await self.resolve_image(image, url)
+            result = self.img_gen.deepfry(img)
+            await self.send_image(interaction, result, "deepfry.png")
+        await self.run_image_command(interaction, logic, image, url)
+
+    @app_commands.command(name="edgedetect", description="Apply an edge detection filter to an image")
+    @app_commands.describe(
+        image="The image to apply edge detection to.",
+        url="Or provide an image URL instead."
+    )
+    async def edgedetect(self, interaction: discord.Interaction, image: discord.Attachment = None, url: str = None):
+        async def logic():
+            img = await self.resolve_image(image, url)
+            result = self.img_gen.edge_detect(img)
+            await self.send_image(interaction, result, "edges.png")
+        await self.run_image_command(interaction, logic, image, url)
+
+    @app_commands.command(name="rainbow", description="Overlay a rainbow gradient onto an image")
+    @app_commands.describe(
+        image="The image to rainbowify.",
+        url="Or provide an image URL instead."
+    )
+    async def rainbow(self, interaction: discord.Interaction, image: discord.Attachment = None, url: str = None):
+        async def logic():
+            img = await self.resolve_image(image, url)
+            result = self.img_gen.rainbowify(img)
+            await self.send_image(interaction, result, "rainbow.png")
+        await self.run_image_command(interaction, logic, image, url)
+
+    @app_commands.command(name="sepia", description="Apply a sepia tone to an image")
+    @app_commands.describe(
+        image="The image to sepia-ize.",
+        url="Or provide an image URL instead."
+    )
+    async def sepia(self, interaction: discord.Interaction, image: discord.Attachment = None, url: str = None):
+        async def logic():
+            img = await self.resolve_image(image, url)
+            result = self.img_gen.sepia(img)
+            await self.send_image(interaction, result, "sepia.png")
+        await self.run_image_command(interaction, logic, image, url)
+
+    @app_commands.command(name="emboss", description="Apply an emboss effect to an image")
+    @app_commands.describe(
+        image="The image to emboss.",
+        url="Or provide an image URL instead."
+    )
+    async def emboss(self, interaction: discord.Interaction, image: discord.Attachment = None, url: str = None):
+        async def logic():
+            img = await self.resolve_image(image, url)
+            result = self.img_gen.emboss(img)
+            await self.send_image(interaction, result, "emboss.png")
+        await self.run_image_command(interaction, logic, image, url)
+
+    @app_commands.command(name="solarize", description="Apply a solarize effect to an image")
+    @app_commands.describe(
+        image="The image to solarize.",
+        url="Or provide an image URL instead."
+    )
+    async def solarize(self, interaction: discord.Interaction, image: discord.Attachment = None, url: str = None):
+        async def logic():
+            img = await self.resolve_image(image, url)
+            result = self.img_gen.solarize(img)
+            await self.send_image(interaction, result, "solarize.png")
+        await self.run_image_command(interaction, logic, image, url)
+
+    @app_commands.command(name="posterize", description="Apply a posterize effect to an image")
+    @app_commands.describe(
+        image="The image to posterize.",
+        url="Or provide an image URL instead."
+    )
+    async def posterize(self, interaction: discord.Interaction, image: discord.Attachment = None, url: str = None):
+        async def logic():
+            img = await self.resolve_image(image, url)
+            result = self.img_gen.posterize(img)
+            await self.send_image(interaction, result, "posterize.png")
+        await self.run_image_command(interaction, logic, image, url)
+
+    @app_commands.command(name="glitch", description="Apply a glitch effect to an image")
+    @app_commands.describe(
+        image="The image to glitch.",
+        url="Or provide an image URL instead."
+    )
+    async def glitch(self, interaction: discord.Interaction, image: discord.Attachment = None, url: str = None):
+        async def logic():
+            img = await self.resolve_image(image, url)
+            result = self.img_gen.glitch(img)
+            await self.send_image(interaction, result, "glitch.png")
+        await self.run_image_command(interaction, logic, image, url)
+
+    @app_commands.command(name="swirl", description="Apply a swirl effect to an image")
+    @app_commands.describe(
+        image="The image to swirl.",
+        url="Or provide an image URL instead."
+    )
+    async def swirl(self, interaction: discord.Interaction, image: discord.Attachment = None, url: str = None):
+        async def logic():
+            img = await self.resolve_image(image, url)
+            result = self.img_gen.swirl(img)
+            await self.send_image(interaction, result, "swirl.png")
+        await self.run_image_command(interaction, logic, image, url)
+
 
 async def image_setup(bot):
     bot.tree.add_command(ImageCommands())
