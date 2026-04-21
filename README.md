@@ -36,6 +36,27 @@ New commands and systems are added regularly as the project grows.
 
 ---
 
+### 🌸 Anime
+
+A unified `/anime` command group for anime images and quotes. Images are fetched from [nekos.best](https://nekos.best) and quotes from [yurippe](https://yurippe.vercel.app).
+
+| **/**                 | **what it does**                   |
+| --------------------- | ---------------------------------- |
+| **`/anime waifu`**    | Get a random anime waifu image.    |
+| **`/anime husbando`** | Get a random anime husbando image. |
+| **`/anime neko`**     | Get a random anime neko image.     |
+| **`/anime kitsune`**  | Get a random anime kitsune image.  |
+| **`/anime quote`**    | Get a random anime quote.          |
+
+**Implementation notes:**
+
+- Images fetched from `nekos.best/api/v2` — returns artist name, artist href, source URL, and dimensions
+- Quotes fetched from `yurippe.vercel.app/api/quotes` — no auth, no rate limit
+- Each image embed includes artist credit and a link to the original artwork
+- Quote embed displays the quote text, character name, and anime title
+
+---
+
 ### 🖼️ Image Commands
 
 A unified `/image` command group for manipulating images. Accepts both uploaded attachments and direct URLs. Powered by Pillow.
@@ -97,8 +118,6 @@ A unified `/animal` command group with multiple subcommands for different animal
 - Works in guilds and DMs
 
 ---
-
-## (rest of README unchanged)
 
 ### 💰 Economy & Profile
 
@@ -427,6 +446,7 @@ python main.py
 - [x] Pet system — cat companion powered by domesticated-LLM
 - [x] LLM integration (domesticated-LLM — cat-speak fine-tune of SmolLM2-135M)
 - [x] Auto setup script (amber.py) and updater (update.py)
+- [x] Anime commands — waifu, husbando, neko, kitsune, quote
 - [ ] Gambling system
 
 ---

@@ -23,6 +23,7 @@ from commands.pet import pet_setup
 from commands.shop import shop_setup
 from commands.animals import animal_setup
 from commands.image import image_setup
+from commands.anime import anime_setup
 # databases
 from utils.radio.database import init_radio_db
 from utils.userbase.database import init_user_db
@@ -76,6 +77,7 @@ async def on_ready():
     await shop_setup(bot)
     await animal_setup(bot)
     await image_setup(bot)
+    await anime_setup(bot)
     await load_extensions()
     await bot.tree.sync()
     print("Commands synced.")

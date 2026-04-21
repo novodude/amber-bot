@@ -4,6 +4,8 @@ from discord import app_commands, ui
 # ─────────────────────────────────────────────
 # Command data — update this when adding commands
 # ─────────────────────────────────────────────
+import discord
+
 COMMANDS = {
     "🎭 Fun": [
         ("/do [action] [user]",        "Anime action GIF — hug, kiss, pat, kick, yeet, baka and more"),
@@ -17,6 +19,13 @@ COMMANDS = {
         ("/mimic start [user]",        "Activate mimic mode for a user"),
         ("/mimic stop [user]",         "Stop mimic mode for a user"),
         ("/mimic list",                "List of users that Amber mimics"),
+    ],
+    "🌸 Anime": [
+        ("/anime waifu",               "Get a random anime waifu image"),
+        ("/anime husbando",            "Get a random anime husbando image"),
+        ("/anime neko",                "Get a random anime neko image"),
+        ("/anime kitsune",             "Get a random anime kitsune image"),
+        ("/anime quote",               "Get a random anime quote"),
     ],
     "🦆 amber": [
         ("/quests", "View your daily quests and claim rewards"),
@@ -136,6 +145,7 @@ COMMANDS = {
 
 CATEGORY_COLORS = {
     "🎭 Fun":      discord.Color.from_rgb(255, 100, 130),
+    "🌸 Anime":    discord.Color.from_rgb(255, 150, 200),
     "🦆 amber":    discord.Color.from_rgb(255, 170, 0),
     "🐾 Animals":  discord.Color.from_rgb(80, 200, 120),
     "💰 Economy":  discord.Color.from_rgb(255, 195, 40),
