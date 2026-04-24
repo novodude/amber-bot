@@ -338,7 +338,8 @@ class ShopCog(commands.Cog):
 
         embed = discord.Embed(title="🔓 Your Unlocks", color=discord.Color.gold())
         for item_name, purchased_at in rows:
-            embed.add_field(name=item_name, value=f"Bought: {purchased_at[:10]}", inline=True)
+            date_str = purchased_at[:10] if purchased_at else "Unknown"
+            embed.add_field(name=item_name, value=f"Bought: {date_str}", inline=True)
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
 
