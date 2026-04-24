@@ -261,11 +261,11 @@ class ShopCog(commands.Cog):
                 "UPDATE users SET amber_dabloons = amber_dabloons - ? WHERE id = ?",
                 (shop_item["price"], user_id)
             )
-            await db.execute("""
-                INSERT INTO inventory (user_id, item_name, quantity)
-                VALUES (?, ?, 1)
-                ON CONFLICT(user_id, item_name) DO UPDATE SET quantity = quantity + 1
-            """, (user_id, shop_item["item_name"]))
+            await db.execute(
+                "INSERT INTO inventory (user_id, item_name, quantity) VALUES (?, ?, 1)"
+                " ON CONFLICT(user_id, item_name) DO UPDATE SET quantity = quantity + 1",
+                (user_id, shop_item["item_name"])
+            )
             await db.commit()
 
         embed = discord.Embed(
