@@ -56,16 +56,6 @@ class DuckClicker(ui.View):
 
         await interaction.response.edit_message(content=message, view=self)
 
-    @discord.ui.button(label="🛒 Shop", style=discord.ButtonStyle.secondary, row=0)
-    async def shop_button(self, interaction: discord.Interaction, button: ui.Button):
-        embed = discord.Embed(
-            title="🛒 Duck Clicker Shop",
-            description="Upgrades are coming soon!\nCheck back later for ways to quack faster 🦆",
-            color=discord.Color.gold()
-        )
-        embed.set_footer(text="quacking good!")
-        await interaction.response.send_message(embed=embed, ephemeral=True)
-
 
 class TicTacToe(ui.View):
     def __init__(self, user_id: int, discord_id: int, difficulty: str, difficulty_level: float):

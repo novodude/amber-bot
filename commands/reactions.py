@@ -1,10 +1,13 @@
 import random
 import discord
 from discord import app_commands
-from typing import Optional, Literal
+from typing import Counter, Optional, Literal
 from utils.userbase.ensure_registered import ensure_registered
 from utils.action_counts import get_received_count, increment_action_count, maybe_reward_dabloons
-from utils.reactions import build_embed, build_title, build_counter_text, ACTIONS, REACTION, React_back
+from utils.reactions import (
+    build_embed, build_title, build_counter_text,
+    ACTIONS, REACTION, React_back, get_counter_text
+)
 
 # ── Command setup ─────────────────────────────────────────────────────────────
 async def setup_reactions(bot):
@@ -51,16 +54,15 @@ async def setup_reactions(bot):
                 base_desc = random.choice(action_data['desc_self']).format(user=interaction.user, author=interaction.user)
 
             # ── Counter (only when targeting another real user) ───────────────
-            is_other_action = (
-                    user and user != interaction.user
-                    and not everyone and not user.bot
+            is_two_users_action = (
+                    user and user != interaction.user 
+                    and not user.bot and not everyone
             )
 
-            counter = ''
-            if is_other_action:
-                await increment_action_count(interaction.user.id, user.id, action)
-                count = await get_received_count(user.id, action)
-                counter = build_counter_text(action, count, interaction.user.display_name, user.display_name)
+            if is_two_users_action:
+                counter = await get_counter_text(interaction, action, user)
+            else:
+                counter = None
 
             # ── Dabloon reward ────────────────────────────────────────────────
             reward = await maybe_reward_dabloons(interaction.user.id)

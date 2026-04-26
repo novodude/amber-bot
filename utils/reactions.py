@@ -6,6 +6,7 @@ from typing import Optional
 from utils.action_counts import (
     increment_action_count,
     maybe_reward_dabloons,
+    get_received_count
 )
 
 # ── Action definitions ────────────────────────────────────────────────────────
@@ -842,6 +843,7 @@ ACTION_PAST_TENSE = {
 PRIVATE_COUNTER_ACTIONS = {'kiss'}
 
 
+
 # ── Counter text builder ──────────────────────────────────────────────────────
 def build_counter_text(action: str, count: int, author_name: str, target_name: str | None, is_look: bool = False) -> str:
     if count <= 0:
@@ -885,12 +887,11 @@ class React_back(discord.ui.View):
             await interaction.response.send_message(f"Only {self.user.display_name} can react back!", ephemeral=True)
             return
 
-        count = await increment_action_count(interaction.user.id, self.author.id, self.action)
         reward = await maybe_reward_dabloons(interaction.user.id)
 
         title = build_title(self.action, self.action_data, self.author.display_name, interaction.user.display_name, react_back=True)
         base_desc = random.choice(self.action_data['desc_other']).format(user=self.user, author=interaction.user)
-        counter = build_counter_text(self.action, count, interaction.user.display_name, self.author.display_name)
+        counter = await get_counter_text(interaction, self.action, self.user)
 
         description = base_desc
         if counter:
@@ -973,3 +974,19 @@ async def get_gif_url(action: str) -> str:
         async with session.get(f"https://nekos.best/api/v2/{action}") as response:
             data = await response.json()
             return data['results'][0]['url']
+
+
+# ── Counter text with the number ─────────────────────────────────────────────────────────────
+async def get_counter_text(interaction: discord.Interaction, action: str, user: Optional[discord.User] = None) -> str:
+    counter = ''
+
+    if action in PRIVATE_COUNTER_ACTIONS:
+        # Private counter: only visible to the user and the bot
+        count = await increment_action_count(interaction.user.id, user.id, action)
+        counter = build_counter_text(action, count, interaction.user.display_name, user.display_name, private=True)
+    else:
+        await increment_action_count(interaction.user.id, user.id, action)
+        count = await get_received_count(user.id, action)
+        counter = build_counter_text(action, count, interaction.user.display_name, user.display_name)
+
+    return counter

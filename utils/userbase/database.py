@@ -162,6 +162,12 @@ async def init_user_db():
             )
         """)
 
+        await db.execute("""
+            CREATE UNIQUE INDEX IF NOT EXISTS
+                idx_inventory_user_item
+                ON inventory (user_id, item_name)
+            """)
+
         # ── migrations in case the db is old ───────────────────────────────────
         migrations = [
             "ALTER TABLE games ADD COLUMN action_use_count INTEGER DEFAULT 0",

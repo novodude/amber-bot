@@ -331,60 +331,6 @@ class ModerationCog(commands.Cog):
         log_embed.add_field(name="Changed At", value=discord.utils.format_dt(discord.utils.utcnow(), style='d'), inline=True)
         await self.send_log(interaction.guild_id, log_embed)
 
-
-    @server.command(name="set_autorole", description="Set a role to automatically assign to new members")
-    @app_commands.describe(role="The role to assign to new members")
-    @app_commands.checks.has_permissions(administrator=True)
-    @app_commands.guild_only()
-    async def set_autorole(self, interaction: discord.Interaction, role: discord.Role):
-        # Make sure the bot's role is above the autorole in the hierarchy
-        if role.position >= interaction.guild.me.top_role.position:
-            await interaction.response.send_message(
-                "I can't assign that role — it's higher than or equal to my highest role!",
-                ephemeral=True
-            )
-            return
-
-        # Don't allow assigning @everyone
-        if role.is_default():
-            await interaction.response.send_message("You can't set @everyone as the autorole!", ephemeral=True)
-            return
-
-        async with aiosqlite.connect(DB_PATH) as db:
-            await db.execute("""
-                INSERT INTO guild_config (guild_id, autorole_id)
-                VALUES (?, ?)
-                ON CONFLICT(guild_id) DO UPDATE SET autorole_id=excluded.autorole_id
-            """, (interaction.guild_id, role.id))
-            await db.commit()
-
-        await interaction.response.send_message(f"New members will now automatically receive the {role.mention} role!", ephemeral=True)
-
-        log_embed = discord.Embed(
-            title="⚙️ Autorole Set",
-            description=f"**Role:** {role.mention}",
-            color=discord.Color.blurple()
-        )
-        log_embed.set_author(name=interaction.user.display_name, icon_url=interaction.user.display_avatar.url)
-        log_embed.add_field(name="Set At", value=discord.utils.format_dt(discord.utils.utcnow(), style='d'), inline=True)
-        await self.send_log(interaction.guild_id, log_embed)
-
-    @server.command(name="set_autorole_off", description="Disable autorole for new members")
-    @app_commands.checks.has_permissions(administrator=True)
-    @app_commands.guild_only()
-    async def set_autorole_off(self, interaction: discord.Interaction):
-        async with aiosqlite.connect(DB_PATH) as db:
-            await db.execute("""
-                UPDATE guild_config SET autorole_id = NULL WHERE guild_id = ?
-            """, (interaction.guild_id,))
-            await db.commit()
-
-        await interaction.response.send_message("Autorole has been disabled.", ephemeral=True)
-
-        log_embed = discord.Embed(title="⚙️ Autorole Disabled", color=discord.Color.blurple())
-        log_embed.set_author(name=interaction.user.display_name, icon_url=interaction.user.display_avatar.url)
-        await self.send_log(interaction.guild_id, log_embed)
-
     @server.command(name="set_log", description="Set a channel for moderation logs")
     @app_commands.describe(channel="The channel to send moderation logs in")
     @app_commands.checks.has_permissions(administrator=True)
@@ -440,16 +386,6 @@ class ModerationCog(commands.Cog):
                     .replace("{user}", member.mention) \
                     .replace("{server}", member.guild.name)
                 await channel.send(message)
-
-        # Assign autorole
-        if row[2]:
-            role = member.guild.get_role(row[2])
-            if role:
-                try:
-                    await member.add_roles(role, reason="Autorole")
-                except discord.Forbidden:
-                    pass  # Bot lost permission or role was moved above it
-
 
 # ── Admin commands ─────────────────────────────────────────────────────────────
 

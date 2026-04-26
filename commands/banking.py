@@ -44,7 +44,7 @@ class Money(app_commands.Group):
             daily_amount = random.randint(100, 200)
             await add_dabloons(user_id, daily_amount)
             xp = random.randint(40, 80)
-            await add_xp(user_id, xp)
+            await add_xp(user_id, xp, None)
             await db.execute(
                 "UPDATE games SET daily_coin_claim = ? WHERE user_id = ?",
                 (now.isoformat(), user_id)
