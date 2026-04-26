@@ -1,7 +1,9 @@
+from typing import Literal
 import aiosqlite
 import random
 
 import discord
+from discord.abc import T
 from utils.userbase.database import DB_PATH
 
 async def add_dabloons(user_id: int, amount: int):
@@ -35,14 +37,117 @@ async def get_dabloons(user_id: int) -> int:
         row = await cursor.fetchone()
         return row[0] if row else 0
 
-async def get_leaderboard() -> list[tuple[int, int]]:
-    """Get the top 10 users by dabloon balance"""
+async def is_private_account(discord_id: int) -> bool:
     async with aiosqlite.connect("data/user.db") as db:
         cursor = await db.execute(
-            "SELECT username, amber_dabloons FROM users ORDER BY amber_dabloons DESC LIMIT 10"
+            "SELECT is_private FROM users WHERE discord_id = ?",
+            (discord_id,)
         )
-        rows = await cursor.fetchall()
-        return rows
+        row = await cursor.fetchone()
+        if row is None:
+            return False
+        return row[0] == 1
+
+async def set_private_account(discord_id: int, is_private: bool):
+    async with aiosqlite.connect("data/user.db") as db:
+        await db.execute(
+            "UPDATE users SET is_private = ? WHERE discord_id = ?",
+            (1 if is_private else 0, discord_id)
+        )
+        await db.commit()
+
+async def clean_leaderboard_data(data: list[tuple[str, int]]) -> list[tuple[str, int]]:
+    """
+    Remove private accounts from leaderboard data and replace discord IDs with mentions.
+    """
+    cleaned_data = []
+    for discord_id, value in data:
+        if not await is_private_account(discord_id):
+            cleaned_data.append((f"<@{discord_id}>", value))
+    return cleaned_data
+
+async def get_leaderboard(type: Literal["money", "level", "actions received", "action given", "duck clicker", "ttt", "ttt streak"]) -> list[tuple[int, int]]:
+    """Get the top 10 users by dabloon balance"""
+    
+    if type == "money":
+        async with aiosqlite.connect("data/user.db") as db:
+            cursor = await db.execute(
+                "SELECT discord_id, amber_dabloons FROM users ORDER BY amber_dabloons DESC LIMIT 10"
+            )
+            data = await cursor.fetchall()
+            return await clean_leaderboard_data(data)
+
+    elif type == "level":
+        async with aiosqlite.connect("data/user.db") as db:
+            cursor = await db.execute(
+                "SELECT discord_id, level FROM users ORDER BY level DESC, experience DESC LIMIT 10"
+            )
+            data = await cursor.fetchall()
+            return await clean_leaderboard_data(data)
+
+    elif type == "actions received":
+        async with aiosqlite.connect("data/user.db") as db:
+            cursor = await db.execute("""
+                SELECT u.discord_id, SUM(ac.count) AS total_received
+                FROM action_counts ac
+                JOIN users u ON u.id = ac.target_id
+                GROUP BY ac.target_id
+                ORDER BY total_received DESC
+                LIMIT 10
+            """)
+            data = await cursor.fetchall()
+            return await clean_leaderboard_data(data)
+
+    elif type == "action given":
+        async with aiosqlite.connect("data/user.db") as db:
+            cursor = await db.execute("""
+                SELECT u.discord_id, SUM(ac.count) AS total_given
+                FROM action_counts ac
+                JOIN users u ON u.id = ac.actor_id
+                GROUP BY ac.actor_id
+                ORDER BY total_given DESC
+                LIMIT 10
+            """)
+            data = await cursor.fetchall()
+            return await clean_leaderboard_data(data)
+
+    elif type == "duck clicker":
+        async with aiosqlite.connect("data/user.db") as db:
+            cursor = await db.execute("""
+                SELECT u.discord_id, g.duck_clicker_current_score AS score
+                FROM games g
+                JOIN users u ON u.id = g.user_id
+                ORDER BY score DESC
+                LIMIT 10
+            """)
+            data = await cursor.fetchall()
+            return await clean_leaderboard_data(data)
+
+    elif type == "ttt":
+        async with aiosqlite.connect("data/user.db") as db:
+            cursor = await db.execute("""
+                SELECT u.discord_id, g.ttt_wins AS wins
+                FROM games g
+                JOIN users u ON u.id = g.user_id
+                ORDER BY wins DESC
+                LIMIT 10
+            """)
+            data = await cursor.fetchall()
+            return await clean_leaderboard_data(data)
+
+    elif type == "ttt streak":
+        async with aiosqlite.connect("data/user.db") as db:
+            cursor = await db.execute("""
+                SELECT u.discord_id, g.ttt_streak AS streak
+                FROM games g
+                JOIN users u ON u.id = g.user_id
+                ORDER BY streak DESC
+                LIMIT 10
+            """)
+            data = await cursor.fetchall()
+            return await clean_leaderboard_data(data)
+
+    
 
 async def get_user_id_from_discord(discord_id: int) -> int | None:
     """Convert Discord ID to internal user ID

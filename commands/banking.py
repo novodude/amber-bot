@@ -8,7 +8,8 @@ from utils.banking import ProfileView, build_profile_embed
 from utils.userbase.ensure_registered import ensure_registered
 from utils.economy import (
     add_dabloons, get_leaderboard, get_user_id_from_discord,
-    get_dabloons, add_xp, get_level, get_xp
+    get_dabloons, add_xp, get_level, get_xp,
+    is_private_account
 )
 
 
@@ -90,25 +91,6 @@ class Money(app_commands.Group):
         balance = await get_dabloons(user_id)
         await interaction.response.send_message(f"You have 🪙 {balance} dabloons.")
 
-    @app_commands.command(name="leaderboard", description="See the top 10 users by dabloon balance")
-    async def leaderboard(self, interaction: discord.Interaction):
-        leaderboard = await get_leaderboard()
-
-        if not leaderboard:
-            await interaction.response.send_message("No users found in the leaderboard.")
-            return
-
-        embed = discord.Embed(
-            title="Dabloon Leaderboard",
-            description="Top 10 users by dabloon balance",
-            color=discord.Color.gold()
-        )
-
-        for rank, (username, dabloons) in enumerate(leaderboard, start=1):
-            name = f"@{username}"
-            embed.add_field(name=f"{rank}. {name}", value=f"🪙 {dabloons}", inline=False)
-
-        await interaction.response.send_message(embed=embed)
 
 
 async def banking_setup(bot):
@@ -117,13 +99,29 @@ async def banking_setup(bot):
     @bot.tree.command(name="profile", description="Check your profile.")
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     @app_commands.allowed_installs(guilds=True, users=True)
-    async def profile(interaction: discord.Interaction):
-        # Auto-register if needed
-        discord_id = interaction.user.id
-        user_id = await ensure_registered(discord_id, str(interaction.user))
+    async def profile(interaction: discord.Interaction, user: discord.User = None):
+        discord_id = interaction.user.id if user is None else user.id
+        target_user = interaction.user if user is None else user
+
+        if user is None:
+            user_id = await ensure_registered(discord_id, str(interaction.user))
+        else:
+            user_id = await get_user_id_from_discord(discord_id)
+            if user_id is None:
+                await interaction.response.send_message(
+                    f"{user.mention} isn't registered yet",
+                    ephemeral=True
+                )
+                return
+
+        if await is_private_account(discord_id):
+            await interaction.response.send_message(
+                f"{user.mention} isn't registered yet",
+                ephemeral=True
+            )
+            return
 
         balance = await get_dabloons(user_id)
-
         async with aiosqlite.connect("data/user.db") as db:
             cursor = await db.execute(
                 "SELECT bio, profile_color FROM users WHERE id = ?", (user_id,)
@@ -143,14 +141,14 @@ async def banking_setup(bot):
 
         embed = await build_profile_embed(
             discord_id=discord_id,
-            user=interaction.user,
+            user=target_user,
             balance=balance,
             bio=bio,
             color=ProfileView(discord_id).get_color(color_name),
             greeting_time=greeting_time,
         )
 
-        view = ProfileView(discord_id)
+        view = ProfileView(discord_id) if user is None else None
         await interaction.response.send_message(embed=embed, view=view)
 
     @bot.tree.command(name="setbio", description="Set your custom bio")

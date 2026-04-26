@@ -205,7 +205,6 @@ class ShopCog(commands.Cog):
                 )
                 return
 
-            # Atomic: deduct money and record purchase in one transaction
             async with aiosqlite.connect(DB_PATH) as db:
                 await db.execute(
                     "UPDATE users SET amber_dabloons = amber_dabloons - ? WHERE id = ?",
@@ -217,7 +216,6 @@ class ShopCog(commands.Cog):
                 )
                 await db.commit()
 
-            # Apply color unlocks immediately
             if effect.startswith("color_") and effect != "color_custom":
                 color_name = effect[len("color_"):]
                 async with aiosqlite.connect(DB_PATH) as db:
@@ -239,7 +237,6 @@ class ShopCog(commands.Cog):
         # ── Custom hex color ──────────────────────────────────────────────────
         if effect == "color_custom":
             if not await has_purchase(user_id, shop_item["item_name"]):
-                # Atomic: deduct money and record purchase in one transaction
                 async with aiosqlite.connect(DB_PATH) as db:
                     await db.execute(
                         "UPDATE users SET amber_dabloons = amber_dabloons - ? WHERE id = ?",
@@ -254,19 +251,14 @@ class ShopCog(commands.Cog):
             return
 
         # ── Consumables and accessories → inventory ───────────────────────────
-        # Atomic: deduct money and add to inventory in one transaction so that a
-        # failure can never leave the user charged without receiving their item.
         async with aiosqlite.connect(DB_PATH) as db:
             await db.execute(
                 "UPDATE users SET amber_dabloons = amber_dabloons - ? WHERE id = ?",
                 (shop_item["price"], user_id)
             )
-            await db.execute(
-                "INSERT INTO inventory (user_id, item_name, quantity) VALUES (?, ?, 1)"
-                " ON CONFLICT(user_id, item_name) DO UPDATE SET quantity = quantity + 1",
-                (user_id, shop_item["item_name"])
-            )
             await db.commit()
+
+        await add_to_inventory(user_id, shop_item["item_name"], 1)
 
         embed = discord.Embed(
             title=f"✅ Purchased {shop_item['emoji']} {shop_item['item_name']}!",
@@ -275,7 +267,6 @@ class ShopCog(commands.Cog):
         )
         embed.set_footer(text=f"Remaining balance: 🪙 {balance - shop_item['price']}")
 
-        # Hint for accessories
         if category == "accessory":
             embed.add_field(
                 name="How to use",
