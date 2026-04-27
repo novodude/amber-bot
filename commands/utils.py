@@ -28,31 +28,13 @@ async def download_and_upload(interaction, session, download_url, title, status_
                 await status_msg.edit(content=f"❌ File too large: {file_size_mb:.1f}MB (max 200MB)")
                 return
             
-            await status_msg.edit(content=f"☁️ Uploading to Catbox ({file_size_mb:.1f}MB)...")
-            
-            safe_title = "".join(c for c in title if c.isalnum() or c in (' ', '-', '_'))[:50]
-            
-            form = aiohttp.FormData()
-            form.add_field('reqtype', 'fileupload')
-            form.add_field('fileToUpload', file_data, filename=f"{safe_title}.mp3", content_type='audio/mpeg')
-            
-            async with session.post('https://catbox.moe/user/api.php', data=form, timeout=180) as upload_response:
-                if upload_response.status != 200:
-                    await status_msg.edit(content=f"❌ Upload failed: HTTP {upload_response.status}")
-                    return
-                
-                catbox_url = (await upload_response.text()).strip()
-                
-                if catbox_url.startswith('http'):
-                    embed = discord.Embed(
-                        title="✅ Download Complete!",
-                        description=f"**{title[:100]}**\n\n[📥 Click to Download]({catbox_url})\n\n📊 Size: {file_size_mb:.1f}MB",
-                        color=discord.Color.green()
-                    )
-                    embed.set_footer(text="Permanent link • Hosted on Catbox.moe")
-                    await status_msg.edit(content=None, embed=embed)
-                else:
-                    await status_msg.edit(content=f"❌ Catbox upload error: {catbox_url}")
+            await status_msg.edit(content=f"📤 Sending file to Discord ({file_size_mb:.1f}MB)...")
+
+            # Send the audio file directly as a Discord attachment
+            discord_file = discord.File(fp=io.BytesIO(file_data), filename=f"{title[:50]}.mp3")
+            await interaction.followup.send(file=discord_file, content="✅ Download Complete!")
+            # Update the status message to indicate completion
+            await status_msg.edit(content="✅ File sent.")
     
     except asyncio.TimeoutError:
         await status_msg.edit(content="❌ Download timed out. File may be too large or server is slow.")

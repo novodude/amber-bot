@@ -52,6 +52,7 @@ def yesno(prompt: str, default_yes: bool = False) -> bool:
     return answer in ("y", "yes")
 
 def using_ai():
+    global USING_AI
     print("  The domesticated-LLM generates AI cat messages.")
     print("  Without it, Amber uses the built-in synthesis engine instead —")
     print("  cat messages will still work, just without the neural flair.\n")
@@ -103,13 +104,13 @@ def step_install():
 
     for dep in deps:
         if USING_AI:
-            code = run([VENV_PIP, "install", ""+dep, "--quiet"])
+            code = run([VENV_PIP, "install", dep, "--quiet"])
             if code != 0:
                 print("  pip install failed. Check your internet connection.")
                 sys.exit(1)
         else:
             if dep not in AI_DEPS:
-                code = run([VENV_PIP, "install", ""+dep, "--quiet"])
+                code = run([VENV_PIP, "install", dep, "--quiet"])
                 if code != 0:
                     print("  pip install failed. Check your internet connection.")
                     sys.exit(1)
@@ -195,7 +196,7 @@ def step_env():
         "GIPHY_API":             ("Giphy API key", False),
         "SPOTIFY_CLIENT_ID":     ("Spotify client ID", False),
         "SPOTIFY_CLIENT_SECRET": ("Spotify client secret", False),
-        "RAPIDAPI_KEY":          ("RapidAPI key (optional, for /download)", False),
+        # "RAPIDAPI_KEY":          ("RapidAPI key (optional, for /download)", False),  # No longer needed – download now uses yt-dlp
     }
 
     changed = False
