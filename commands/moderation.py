@@ -364,6 +364,44 @@ class ModerationCog(commands.Cog):
         log_embed.set_author(name=interaction.user.display_name, icon_url=interaction.user.display_avatar.url)
         log_embed.add_field(name="Set At", value=discord.utils.format_dt(discord.utils.utcnow(), style='d'), inline=True)
         await self.send_log(interaction.guild_id, log_embed)
+
+    @server.command(name="set_4k_channel", description="Set a channel for 4k image generation results")
+    @app_commands.describe(channel="The channel to send 4k generation results in")
+    @app_commands.checks.has_permissions(manage_channels=True)
+    @app_commands.guild_only()
+    async def set_4k_channel(self, interaction: discord.Interaction, channel: discord.TextChannel):
+        # Verify the bot can actually send in the chosen channel before saving
+        if not channel.permissions_for(interaction.guild.me).send_messages:
+            await interaction.response.send_message(
+                "I don't have permission to send messages in that channel! Please choose a different channel or adjust my permissions.",
+                ephemeral=True
+            )
+            return
+
+        # Upsert 4k channel - only updates 4k_channel
+        async with aiosqlite.connect(DB_PATH) as db:
+            await db.execute("""
+                INSERT INTO guild_config (guild_id, four_k_channel)
+                VALUES (?, ?)
+                ON CONFLICT(guild_id) DO UPDATE SET four_k_channel=excluded.four_k_channel
+            """, (interaction.guild_id, channel.id))
+            await db.commit()
+
+        await interaction.response.send_message(f"4k generation results will now be sent in {channel.mention}!", ephemeral=True)
+
+    @server.command(name="set_4k_channel_off", description="Disable 4k generation messages")
+    @app_commands.checks.has_permissions(manage_channels=True)
+    @app_commands.guild_only()
+    async def set_4k_channel_off(self, interaction: discord.Interaction):
+        async with aiosqlite.connect(DB_PATH) as db:
+            await db.execute("""
+                UPDATE guild_config
+                SET four_k_channel = NULL
+                WHERE guild_id = ?
+            """, (interaction.guild_id,))
+            await db.commit()
+
+        await interaction.response.send_message("4k generation messages have been disabled for this server.", ephemeral=True)
         
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member):

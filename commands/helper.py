@@ -8,7 +8,7 @@ import discord
 
 COMMANDS = {
     "🎭 Fun": [
-        ("/do [action] [user]",        "Anime action GIF — hug, kiss, pat, kick, yeet, baka and more"),
+        ("/do [action] [user]",        "Anime action GIF — hug, kiss, pat, kick, yeet, baka, peck and more"),
         ("/look [reaction]",           "Anime reaction GIF — blush, shrug, angry, happy and more"),
         ("/ofc [type]",     "Out-of-context image"),
         ("/8ball [question]",          "Ask the magic 8 ball"),
@@ -20,7 +20,7 @@ COMMANDS = {
         ("/mimic stop [user]",         "Stop mimic mode for a user"),
         ("/mimic list",                "List of users that Amber mimics"),
     ],
-    "🌸 Anime": [
+   "🌸 Anime": [
         ("/anime waifu",               "Get a random anime waifu image"),
         ("/anime husbando",            "Get a random anime husbando image"),
         ("/anime neko",                "Get a random anime neko image"),
@@ -98,8 +98,8 @@ COMMANDS = {
         ("/melody",              "Generate a short WAV melody"),
     ],
     "🎮 Games": [
-        ("/games duck_clicker",              "Click ducks to earn dabloons — 2 per 5 clicks"),
-        ("/games tic_tac_toe [difficulty]",  "Play Tic Tac Toe vs AI — easy / medium / hard"),
+        ("/games duck_clicker",              "Click ducks to earn dabloons — 2 per 5 clicks (4 with Double Points). Auto Clicker ticks every 60s in the background."),
+        ("/games tic_tac_toe [difficulty]",  "Play Tic Tac Toe vs AI — easy / medium / hard. Custom symbols available from the shop."),
         ("/games trivia",                    "Answer a trivia question"),
     ],
     "📻 Radio": [
@@ -125,21 +125,23 @@ COMMANDS = {
         ("/admin unlockdown",               "Lift channel lockdown  ·  requires Manage Channels"),
     ],
     "⚙️ Server": [
-        ("/server info",                    "Show server info — owner, members, channels, roles"),
-        ("/server invite",                  "Generate a single-use 1-hour invite link"),
-        ("/server icon",                    "Show the server icon"),
-        ("/server banner",                  "Show the server banner"),
-        ("/server set_prefix [prefix]",     "Set a custom command prefix (1–5 chars)  ·  Admin"),
-        ("/server set_welcome [channel]",   "Set welcome channel + message via modal  ·  Admin"),
-        ("/server set_welcome_off",         "Disable welcome messages  ·  Admin"),
-        ("/server set_autorole [role]",     "Auto-assign a role to every new member  ·  Admin"),
-        ("/server set_autorole_off",        "Disable autorole  ·  Admin"),
-        ("/server set_log [channel]",       "Set the moderation log channel  ·  Admin"),
+        ("/server info",                      "Show server info — owner, members, channels, roles"),
+        ("/server invite",                    "Generate a single-use 1-hour invite link"),
+        ("/server icon",                      "Show the server icon"),
+        ("/server banner",                    "Show the server banner"),
+        ("/server set_prefix [prefix]",       "Set a custom command prefix (1–5 chars)  ·  Admin"),
+        ("/server set_welcome [channel]",     "Set welcome channel + message via modal  ·  Admin"),
+        ("/server set_welcome_off",           "Disable welcome messages  ·  Admin"),
+        ("/server set_autorole [role]",       "Auto-assign a role to every new member  ·  Admin"),
+        ("/server set_autorole_off",          "Disable autorole  ·  Admin"),
+        ("/server set_log [channel]",         "Set the moderation log channel  ·  Admin"),
+        ("/server set_4k_channel [channel]",  "Set a channel for 4k image results to be forwarded to  ·  Manage Channels"),
+        ("/server set_4k_channel_off",        "Disable 4k channel forwarding  ·  Manage Channels"),
     ],
     "💬 Events": [
-        ("Reply with `4k`",    "Quote the replied message as an image"),
-        ("Reply with `pin`",   "Pin the replied message"),
-        ("Reply with `unpin`", "Unpin the replied message"),
+    ("Reply with `4k`",    "Quote the replied message as an image — also forwards to the 4k channel if configured"),
+    ("Reply with `pin`",   "Pin the replied message"),
+    ("Reply with `unpin`", "Unpin the replied message"),
     ]
 }
 

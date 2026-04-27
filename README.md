@@ -14,25 +14,25 @@ New commands and systems are added regularly as the project grows.
 
 ### General
 
-| **/**                            | **description**                                                                                                                                                                           | **how I made it?**                                                                                     |
-| -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| **`/do [action] [user]`**        | Anime action GIFs — hug, kiss, pat, poke, cuddle, bite, kick, punch, feed, highfive, dance, sleep, cry, smile, wave, laugh, yeet, baka, facepalm, think, nom, shoot, run, stare, thumbsup | Dictionary-driven actions with colors, emojis, text, and async fetching via `aiohttp` from nekos.best. |
-| **`/look [reaction]`**           | Anime reaction GIFs — blush, shrug, yawn, angry, bored, happy, nope, smug, lurk, pout, nod                                                                                                | Same system as `/do`, but emotion-focused reactions.                                                   |
-| **`/ping`**                      | Checks the bot's latency.                                                                                                                                                                 | Uses `bot.latency * 1000` to report milliseconds.                                                      |
-| **`/rarch`**                     | Generates artistic symmetrical inkblot images.                                                                                                                                            | Pillow-based procedural generation with blur and noise.                                                |
-| **`/ofc [type]`**                | Displays out-of-context images from local assets (SFW or NSFW).                                                                                                                           | Serves images locally with NSFW channel checks.                                                        |
-| **`/wanted [user] [amount]`**    | Creates a wanted poster for a user.                                                                                                                                                       | Pillow image compositing with avatars and text fitting.                                                |
-| **`/misquote [user] [message]`** | Generates a fake misquote image.                                                                                                                                                          | Pillow canvas with avatar and styled text.                                                             |
-| **`/melody`**                    | Generates short WAV melodies from notes or beats.                                                                                                                                         | Modal input + `wavesynth` audio generation.                                                            |
-| **`/8ball [question]`**          | Ask the magic 8 ball a question.                                                                                                                                                          | Random response pool.                                                                                  |
-| **`/coinflip`**                  | Flip a coin.                                                                                                                                                                              | `random.choice` between heads and tails.                                                               |
-| **`/no`**                        | Random rejection reasons.                                                                                                                                                                 | Fetches from `naas.isalman.dev/no` API.                                                                |
-| **`/yes`**                       | Random agreement reasons.                                                                                                                                                                 | Static response pool from `assets/fun/yes.json`.                                                       |
-| **`/rate [user]`**               | Rates you or another user across 6 categories.                                                                                                                                            | Random scoring with description tiers from `assets/fun/rating.json`.                                   |
-| **`/download [url]`**            | Downloads audio from YouTube and uploads it to Catbox.                                                                                                                                    | Multiple fallback APIs + Catbox upload. Spotify links return metadata only.                            |
-| **`/mimic start [@user]`**       | Makes Amber repeat the target user's messages, with a 30% chance of sending one of their last 15 messages instead.                                                                        | Admin only. Mirrors text, attachments, and stickers.                                                   |
-| **`/say embed [message]`**       | Makes Amber send an embed message.                                                                                                                                                        | Supports text, timestamps, author display, image attachments, and 6 color options.                     |
-| **`/say text [message]`**        | Makes Amber say a text message.                                                                                                                                                           | Can send text and attachments.                                                                         |
+| **/**                            | **description**                                                                                                                                                                     | **how I made it?**                                                                                     |
+| -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| **`/do [action] [user]`**        | Anime action GIFs — hug, kiss, pat, poke, cuddle, bite, kick, punch, feed, highfive, dance, sleep, cry, smile, wave, laugh, yeet, baka, facepalm, peck, shoot, run, stare, thumbsup | Dictionary-driven actions with colors, emojis, text, and async fetching via `aiohttp` from nekos.best. |
+| **`/look [reaction]`**           | Anime reaction GIFs — blush, shrug, yawn, angry, bored, happy, nope, smug, lurk, pout, nod                                                                                          | Same system as `/do`, but emotion-focused reactions.                                                   |
+| **`/ping`**                      | Checks the bot's latency.                                                                                                                                                           | Uses `bot.latency * 1000` to report milliseconds.                                                      |
+| **`/rarch`**                     | Generates artistic symmetrical inkblot images.                                                                                                                                      | Pillow-based procedural generation with blur and noise.                                                |
+| **`/ofc [type]`**                | Displays out-of-context images from local assets (SFW or NSFW).                                                                                                                     | Serves images locally with NSFW channel checks.                                                        |
+| **`/wanted [user] [amount]`**    | Creates a wanted poster for a user.                                                                                                                                                 | Pillow image compositing with avatars and text fitting.                                                |
+| **`/misquote [user] [message]`** | Generates a fake misquote image.                                                                                                                                                    | Pillow canvas with avatar and styled text.                                                             |
+| **`/melody`**                    | Generates short WAV melodies from notes or beats.                                                                                                                                   | Modal input + `wavesynth` audio generation.                                                            |
+| **`/8ball [question]`**          | Ask the magic 8 ball a question.                                                                                                                                                    | Random response pool.                                                                                  |
+| **`/coinflip`**                  | Flip a coin.                                                                                                                                                                        | `random.choice` between heads and tails.                                                               |
+| **`/no`**                        | Random rejection reasons.                                                                                                                                                           | Fetches from `naas.isalman.dev/no` API.                                                                |
+| **`/yes`**                       | Random agreement reasons.                                                                                                                                                           | Static response pool from `assets/fun/yes.json`.                                                       |
+| **`/rate [user]`**               | Rates you or another user across 6 categories.                                                                                                                                      | Random scoring with description tiers from `assets/fun/rating.json`.                                   |
+| **`/download [url]`**            | Downloads audio from YouTube and uploads it to Catbox.                                                                                                                              | Multiple fallback APIs + Catbox upload. Spotify links return metadata only.                            |
+| **`/mimic start [@user]`**       | Makes Amber repeat the target user's messages, with a 30% chance of sending one of their last 15 messages instead.                                                                  | Admin only. Mirrors text, attachments, and stickers.                                                   |
+| **`/say embed [message]`**       | Makes Amber send an embed message.                                                                                                                                                  | Supports text, timestamps, author display, image attachments, and 6 color options.                     |
+| **`/say text [message]`**        | Makes Amber say a text message.                                                                                                                                                     | Can send text and attachments.                                                                         |
 
 ---
 
@@ -164,6 +164,12 @@ A full item shop where you spend dabloons on upgrades, pet supplies, and cosmeti
 | 🍬 Pet Candy      | XP Candy, Rare Candy, Mega Candy — level up your pet fast                             |
 | 🎨 Profile Colors | Cyan, Rose, Midnight themes + Custom hex color unlock                                 |
 
+**Game upgrades:**
+
+- **Auto Clicker** — clicks Duck Clicker for you every 60 seconds in the background, even while you're offline. Dabloon rewards and quest progress are tracked automatically.
+- **Double Points** — earn 4 dabloons per 5 clicks instead of 2, works with the Auto Clicker too.
+- **Custom X/O Symbols** — replace ❌ with ⭐ and ⭕ with 💫 in Tic Tac Toe.
+
 ---
 
 ### 🐱 Pet System
@@ -217,20 +223,21 @@ Games integrate with the economy to reward or cost dabloons.
 | ------------------------------------- | ----------------------------------------------------------------- |
 | **`/games duck_clicker`**             | Click ducks to increase your score and earn dabloons.             |
 | **`/games tic_tac_toe [difficulty]`** | Play against AI — easy, medium, or hard. Costs dabloons to enter. |
+| **`/games trivia`**                   | Answer a trivia question from a random category and difficulty.   |
 
 **Duck Clicker:**
 
 - Score saved per user in the database
 - Only the initiating user can click
 - Earn 2 dabloons every 5 clicks (4 with Double Points upgrade)
-- Auto Clicker upgrade clicks automatically every 60s
+- Auto Clicker upgrade ticks every 60 seconds in the background — dabloons and quest progress accumulate even while you're not playing
 
 **Tic Tac Toe:**
 
 - Costs to play: `easy=2`, `medium=4`, `hard=8` dabloons
 - Win rewards: `easy=4`, `medium=8`, `hard=16` dabloons
 - Board updates live with button interactions
-- Custom X/O symbols purchasable from the shop
+- Custom X/O symbols purchasable from the shop (⭐ and 💫)
 
 ---
 
@@ -272,7 +279,7 @@ Quests refresh every day and scale with your level.
 - Emoji usage — send a specific emoji multiple times
 - Word usage — repeat a specific word in chat
 - Tic Tac Toe — win games against the AI
-- Duck Clicker — reach a click target based on your level
+- Duck Clicker — reach a click target based on your level (Auto Clicker counts toward this)
 
 **Features:**
 
@@ -308,18 +315,20 @@ A full-featured moderation suite with logging, warnings, and server configuratio
 
 #### Server Commands (`/server ...`)
 
-| **/**                               | **what it does**                                                      | **permission required** |
-| ----------------------------------- | --------------------------------------------------------------------- | ----------------------- |
-| **`/server info`**                  | Display server info — owner, members, channels, roles, creation date. | —                       |
-| **`/server invite`**                | Generate a single-use 1-hour invite link.                             | —                       |
-| **`/server icon`**                  | Show the server icon.                                                 | —                       |
-| **`/server banner`**                | Show the server banner.                                               | —                       |
-| **`/server set_prefix [prefix]`**   | Set a custom command prefix (1–5 characters).                         | Administrator           |
-| **`/server set_welcome [channel]`** | Set a welcome channel and message via modal popup.                    | Administrator           |
-| **`/server set_welcome_off`**       | Disable welcome messages.                                             | Administrator           |
-| **`/server set_autorole [role]`**   | Auto-assign a role to every new member.                               | Administrator           |
-| **`/server set_autorole_off`**      | Disable autorole.                                                     | Administrator           |
-| **`/server set_log [channel]`**     | Set the channel for moderation logs.                                  | Administrator           |
+| **/**                                  | **what it does**                                                      | **permission required** |
+| -------------------------------------- | --------------------------------------------------------------------- | ----------------------- |
+| **`/server info`**                     | Display server info — owner, members, channels, roles, creation date. | —                       |
+| **`/server invite`**                   | Generate a single-use 1-hour invite link.                             | —                       |
+| **`/server icon`**                     | Show the server icon.                                                 | —                       |
+| **`/server banner`**                   | Show the server banner.                                               | —                       |
+| **`/server set_prefix [prefix]`**      | Set a custom command prefix (1–5 characters).                         | Administrator           |
+| **`/server set_welcome [channel]`**    | Set a welcome channel and message via modal popup.                    | Administrator           |
+| **`/server set_welcome_off`**          | Disable welcome messages.                                             | Administrator           |
+| **`/server set_autorole [role]`**      | Auto-assign a role to every new member.                               | Administrator           |
+| **`/server set_autorole_off`**         | Disable autorole.                                                     | Administrator           |
+| **`/server set_log [channel]`**        | Set the channel for moderation logs.                                  | Administrator           |
+| **`/server set_4k_channel [channel]`** | Set a channel where 4k image results are forwarded automatically.     | Manage Channels         |
+| **`/server set_4k_channel_off`**       | Disable 4k channel forwarding.                                        | Manage Channels         |
 
 **Welcome message placeholders:** `{user}` — mentions the new member · `{server}` — inserts the server name
 
@@ -329,11 +338,11 @@ All moderation actions are automatically logged to the configured log channel.
 
 ### 💬 Message Events
 
-| trigger                | what it does                           |
-| ---------------------- | -------------------------------------- |
-| Reply with **`4k`**    | Quote the replied message as an image. |
-| Reply with **`pin`**   | Pin the replied message.               |
-| Reply with **`unpin`** | Unpin the replied message.             |
+| trigger                | what it does                                                                              |
+| ---------------------- | ----------------------------------------------------------------------------------------- |
+| Reply with **`4k`**    | Quote the replied message as an image. Also forwards to the configured 4k channel if set. |
+| Reply with **`pin`**   | Pin the replied message.                                                                  |
+| Reply with **`unpin`** | Unpin the replied message.                                                                |
 
 > Amber must be a member of the server for these to work.
 
@@ -447,6 +456,8 @@ python main.py
 - [x] LLM integration (domesticated-LLM — cat-speak fine-tune of SmolLM2-135M)
 - [x] Auto setup script (amber.py) and updater (update.py)
 - [x] Anime commands — waifu, husbando, neko, kitsune, quote
+- [x] Shop upgrades fully implemented (Auto Clicker, Double Points, Custom X/O)
+- [x] 4k channel forwarding
 - [ ] Gambling system
 
 ---

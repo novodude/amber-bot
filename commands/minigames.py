@@ -5,19 +5,89 @@ import requests
 import aiosqlite
 from typing import Literal
 import discord.ui as ui
+from discord.ext import commands, tasks
 from utils.economy import add_dabloons, add_xp, get_dabloons
 from utils.userbase.ensure_registered import ensure_registered
 from utils.quests import increment_quest_progress
 from discord import app_commands
 
 
+async def has_purchase(user_id: int, item_name: str) -> bool:
+    """Check if a user owns a permanent unlock. user_id is the internal DB id."""
+    async with aiosqlite.connect("data/user.db") as db:
+        cursor = await db.execute(
+            "SELECT id FROM user_purchases WHERE user_id = ? AND item_name = ? AND active = 1",
+            (user_id, item_name)
+        )
+        return await cursor.fetchone() is not None
+
+
+# ── Background auto clicker ────────────────────────────────────────────────────
+
+class AutoClickerCog(commands.Cog):
+    """Runs a background loop that auto-clicks for all Auto Clicker owners every 60s."""
+
+    def __init__(self, bot: commands.Bot):
+        self.bot = bot
+        self.auto_click_loop.start()
+
+    def cog_unload(self):
+        self.auto_click_loop.cancel()
+
+    @tasks.loop(seconds=60)
+    async def auto_click_loop(self):
+        # Fetch all Auto Clicker owners and their discord_ids in one query
+        async with aiosqlite.connect("data/user.db") as db:
+            cursor = await db.execute("""
+                SELECT up.user_id, u.discord_id
+                FROM user_purchases up
+                JOIN users u ON u.id = up.user_id
+                WHERE up.item_name = 'Auto Clicker' AND up.active = 1
+            """)
+            owners = await cursor.fetchall()
+
+        for user_id, discord_id in owners:
+            async with aiosqlite.connect("data/user.db") as db:
+                # Increment score and read new value atomically
+                await db.execute("""
+                    UPDATE games
+                    SET duck_clicker_current_score = duck_clicker_current_score + 1
+                    WHERE user_id = ?
+                """, (user_id,))
+                await db.commit()
+
+                cursor = await db.execute(
+                    "SELECT duck_clicker_current_score FROM games WHERE user_id = ?",
+                    (user_id,)
+                )
+                row = await cursor.fetchone()
+                new_score = row[0] if row else 0
+
+            # Award dabloons on multiples of 5
+            if new_score % 5 == 0:
+                has_double = await has_purchase(user_id, "Double Points")
+                reward = 4 if has_double else 2
+                await add_dabloons(user_id, reward)
+
+            # Track quest progress
+            await increment_quest_progress(discord_id, "duck_clicks", amount=1)
+
+    @auto_click_loop.before_loop
+    async def before_loop(self):
+        await self.bot.wait_until_ready()
+
+
+# ── Duck Clicker view ─────────────────────────────────────────────────────────
+
 class DuckClicker(ui.View):
     def __init__(self, user_id: int, discord_id: int):
         super().__init__(timeout=None)
-        self.click_count = 0        # total all-time score
-        self.session_clicks = 0     # clicks this session (for quest tracking)
+        self.click_count = 0
+        self.session_clicks = 0
         self.user_id = user_id
         self.discord_id = discord_id
+        self.double_points = False
+        self.auto_clicker = False
 
     async def load_score(self):
         async with aiosqlite.connect("data/user.db") as db:
@@ -27,13 +97,18 @@ class DuckClicker(ui.View):
             row = await cursor.fetchone()
             self.click_count = row[0] if row and row[0] is not None else 0
 
-    async def save_score(self):
-        async with aiosqlite.connect("data/user.db") as db:
-            await db.execute(
-                "UPDATE games SET duck_clicker_current_score = ? WHERE user_id = ?",
-                (self.click_count, self.user_id)
-            )
-            await db.commit()
+        self.double_points = await has_purchase(self.user_id, "Double Points")
+        self.auto_clicker  = await has_purchase(self.user_id, "Auto Clicker")
+
+    def build_message(self, dabloon_reward: int | None = None) -> str:
+        lines = [f"**{self.click_count}** ducks quacked! 🦆"]
+        if self.double_points:
+            lines.append("-# ✨ Double Points active — 4 dabloons per 5 clicks")
+        if self.auto_clicker:
+            lines.append("-# 🤖 Auto Clicker active — clicking every 60s in the background")
+        if dabloon_reward:
+            lines.append(f"✨ **+{dabloon_reward} dabloons!** keep on clicking :D")
+        return "\n".join(lines)
 
     @discord.ui.button(label="🦆 quack!", style=discord.ButtonStyle.primary, row=0)
     async def click_button(self, interaction: discord.Interaction, button: ui.Button):
@@ -41,33 +116,48 @@ class DuckClicker(ui.View):
             await interaction.response.send_message("This isn't your duck clicker!", ephemeral=True)
             return
 
-        self.click_count += 1
-        self.session_clicks += 1
-        await self.save_score()
+        # Always read from DB first so background auto-clicks are reflected
+        async with aiosqlite.connect("data/user.db") as db:
+            cursor = await db.execute(
+                "SELECT duck_clicker_current_score FROM games WHERE user_id = ?", (self.user_id,)
+            )
+            row = await cursor.fetchone()
+            self.click_count = (row[0] if row and row[0] is not None else 0) + 1
+            await db.execute(
+                "UPDATE games SET duck_clicker_current_score = ? WHERE user_id = ?",
+                (self.click_count, self.user_id)
+            )
+            await db.commit()
 
-        # ── quest progress ────────────────────────────────────────────────────
+        self.session_clicks += 1
         await increment_quest_progress(self.discord_id, "duck_clicks", amount=1)
 
-        message = f"**{self.click_count}** ducks quacked! 🦆"
-
+        dabloon_reward = None
         if self.click_count % 5 == 0:
-            await add_dabloons(self.user_id, 2)
-            message += "\n✨ **+2 dabloons!** keep on clicking :D"
+            reward = 4 if self.double_points else 2
+            await add_dabloons(self.user_id, reward)
+            dabloon_reward = reward
 
-        await interaction.response.edit_message(content=message, view=self)
+        await interaction.response.edit_message(
+            content=self.build_message(dabloon_reward=dabloon_reward),
+            view=self
+        )
 
+
+# ── Tic Tac Toe view ──────────────────────────────────────────────────────────
 
 class TicTacToe(ui.View):
-    def __init__(self, user_id: int, discord_id: int, difficulty: str, difficulty_level: float):
+    def __init__(self, user_id: int, discord_id: int, difficulty: str, difficulty_level: float,
+                 player_symbol: str = "❌", ai_symbol: str = "⭕️"):
         super().__init__(timeout=None)
         self.user_id = user_id
         self.discord_id = discord_id
         self.difficulty = difficulty
         self.difficulty_level = difficulty_level
         self.board = [None] * 9
-        self.player_symbol = "❌"
-        self.ai_symbol = "⭕️"
-        self.current_player = "❌"
+        self.player_symbol = player_symbol
+        self.ai_symbol = ai_symbol
+        self.current_player = player_symbol
         self.ai_enabled = True
         self.game_over = False
 
@@ -119,10 +209,7 @@ class TicTacToe(ui.View):
                 reward = rewards[self.difficulty]
                 await add_dabloons(self.user_id, reward)
                 await add_xp(self.user_id, reward * 10, None)
-
-                # ── quest progress ────────────────────────────────────────────
                 await increment_quest_progress(self.discord_id, "ttt_win", amount=1)
-
                 content = f"You win! 🎉 +{reward} dabloons"
             elif winner == "Tie":
                 content = "It's a tie!"
@@ -204,7 +291,7 @@ class TicTacToe(ui.View):
             button.disabled = True
 
 
-
+# ── Games command group ───────────────────────────────────────────────────────
 
 class Games(app_commands.Group):
     def __init__(self):
@@ -218,10 +305,8 @@ class Games(app_commands.Group):
 
         view = DuckClicker(user_id, interaction.user.id)
         await view.load_score()
-        await interaction.response.send_message(
-            f"**{view.click_count}** ducks quacked! 🦆",
-            view=view
-        )
+
+        await interaction.response.send_message(view.build_message(), view=view)
 
     @app_commands.command(name="tic_tac_toe", description="Play a game of tic tac toe!")
     @app_commands.describe(difficulty="Choose AI difficulty")
@@ -249,15 +334,21 @@ class Games(app_commands.Group):
 
         await add_dabloons(user_id, -cost)
 
+        player_symbol = "⭐" if await has_purchase(user_id, "Custom X Symbol") else "❌"
+        ai_symbol     = "💫" if await has_purchase(user_id, "Custom O Symbol") else "⭕️"
+
         difficulty_mapping = {"easy": 0.7, "medium": 0.75, "hard": 0.9}
         difficulty_value = difficulty_mapping[difficulty]
         view = TicTacToe(
             user_id=user_id,
             discord_id=interaction.user.id,
             difficulty=difficulty,
-            difficulty_level=difficulty_value
+            difficulty_level=difficulty_value,
+            player_symbol=player_symbol,
+            ai_symbol=ai_symbol,
         )
-        await interaction.followup.send("Tic Tac Toe! You are ❌'s!", view=view)
+
+        await interaction.followup.send(f"Tic Tac Toe! You are {player_symbol}'s!", view=view)
 
     @app_commands.command(name="trivia", description="Answer trivia questions and win dabloons!")
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
@@ -294,9 +385,7 @@ class Games(app_commands.Group):
         await interaction.edit_original_response(embed=correct_answer)
 
 
-
-
-
-async def minigames_setup(bot):
+async def minigames_setup(bot: commands.Bot):
     games = Games()
     bot.tree.add_command(games)
+    await bot.add_cog(AutoClickerCog(bot))

@@ -571,17 +571,21 @@ class ImageCommands(app_commands.Group):
         except Exception as e:
             await interaction.followup.send(f"An error occurred:\n```\n{e}\n```")
 
+ 
     @app_commands.command(name="wanted", description="Create a wanted poster!")
     @app_commands.describe(
         user="The criminal you want the poster for.",
         amount="The bounty amount."
     )
     async def wanted(self, interaction: discord.Interaction, user: discord.User, amount: int):
-        async def logic():
+        await interaction.response.defer(thinking=True)
+        try:
             output_bytes = await self.img_gen.create_wanted_poster(user, amount)
             file = discord.File(output_bytes, filename=f"wanted_{user.name}.png")
             await interaction.followup.send(file=file)
-        await self.run_image_command(interaction, logic)
+        except Exception as e:
+            await interaction.followup.send(f"An error occurred:\n ```\n{str(e)}\n```")
+    
 
     @app_commands.command(name="misquote", description="Create a fake quote image")
     @app_commands.describe(
@@ -589,11 +593,14 @@ class ImageCommands(app_commands.Group):
         user="Who said it?"
     )
     async def misquote(self, interaction: discord.Interaction, user: discord.User, message: str):
-        async def logic():
+        await interaction.response.defer()
+        try:
             output_bytes = await self.img_gen.create_quote_image(user, message)
             file = discord.File(output_bytes, filename=f"quote_{user.name}.png")
             await interaction.followup.send(file=file)
-        await self.run_image_command(interaction, logic)
+        except Exception as e:
+            await interaction.followup.send(f"An error occurred:\n ```\n{str(e)}\n```")
+    
 
     @app_commands.command(name="rarch", description="Generate an inkblot image")
     async def rarch(self, interaction: discord.Interaction):

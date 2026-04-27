@@ -1,4 +1,5 @@
 from commands.image import ImageGenerator
+from utils.economy import get_4k_channel_id
 from discord import app_commands
 from discord.ext import commands
 from typing import Optional
@@ -202,27 +203,72 @@ async def fun_setup(bot: commands.Bot):
                 )
 
 async def handle_4k(bot: commands.Bot, message: discord.Message):
-    """Handle the '4k' message reply command."""
     if message.author.bot or message.content.lower().strip() != "4k":
         return
-    
+
+    if not message.guild:
+        return
+
     if not message.reference or not getattr(message.reference, "message_id", None):
-        await message.reply("You must **reply** to a message to use `4k`.", delete_after=2)
+        await message.reply("Reply to a message to use `4k`.", delete_after=2)
         return
-    
-    try:
-        replied = await message.channel.fetch_message(message.reference.message_id)
-    except Exception:
-        await message.reply("Can't read the replied message.", delete_after=2)
-        return
-    
+
+    # Try cache first, fallback to fetch
+    replied = message.reference.resolved
+    if not isinstance(replied, discord.Message):
+        try:
+            replied = await message.channel.fetch_message(message.reference.message_id)
+        except Exception:
+            await message.reply("Can't read the replied message.", delete_after=2)
+            return
+
     ROOT_DIR = Path(__file__).resolve().parent.parent
     img_gen = ImageGenerator(ROOT_DIR)
-    
+
     try:
-        output_bytes = await img_gen.create_quote_image(replied.author, replied.content or "")
-        await message.reply(file=discord.File(output_bytes, filename=f"quote_{replied.author.name}.png"))
+        output_bytes = await img_gen.create_quote_image(
+            replied.author,
+            replied.content or ""
+        )
     except Exception as e:
-        await message.reply(f"An error occurred: {str(e)}", delete_after=5)
+        await message.reply(f"Error: {e}", delete_after=5)
+        return
+
+    filename = f"quote_{replied.author.id}.png"
+
+    # ── Send image in current channel ─────────────────
+    await message.reply(
+        file=discord.File(output_bytes, filename=filename)
+    )
+
+    # ── Forward to 4K channel ─────────────────────────
+    four_k_channel_id = await get_4k_channel_id(message)
+
+    output_bytes.seek(0)  # Reset buffer position before sending to another channel
+
+    if four_k_channel_id:
+        channel = message.guild.get_channel(four_k_channel_id)
+
+        if channel:
+            
+            content = (
+                f"📸 {message.author.mention} caught {replied.author.mention} in 4K\n\n"
+                f"{replied.jump_url}"
+            )
+
+            embed = discord.Embed(
+                title="4K Alert!",
+                description=content,
+                color=discord.Color.orange()
+            )
+            embed.set_footer(text=f"Original message by {replied.author.display_name}", icon_url=replied.author.display_avatar.url)
     
+
+            await channel.send(
+                embed=embed,
+                file=discord.File(output_bytes, filename=filename)
+            )
+
+            
+
     await bot.process_commands(message)

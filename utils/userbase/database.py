@@ -180,8 +180,10 @@ async def init_user_db():
             "ALTER TABLE user_purchases ADD COLUMN purchased_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP",
             "ALTER TABLE user_purchases ADD COLUMN active INTEGER DEFAULT 1",
             "ALTER TABLE user_purchases ADD COLUMN custom_value TEXT",
-            "ALTER TABLE users ADD COLUMN is_private INTEGER DEFAULT 0"
+            "ALTER TABLE users ADD COLUMN is_private INTEGER DEFAULT 0",
+            "ALTER TABLE guild_config ADD COLUMN four_k_channel INTEGER"
         ]
+
         for sql in migrations:
             try:
                 await db.execute(sql)

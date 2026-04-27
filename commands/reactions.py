@@ -25,7 +25,7 @@ async def setup_reactions(bot):
         action: Literal[
             'hug', 'kiss', 'pat', 'poke', 'cuddle', 'bite', 'kick', 'punch',
             'feed', 'highfive', 'dance', 'sleep', 'cry', 'smile', 'think',
-            'wave', 'laugh', 'yeet', 'facepalm', 'baka', 'nom', 'shoot',
+            'wave', 'laugh', 'yeet', 'facepalm', 'baka', 'peck', 'shoot',
             'run', 'stare', 'thumbsup'
         ],
         user: Optional[discord.User] = None,

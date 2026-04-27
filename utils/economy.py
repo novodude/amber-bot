@@ -217,3 +217,19 @@ async def get_xp(user_id) -> int:
         )
         row = await cursor.fetchone()
         return row[0] if row else 0
+
+async def get_4k_channel_id(message: discord.Message) -> int | None:
+    async with aiosqlite.connect(DB_PATH) as db:
+        async with db.execute(
+            "SELECT four_k_channel FROM guild_config WHERE guild_id = ?",
+            (message.guild.id,)
+        ) as cursor:
+            row = await cursor.fetchone()
+
+    if not row:
+        return
+
+    four_k_channel_id = row[0]
+    if four_k_channel_id is None:
+        return
+    return four_k_channel_id

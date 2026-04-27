@@ -548,30 +548,30 @@ ACTIONS = {
             'the duck has spoken 🦆',
         ],
     },
-    'nom': {
-        'act': 'noms on',
-        'color': discord.Color.orange(),
-        'emoji': '😋',
+    'peck': {
+        'act': 'gives a soft peck to',
+        'color': discord.Color.yellow(),
+        'emoji': '😘',
         'lone': False,
         'link': '',
         'desc_everyone': [
-            'nom nom nom everyone! :P',
-            'everyone is on the menu today 😋',
-            'mass nomming in progress >:3',
-            'so many noms so little time :P',
+            'everyone gets a gentle peck :3',
+            'sending tiny peck kisses to everyone',
+            'a flurry of soft pecks fills the air',
+            'quick pecks for everyone, no escape :P',
         ],
         'desc_self': [
-            'nomming on yourself? silly goose! :3',
-            'self-nom? bold choice 😋',
-            'you taste good apparently :P',
-            'weird flex but okay :3',
+            'you give yourself a tiny peck... self-love I guess :3',
+            'a soft peck for yourself, not bad',
+            'you gently peck yourself... interesting choice',
+            'self-peck acquired :P',
         ],
         'desc_other': [
-            'tasty? hehe :3',
-            'nom nom nom! 😋',
-            '{user.display_name} has been nommed >:3',
-            'delicious apparently :P',
-            'chomp! sorry not sorry 😋',
+            'a soft peck lands on {user.display_name} :3',
+            'mwah—just a tiny peck for {user.display_name}',
+            '{user.display_name} receives a gentle peck',
+            'a quick peck for {user.display_name} :P',
+            'you give {user.display_name} a cute little peck',
         ],
     },
     'shoot': {
@@ -810,21 +810,21 @@ ACTION_PAST_TENSE = {
     'punch':    'punched',
     'feed':     'fed',
     'highfive': 'high-fived',
-    'dance':    'danced with',
-    'sleep':    'slept with',
-    'cry':      'cried with',
-    'smile':    'smiled at',
-    'think':    'thought about',
-    'wave':     'waved at',
-    'laugh':    'laughed with',
+    'dance':    'danced',
+    'sleep':    'slept',
+    'cry':      'cried',
+    'smile':    'smiled',
+    'think':    'thought',
+    'wave':     'waved',
+    'laugh':    'laughed',
     'yeet':     'yeeted',
-    'facepalm': 'facepalmed at',
-    'baka':     'baka\'d at',
-    'nom':      'nommed on',
+    'facepalm': 'facepalmed',
+    'baka':     'baka\'d',
+    'peck':     'gave a peck',
     'shoot':    'shot',
-    'run':      'ran with',
-    'stare':    'stared at',
-    'thumbsup': 'given a thumbs up to',
+    'run':      'ran',
+    'stare':    'stared',
+    'thumbsup': 'given a thumbs up',
     # reactions (/look)
     'blush':    'blushed',
     'shrug':    'shrugged',
@@ -883,14 +883,14 @@ class React_back(discord.ui.View):
 
     @discord.ui.button(label="React back!", style=discord.ButtonStyle.secondary, custom_id="react_back_button")
     async def react_back_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-        if self.user and interaction.user != self.user:
+        if self.user and author != self.user:
             await interaction.response.send_message(f"Only {self.user.display_name} can react back!", ephemeral=True)
             return
 
-        reward = await maybe_reward_dabloons(interaction.user.id)
+        reward = await maybe_reward_dabloons(author.id)
 
-        title = build_title(self.action, self.action_data, self.author.display_name, interaction.user.display_name, react_back=True)
-        base_desc = random.choice(self.action_data['desc_other']).format(user=self.user, author=interaction.user)
+        title = build_title(self.action, self.action_data, self.author.display_name, author.display_name, react_back=True)
+        base_desc = random.choice(self.action_data['desc_other']).format(user=self.user, author=author)
         counter = await get_counter_text(interaction, self.action, self.user)
 
         description = base_desc
@@ -899,7 +899,7 @@ class React_back(discord.ui.View):
         if reward:
             description += f'\n-# ✨ +{reward} dabloons!'
 
-        embed = await build_embed(self.action_data['color'], title, description, self.action, author=interaction.user)
+        embed = await build_embed(self.action_data['color'], title, description, self.action, author=author)
 
         button.disabled = True
         await interaction.response.defer()
@@ -977,16 +977,26 @@ async def get_gif_url(action: str) -> str:
 
 
 # ── Counter text with the number ─────────────────────────────────────────────────────────────
-async def get_counter_text(interaction: discord.Interaction, action: str, user: Optional[discord.User] = None) -> str:
+async def get_counter_text(interaction: discord.Interaction, action: str, user: Optional[discord.User] = None, is_button: bool = False) -> str:
     counter = ''
+    author = interaction.user
 
     if action in PRIVATE_COUNTER_ACTIONS:
         # Private counter: only visible to the user and the bot
-        count = await increment_action_count(interaction.user.id, user.id, action)
-        counter = build_counter_text(action, count, interaction.user.display_name, user.display_name, private=True)
+        if not is_button:
+            count = await increment_action_count(author.id, user.id, action)
+            counter = build_counter_text(action, count, author.display_name, user.display_name)
+        else:
+            count = await get_received_count(user.id, action)
+            counter = build_counter_text(action, count, user.display_name, author.display_name)
     else:
-        await increment_action_count(interaction.user.id, user.id, action)
-        count = await get_received_count(user.id, action)
-        counter = build_counter_text(action, count, interaction.user.display_name, user.display_name)
+        if not is_button:
+            await increment_action_count(author.id, user.id, action)
+            count = await get_received_count(user.id, action)
+            counter = build_counter_text(action, count, author.display_name, user.display_name)
+        else:
+            await increment_action_count(user.id, action)
+            count = await get_received_count(author.id, action)
+            counter = build_counter_text(action, count, user.display_name, author.display_name)
 
     return counter
