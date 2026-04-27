@@ -883,15 +883,15 @@ class React_back(discord.ui.View):
 
     @discord.ui.button(label="React back!", style=discord.ButtonStyle.secondary, custom_id="react_back_button")
     async def react_back_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-        if self.user and author != self.user:
+        if self.user and interaction.user.id != self.user.id:
             await interaction.response.send_message(f"Only {self.user.display_name} can react back!", ephemeral=True)
             return
 
-        reward = await maybe_reward_dabloons(author.id)
+        reward = await maybe_reward_dabloons(interaction.user.id)
 
-        title = build_title(self.action, self.action_data, self.author.display_name, author.display_name, react_back=True)
-        base_desc = random.choice(self.action_data['desc_other']).format(user=self.user, author=author)
-        counter = await get_counter_text(interaction, self.action, self.user)
+        title = build_title(self.action, self.action_data, self.author.display_name, interaction.user.display_name, react_back=True)
+        base_desc = random.choice(self.action_data['desc_other']).format(user=self.user, author=interaction.user)
+        counter = await get_counter_text(interaction, self.action, self.author, is_button=True)
 
         description = base_desc
         if counter:
@@ -899,7 +899,7 @@ class React_back(discord.ui.View):
         if reward:
             description += f'\n-# ✨ +{reward} dabloons!'
 
-        embed = await build_embed(self.action_data['color'], title, description, self.action, author=author)
+        embed = await build_embed(self.action_data['color'], title, description, self.action, author=interaction.user)
 
         button.disabled = True
         await interaction.response.defer()
@@ -977,26 +977,27 @@ async def get_gif_url(action: str) -> str:
 
 
 # ── Counter text with the number ─────────────────────────────────────────────────────────────
-async def get_counter_text(interaction: discord.Interaction, action: str, user: Optional[discord.User] = None, is_button: bool = False) -> str:
+async def get_counter_text(interaction, action, user=None, is_button=False):
     counter = ''
-    author = interaction.user
+    author = interaction.user  # person who triggered this (button clicker, or original command user)
 
     if action in PRIVATE_COUNTER_ACTIONS:
-        # Private counter: only visible to the user and the bot
         if not is_button:
             count = await increment_action_count(author.id, user.id, action)
             counter = build_counter_text(action, count, author.display_name, user.display_name)
         else:
-            count = await get_received_count(user.id, action)
-            counter = build_counter_text(action, count, user.display_name, author.display_name)
+            # clicker (author) is kissing back the original sender (user)
+            count = await increment_action_count(author.id, user.id, action)
+            counter = build_counter_text(action, count, author.display_name, user.display_name)
     else:
         if not is_button:
             await increment_action_count(author.id, user.id, action)
             count = await get_received_count(user.id, action)
             counter = build_counter_text(action, count, author.display_name, user.display_name)
         else:
-            await increment_action_count(user.id, action)
-            count = await get_received_count(author.id, action)
-            counter = build_counter_text(action, count, user.display_name, author.display_name)
+            # clicker (author) is acting on the original sender (user)
+            await increment_action_count(author.id, user.id, action)
+            count = await get_received_count(user.id, action)
+            counter = build_counter_text(action, count, author.display_name, user.display_name)
 
     return counter

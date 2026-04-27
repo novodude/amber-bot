@@ -81,6 +81,6 @@ async def leaderboard_setup(bot):
         )
 
         for rank, (username, value) in enumerate(leaderboard, start=1):
-            embed.add_field(name=f"{rank}. {username}", value=f"{EMOJI_MAP['level']} {value} dabloons", inline=False)
+            embed.add_field(name=f"{rank}. {username}", value=f"{EMOJI_MAP['level']} {value}", inline=False)
 
         await interaction.response.send_message(embed=embed, view=LeaderboardUI())

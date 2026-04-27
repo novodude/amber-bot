@@ -6,6 +6,7 @@ import aiosqlite
 from typing import Literal
 import discord.ui as ui
 from discord.ext import commands, tasks
+from utils.minigames import increment_ttt_wins, increment_ttt_wins_streak, reset_ttt_wins_streak
 from utils.economy import add_dabloons, add_xp, get_dabloons
 from utils.userbase.ensure_registered import ensure_registered
 from utils.quests import increment_quest_progress
@@ -210,10 +211,14 @@ class TicTacToe(ui.View):
                 await add_dabloons(self.user_id, reward)
                 await add_xp(self.user_id, reward * 10, None)
                 await increment_quest_progress(self.discord_id, "ttt_win", amount=1)
+                await increment_ttt_wins(interaction.user)
+                await increment_ttt_wins_streak(interaction.user)
                 content = f"You win! 🎉 +{reward} dabloons"
             elif winner == "Tie":
+                await reset_ttt_wins_streak(interaction.user)
                 content = "It's a tie!"
             else:
+                await reset_ttt_wins_streak(interaction.user)
                 content = "AI wins 😈"
 
             await interaction.edit_original_response(content=content, view=self)
