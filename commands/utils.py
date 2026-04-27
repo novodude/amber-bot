@@ -1,15 +1,13 @@
-from typing import Literal, Optional
 from datetime import datetime
-import discord
 from discord import app_commands
+from typing import Literal, Optional
 import aiohttp
-import spotipy
 import asyncio
-import re
+import discord
+import io
 import os
-from dotenv import load_dotenv
-
-load_dotenv()
+import re
+import spotipy
 
 async def download_and_upload(interaction, session, download_url, title, status_msg):
     """Download file and upload to Catbox"""
