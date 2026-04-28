@@ -820,7 +820,7 @@ ACTION_PAST_TENSE = {
     'yeet':     'yeeted',
     'facepalm': 'facepalmed',
     'baka':     'baka\'d',
-    'peck':     'gave a peck',
+    'peck':     'pecked',
     'shoot':    'shot',
     'run':      'ran',
     'stare':    'stared',

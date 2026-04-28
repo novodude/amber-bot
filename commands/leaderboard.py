@@ -1,5 +1,6 @@
-import discord
+from discord import app_commands
 from utils.economy import get_leaderboard, set_private_account, is_private_account
+import discord
 
 
 EMOJI_MAP = {
@@ -57,6 +58,8 @@ class LeaderboardUI(discord.ui.View):
 
 async def leaderboard_setup(bot):
     @bot.tree.command(name="switchprivacy", description="Toggle your account's privacy setting for leaderboards.")
+    @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+    @app_commands.allowed_installs(guilds=True, users=True)
     async def switchprivacy(interaction: discord.Interaction):
         discord_id = interaction.user.id
         current_privacy = await is_private_account(discord_id)

@@ -7,12 +7,14 @@ from datetime import datetime, timedelta
 from utils.banking import ProfileView, build_profile_embed
 from utils.userbase.ensure_registered import ensure_registered
 from utils.economy import (
-    add_dabloons, get_leaderboard, get_user_id_from_discord,
+    add_dabloons, get_user_id_from_discord,
     get_dabloons, add_xp, get_level, get_xp,
     is_private_account
 )
 
 
+@app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+@app_commands.allowed_installs(guilds=True, users=True)
 class Money(app_commands.Group):
     def __init__(self):
         super().__init__(

@@ -2,6 +2,8 @@ import discord
 from discord import app_commands
 import aiohttp
 
+@app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+@app_commands.allowed_installs(guilds=True, users=True)
 class Anime(app_commands.Group):
     """Commands related to anime."""
     
