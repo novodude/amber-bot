@@ -29,7 +29,7 @@ New commands and systems are added regularly as the project grows.
 | **`/no`**                        | Random rejection reasons.                                                                                                                                                           | Fetches from `naas.isalman.dev/no` API.                                                                |
 | **`/yes`**                       | Random agreement reasons.                                                                                                                                                           | Static response pool from `assets/fun/yes.json`.                                                       |
 | **`/rate [user]`**               | Rates you or another user across 6 categories.                                                                                                                                      | Random scoring with description tiers from `assets/fun/rating.json`.                                   |
-| **`/download [url]`**            | Downloads audio from a YouTube (or supported) URL using yt‑dlp and sends the file directly to Discord.                                                                                | Simplified implementation – no RapidAPI key required. |
+| **`/download [url]`**            | Downloads audio from a YouTube (or supported) URL using yt‑dlp and sends the file directly to Discord.                                                                              | Simplified implementation – no RapidAPI key required.                                                  |
 | **`/mimic start [@user]`**       | Makes Amber repeat the target user's messages, with a 30% chance of sending one of their last 15 messages instead.                                                                  | Admin only. Mirrors text, attachments, and stickers.                                                   |
 | **`/say embed [message]`**       | Makes Amber send an embed message.                                                                                                                                                  | Supports text, timestamps, author display, image attachments, and 6 color options.                     |
 | **`/say text [message]`**        | Makes Amber say a text message.                                                                                                                                                     | Can send text and attachments.                                                                         |
@@ -187,32 +187,6 @@ Adopt a cat companion powered by **domesticated-LLM** — a fine-tuned 135M lang
 | **`/pet unequip [slot]`**      | Remove the item from a slot.                                             |
 | **`/pet rename [name]`**       | Give your cat a new name.                                                |
 
-**How it works:**
-
-- Your cat has **hunger** and **happiness** stats that decay over time
-- Hunger drops 5 points per hour. Happiness drops if hunger falls below 30
-- Feed and play with your cat to keep it happy
-- Happy cats generate more playful and varied messages
-- Your cat will **message you or your server's pet channel** when you've been inactive for 4+ hours — it checks on you using the AI model, responding based on its current mood, hunger, and equipped toy
-- The cat won't spam — there's a 6h cooldown between check-in messages per owner
-
-**Accessories & effects:**
-
-| Slot    | Effect                                                                                               |
-| ------- | ---------------------------------------------------------------------------------------------------- |
-| Collar  | XP boost — Red Collar +10%, Gold Collar +25%                                                         |
-| Bow     | Dabloon drop boost — Silk Bow +10%, Diamond Bow +25%                                                 |
-| Hat     | Cosmetic — shown as an emoji on `/pet status`                                                        |
-| Toy     | Changes the cat's message style — Yarn Ball (happy), Laser Pointer (zoomies), Feather Wand (hunting) |
-| Extra 1 | Unlocks at level 5                                                                                   |
-| Extra 2 | Unlocks at level 10                                                                                  |
-
-**Pet leveling:**
-
-- Pet gains XP from playing and eating candy
-- Leveling up unlocks new accessory slots
-- Use Mega Candy for big XP jumps
-
 ---
 
 ### 🎮 Games
@@ -225,36 +199,31 @@ Games integrate with the economy to reward or cost dabloons.
 | **`/games tic_tac_toe [difficulty]`** | Play against AI — easy, medium, or hard. Costs dabloons to enter. |
 | **`/games trivia`**                   | Answer a trivia question from a random category and difficulty.   |
 
-**Duck Clicker:**
-
-- Score saved per user in the database
-- Only the initiating user can click
-- Earn 2 dabloons every 5 clicks (4 with Double Points upgrade)
-- Auto Clicker upgrade ticks every 60 seconds in the background — dabloons and quest progress accumulate even while you're not playing
-
-**Tic Tac Toe:**
-
-- Costs to play: `easy=2`, `medium=4`, `hard=8` dabloons
-- Win rewards: `easy=4`, `medium=8`, `hard=16` dabloons
-- Board updates live with button interactions
-- Custom X/O symbols purchasable from the shop (⭐ and 💫)
-
 ---
 
 ### 📻 Radio System
 
-A local audio player that pulls your YouTube and Spotify playlists and syncs them locally.
-Uses `yt_dlp` for downloads, `spotipy` for Spotify metadata, and `aiosqlite` for storage.
+A streaming radio player that pulls tracks from YouTube and Spotify playlists and plays them directly — **nothing is saved to disk**.
+Uses `yt-dlp` for stream resolution, `spotipy` for Spotify metadata, and `aiosqlite` for playlist storage.
+All commands live under the `/radio` group.
 
-| **/**                         | **what it does**                                                                    |
-| ----------------------------- | ----------------------------------------------------------------------------------- |
-| **`/radio [playlist_id]`**    | Play a saved playlist by ID. Enable `mix_mode` to shuffle all accessible playlists. |
-| **`/radio_libraries`**        | List your saved playlists, or browse public ones with `public: True`.               |
-| **`/radio_add [name] [url]`** | Create a new playlist from a YouTube or Spotify URL.                                |
-| **`/radio_remove [id]`**      | Delete a playlist and its downloaded songs (owner only).                            |
-| **`/radio_sync [id]`**        | Re-download songs from the playlist's source URL.                                   |
-| **`/radio_songs [id]`**       | View all songs in a playlist (paginated, 10 per page).                              |
-| **`/radio_stop`**             | Stop playback and disconnect from voice.                                            |
+| **/**                                                   | **what it does**                                                                                                                       |
+| ------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| **`/radio play [playlist_id] [source_url] [mix_mode]`** | Play a saved playlist by ID, stream a single YouTube URL directly, or shuffle all accessible playlists with mix mode.                  |
+| **`/radio queue [source_url]`**                         | Add a YouTube URL to the end of the current queue without interrupting playback.                                                       |
+| **`/radio add [name] [url] [public]`**                  | Create a new playlist from a YouTube or Spotify URL. Syncs in the background with a live progress bar — up to 1500 songs per playlist. |
+| **`/radio sync [playlist_id]`**                         | Re-sync a playlist from its source URL. Runs in the background with a progress bar.                                                    |
+| **`/radio libraries [public]`**                         | List your saved playlists, or browse public ones with `public: True`.                                                                  |
+| **`/radio remove [playlist_id]`**                       | Delete a playlist and all its song entries (owner only).                                                                               |
+| **`/radio songs [playlist_id]`**                        | View all songs in a playlist (paginated, 10 per page).                                                                                 |
+| **`/radio stop`**                                       | Stop playback and disconnect from voice.                                                                                               |
+
+**How syncing works:**
+
+- `/radio add` and `/radio sync` respond immediately, then run in the background
+- A live embed updates every 5 songs with a progress bar and the last added track name
+- You get a DM when the sync finishes
+- Playlist cap is **1500 songs** per playlist
 
 ---
 
@@ -267,29 +236,6 @@ Quests refresh every day and scale with your level.
 | ------------- | ------------------------------------------ |
 | **`/quests`** | View your current daily quests.            |
 | **`/level`**  | View your level and needed XP to level up. |
-
-**How it works:**
-
-- Each day, a shared pool of quests is generated
-- You unlock more quests as your level increases (up to 5)
-- Progress is tracked automatically as you use the bot
-
-**Quest types include:**
-
-- Emoji usage — send a specific emoji multiple times
-- Word usage — repeat a specific word in chat
-- Tic Tac Toe — win games against the AI
-- Duck Clicker — reach a click target based on your level (Auto Clicker counts toward this)
-
-**Features:**
-
-- Daily random target word and emoji
-- Level-based scaling for difficulty and rewards
-- Per-user progress tracking stored in the database
-- Interactive claim buttons for completed quests
-- Rewards include dabloons and XP
-
-Quests are designed to be slightly chaotic, sometimes embarrassing, and always fun.
 
 ---
 
@@ -330,10 +276,6 @@ A full-featured moderation suite with logging, warnings, and server configuratio
 | **`/server set_4k_channel [channel]`** | Set a channel where 4k image results are forwarded automatically.     | Manage Channels         |
 | **`/server set_4k_channel_off`**       | Disable 4k channel forwarding.                                        | Manage Channels         |
 
-**Welcome message placeholders:** `{user}` — mentions the new member · `{server}` — inserts the server name
-
-All moderation actions are automatically logged to the configured log channel.
-
 ---
 
 ### 💬 Message Events
@@ -343,8 +285,6 @@ All moderation actions are automatically logged to the configured log channel.
 | Reply with **`4k`**    | Quote the replied message as an image. Also forwards to the configured 4k channel if set. |
 | Reply with **`pin`**   | Pin the replied message.                                                                  |
 | Reply with **`unpin`** | Unpin the replied message.                                                                |
-
-> Amber must be a member of the server for these to work.
 
 ---
 
@@ -374,68 +314,6 @@ To update at any time, run:
 python update.py
 ```
 
-This checks for new commits, pulls them, updates dependencies if `requirements.txt` changed, and tells you to run `main.py`.
-
----
-
-### Manual Setup
-
-If you prefer to set things up yourself:
-
-1. Clone the repository:
-
-```bash
-git clone https://github.com/novodude/amber-bot.git
-cd amber-bot
-```
-
-1. Create and activate a virtual environment:
-
-```bash
-python -m venv .venv
-source .venv/bin/activate  # Windows: .venv\Scripts\activate
-```
-
-1. Install dependencies:
-
-```bash
-pip install -r requirements.txt
-pip install torch transformers accelerate
-```
-
-1. Download the model:
-
-```python
-from transformers import AutoTokenizer, AutoModelForCausalLM
-model = AutoModelForCausalLM.from_pretrained("Novodude/domesticated-LLM")
-tokenizer = AutoTokenizer.from_pretrained("Novodude/domesticated-LLM")
-model.save_pretrained("domesticated-LLM")
-tokenizer.save_pretrained("domesticated-LLM")
-```
-
-1. Get required API keys:
-
-- Discord bot: [Discord Developer Portal](https://discord.com/developers/applications)
-- Spotify API: [Spotify Developer Dashboard](https://developer.spotify.com/dashboard)
-- Giphy API: [Giphy Developers](https://developers.giphy.com/dashboard/)
-- RapidAPI (optional, for `/download`): [RapidAPI](https://rapidapi.com/)
-
-1. Create a `.env` file:
-
-```bash
-DISCORD_TOKEN=your_bot_token
-GIPHY_API=your_giphy_key
-SPOTIFY_CLIENT_ID=your_spotify_id
-SPOTIFY_CLIENT_SECRET=your_spotify_secret
-RAPIDAPI_KEY=optional_key
-```
-
-1. Run the bot:
-
-```bash
-python main.py
-```
-
 ---
 
 ## To-Do
@@ -458,6 +336,7 @@ python main.py
 - [x] Anime commands — waifu, husbando, neko, kitsune, quote
 - [x] Shop upgrades fully implemented (Auto Clicker, Double Points, Custom X/O)
 - [x] 4k channel forwarding
+- [x] Streaming radio — no disk usage, up to 1500 songs/playlist, background sync with live progress bar
 - [ ] Gambling system
 
 ---
@@ -465,8 +344,6 @@ python main.py
 ## The Model — domesticated-LLM
 
 The pet system uses **domesticated-LLM**, a fine-tuned version of `SmolLM2-135M-Instruct` trained on 20,000 synthetic cat-speak examples across 8 behavior styles (food, play, sleep, affection, grooming, alarm, boredom, comfort).
-
-Given an instruction and a context (the owner's last message), it generates a response like a small chaotic cat would. The model lives locally at `./domesticated-LLM/` and is loaded lazily on first use.
 
 Full model card: [novodude/domesticated-LLM](https://huggingface.co/novodude/domesticated-LLM)
 
@@ -485,7 +362,7 @@ Full model card: [novodude/domesticated-LLM](https://huggingface.co/novodude/dom
 - torch
 - transformers
 - accelerate
-- **ffmpeg** — required for audio processing in `/radio`
+- **ffmpeg** — required for audio streaming in `/radio`
   > Download at [ffmpeg.org/download.html](https://ffmpeg.org/download.html)
 
 ---

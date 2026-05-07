@@ -103,13 +103,14 @@ COMMANDS = {
         ("/games trivia",                    "Answer a trivia question"),
     ],
     "📻 Radio": [
-        ("/radio [playlist_id]",    "Play a saved playlist (or enable mix mode for all playlists)"),
-        ("/radio_add [name] [url]", "Create a new playlist from a YouTube or Spotify URL"),
-        ("/radio_libraries",        "Browse your playlists or public ones"),
-        ("/radio_remove [id]",      "Delete a playlist and its songs (owner only)"),
-        ("/radio_sync [id]",        "Re-download songs from the playlist source URL"),
-        ("/radio_songs [id]",       "View all songs in a playlist (paginated)"),
-        ("/radio_stop",             "Stop playback and disconnect from voice"),
+        ("/radio play [playlist_id] [source_url] [mix_mode]", "Play a saved playlist, stream a direct YouTube URL, or shuffle everything with mix mode"),
+        ("/radio queue [source_url]",                         "Add a YouTube URL to the current queue without interrupting playback"),
+        ("/radio add [name] [url] [public]",                  "Create a playlist from a YouTube or Spotify URL — syncs in the background with a live progress bar"),
+        ("/radio sync [playlist_id]",                         "Re-sync a playlist from its source URL — runs in the background"),
+        ("/radio libraries [public]",                         "Browse your playlists or public ones"),
+        ("/radio remove [playlist_id]",                       "Delete a playlist and all its songs (owner only)"),
+        ("/radio songs [playlist_id]",                        "View all songs in a playlist (paginated)"),
+        ("/radio stop",                                       "Stop playback and disconnect from voice"),
     ],
     "🛡️ Admin": [
         ("/admin kick [member]",            "Kick a member  ·  requires Kick Members"),
@@ -144,7 +145,7 @@ COMMANDS = {
     ("Reply with `unpin`", "Unpin the replied message"),
     ]
 }
-
+ 
 CATEGORY_COLORS = {
     "🎭 Fun":      discord.Color.from_rgb(255, 100, 130),
     "🌸 Anime":    discord.Color.from_rgb(255, 150, 200),

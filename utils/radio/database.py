@@ -4,11 +4,10 @@ import os
 DB_PATH = "data/radio.db"
 
 async def init_radio_db():
-    """Initialize the database with tables"""
+    """Initialize the radio database (streaming-only, no file downloads)."""
     os.makedirs("data", exist_ok=True)
-    
+
     async with aiosqlite.connect(DB_PATH) as db:
-        # Playlists table
         await db.execute("""
             CREATE TABLE IF NOT EXISTS playlists (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -21,23 +20,21 @@ async def init_radio_db():
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
-        
-        # Songs table
+
         await db.execute("""
             CREATE TABLE IF NOT EXISTS songs (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 playlist_id INTEGER NOT NULL,
                 title TEXT NOT NULL,
                 artist TEXT,
-                file_path TEXT NOT NULL,
+                stream_url TEXT NOT NULL,
                 duration INTEGER,
                 file_hash TEXT,
                 added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (playlist_id) REFERENCES playlists(id) ON DELETE CASCADE
             )
         """)
-        
-        # User settings table
+
         await db.execute("""
             CREATE TABLE IF NOT EXISTS user_settings (
                 user_id INTEGER PRIMARY KEY,
@@ -45,5 +42,15 @@ async def init_radio_db():
                 auto_mix BOOLEAN DEFAULT 0
             )
         """)
-        
+
+        # ── Migrations for existing databases ─────────────────────────────────
+        migrations = [
+            "ALTER TABLE songs ADD COLUMN stream_url TEXT",
+        ]
+        for sql in migrations:
+            try:
+                await db.execute(sql)
+            except Exception:
+                pass
+
         await db.commit()

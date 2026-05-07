@@ -9,3 +9,5 @@ spotipy
 torch
 transformers
 accelerate
+PyNaCl
+davey

@@ -1,9 +1,7 @@
 # other libraries
 import os
 import logging
-import re
 import aiosqlite
-from io import BytesIO
 from dotenv import load_dotenv
 # discord library
 import discord
@@ -55,9 +53,7 @@ bot = commands.Bot(command_prefix=get_prefix, intents=intents)
 
 
 async def load_extensions():
-    await bot.load_extension('commands.radio.settings')
-    await bot.load_extension('commands.radio.player')
-    await bot.load_extension('commands.quests')
+    await bot.load_extension('commands.radio')
 
 
 @bot.event
@@ -95,7 +91,6 @@ async def on_message(message: discord.Message):
     await message_xp_handler(message)
     await message_quest_handler(message)
 
-    # Update pet inactivity timer whenever the owner sends any message
     user_id = await get_user_id_from_discord(message.author.id)
     if user_id:
         await touch_owner_activity(user_id)
