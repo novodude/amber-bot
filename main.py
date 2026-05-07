@@ -54,6 +54,7 @@ bot = commands.Bot(command_prefix=get_prefix, intents=intents)
 
 async def load_extensions():
     await bot.load_extension('commands.radio')
+    await bot.load_extension('commands.quests')
 
 
 @bot.event

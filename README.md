@@ -109,6 +109,7 @@ A unified `/animal` command group with multiple subcommands for different animal
 | **`/animal koala`**    | Random koala image + fact 🐨          |
 | **`/animal kangaroo`** | Random kangaroo image + fact 🦘       |
 | **`/animal bunny`**    | Random bunny image/GIF 🐰             |
+| **`/animal sheep`**    | Random sheep GIF 🐑                   |
 
 **Implementation notes:**
 
@@ -124,15 +125,17 @@ A unified `/animal` command group with multiple subcommands for different animal
 A simple economy and profile system powered by `aiosqlite`.
 Each user has dabloons, a bio, and a customizable profile appearance.
 
-| **/**                             | **what it does**                                            |
-| --------------------------------- | ----------------------------------------------------------- |
-| **`/register`**                   | Registers you in the system with 50 starter dabloons.       |
-| **`/profile`**                    | Shows your profile with balance, bio, and customization UI. |
-| **`/setbio [bio]`**               | Sets a text bio manually.                                   |
-| **`/money balance`**              | Check your current dabloons balance.                        |
-| **`/money daily`**                | Claim your daily dabloons (24h cooldown).                   |
-| **`/money give [user] [amount]`** | Send dabloons to another registered user.                   |
-| **`/money leaderboard`**          | Show the top 10 users globally by balance.                  |
+| **/**                             | **what it does**                                                                                                    |
+| --------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| **`/register`**                   | Registers you in the system with 50 starter dabloons.                                                               |
+| **`/profile`**                    | Shows your profile with balance, bio, and customization UI.                                                         |
+| **`/setbio [bio]`**               | Sets a text bio manually.                                                                                           |
+| **`/money balance`**              | Check your current dabloons balance.                                                                                |
+| **`/money daily`**                | Claim your daily dabloons (24h cooldown).                                                                           |
+| **`/money give [user] [amount]`** | Send dabloons to another registered user.                                                                           |
+| **`/money leaderboard`**          | Show the top 10 users globally by balance.                                                                          |
+| **`/money rob [user]`**           | Attempt to steal dabloons from another user. Success is a 50/50 shot; failure results in a fine paid to the victim. |
+| **`/money beg`**                  | Ask for dabloons with varying levels of success based on luck.                                                      |
 
 Profile features include:
 
@@ -224,6 +227,18 @@ All commands live under the `/radio` group.
 - A live embed updates every 5 songs with a progress bar and the last added track name
 - You get a DM when the sync finishes
 - Playlist cap is **1500 songs** per playlist
+
+---
+
+### 🎲 Gambling
+
+A high-stakes command group for the bold.
+
+| **/**                                 | **description**                                                                  |
+| :------------------------------------ | :------------------------------------------------------------------------------- |
+| **`/gamble coinflip [bet] [choice]`** | Bet on heads or tails to double your money.                                      |
+| **`/gamble roll [bet] [choice]`**     | Bet on a specific dice face (1-6) for a **5x** payout.                           |
+| **`/gamble slots [bet]`**             | Spin for a **2x** payout (two of a kind) or a **10x** Jackpot (three of a kind). |
 
 ---
 
@@ -337,7 +352,7 @@ python update.py
 - [x] Shop upgrades fully implemented (Auto Clicker, Double Points, Custom X/O)
 - [x] 4k channel forwarding
 - [x] Streaming radio — no disk usage, up to 1500 songs/playlist, background sync with live progress bar
-- [ ] Gambling system
+- [x] Gambling system
 
 ---
 

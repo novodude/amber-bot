@@ -355,7 +355,7 @@ class Games(app_commands.Group):
 
         await interaction.followup.send(f"Tic Tac Toe! You are {player_symbol}'s!", view=view)
 
-    @app_commands.command(name="trivia", description="Answer trivia questions and win dabloons!")
+    @app_commands.command(name="trivia", description="Answer trivia questions!")
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     @app_commands.allowed_installs(guilds=True, users=True)
     async def trivia(self, interaction: discord.Interaction):

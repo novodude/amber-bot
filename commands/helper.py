@@ -51,7 +51,8 @@ COMMANDS = {
         ("/money balance",               "Check your current dabloons balance"),
         ("/money daily",                 "Claim your daily dabloons (24h cooldown)"),
         ("/money give [user] [amount]",  "Send dabloons to another registered user"),
-        ("/money leaderboard",           "See the top 10 users by dabloon balance"),
+        ("/money beg"                 ,  "Beg users for dabloons"),
+        ("/money rob [user]",            "Attempt to rob another user (risky!)"),
     ],
     "🛒 Shop": [
         ("/shop browse",         "Browse all shop categories"),
@@ -143,6 +144,11 @@ COMMANDS = {
     ("Reply with `4k`",    "Quote the replied message as an image — also forwards to the 4k channel if configured"),
     ("Reply with `pin`",   "Pin the replied message"),
     ("Reply with `unpin`", "Unpin the replied message"),
+    ],
+    "🎲 Gamble": [
+        ("/gamble coinflip [bet] [choice]", "Double your dabloons on a 50/50 flip"),
+        ("/gamble roll [bet] [choice]",     "Bet on a dice roll for a 5x payout"),
+        ("/gamble slots [bet]",             "Spin the slots for a chance at a 10x Jackpot"),
     ]
 }
  
@@ -154,6 +160,7 @@ CATEGORY_COLORS = {
     "💰 Economy":  discord.Color.from_rgb(255, 195, 40),
     "🛒 Shop":     discord.Color.from_rgb(255, 165, 0),
     "🐱 Pet":      discord.Color.from_rgb(255, 140, 50),
+    "🎲 Gamble":   discord.Color.from_rgb(200, 0, 0),
     "🖼️ Image":    discord.Color.from_rgb(120, 170, 255),
     "⚙️ Utils":    discord.Color.from_rgb(160, 160, 160),
     "🎮 Games":    discord.Color.from_rgb(130, 100, 255),

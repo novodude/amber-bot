@@ -1,3 +1,4 @@
+from os import replace
 import random
 import aiohttp
 import discord
@@ -9,6 +10,18 @@ api_key = dotenv.get_key(".env", "GIPHY_API")
 
 SRA_BASE = "https://some-random-api.com/animal"
 ANIMALITY_BASE = "https://api.animality.xyz/all"
+
+
+STUMMI_SHEEP_ART = [
+    "https://cdn.discordapp.com/attachments/1403112075005530143/1499042413375782983/Untitled181_20260429093859.png?ex=69fde78a&is=69fc960a&hm=1ee7f73fa1c2f36d494a99b3db4d67e28060e587ca9fe0c0105609c629d503b5&",
+    "https://cdn.discordapp.com/attachments/1403112075005530143/1490521124646424766/Screenshot_20260405_211633_ibisPaint_X.jpg?ex=69fde2b8&is=69fc9138&hm=ec097826ab881aa276cf201f660079d0d4668fa04997478ef2a46e4c98637064&",
+    "https://cdn.discordapp.com/attachments/1403112075005530143/1488422441012297849/Untitled155_20260331021858.png?ex=69fd806b&is=69fc2eeb&hm=f30e2e83e02894a324455394ef81e2251d8189ec73293a99e7402d8345ee3d1c&",
+    "https://cdn.discordapp.com/attachments/1403112075005530143/1488422441590980718/Untitled155_20260331021902.png?ex=69fd806b&is=69fc2eeb&hm=25188b190f3bcbf09807bd67eb26a400cfc5a22e5dc67dd6719466ca895adb29&",
+    "https://cdn.discordapp.com/attachments/1403112075005530143/1486187965293138121/Untitled148_20260324221932.png?ex=69fd4866&is=69fbf6e6&hm=e03ee79ad495cd85c0986be46c320cb1085a179d01aac3db1baa3a79bc809d78&",
+    "https://cdn.discordapp.com/attachments/1403112075005530143/1486212539564949625/Untitled148_20260324235031.png?ex=69fd5f49&is=69fc0dc9&hm=99473e1bc14ca12ebee4537047ca25b0c5fa4c70d077a5fce3bdcb86e53f703d&"
+]
+
+STUMMI_CHANCE = 0.1
 
 @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
 @app_commands.allowed_installs(guilds=True, users=True)
@@ -95,6 +108,31 @@ class AnimalCommands(app_commands.Group):
                 color=discord.Color.dark_green()
             )
         except Exception as e:
+            e = str(e).replace(api_key, "[REDACTED]")
+            await self._error(interaction, e)
+
+    @app_commands.command(name="sheep", description="Get a random sheep gif")
+    async def sheep(self, interaction: discord.Interaction):
+        colors = [discord.Color.orange(), discord.Color.from_rgb(255, 255, 255),
+                  discord.Color.pink(), discord.Color.from_rgb(0, 0, 0)]
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(f"https://api.giphy.com/v1/gifs/random?api_key={api_key}&tag=sheep") as resp:
+                    resp.raise_for_status()
+                    data = await resp.json()
+                    gif_url = data["data"]["images"]["original"]["url"]
+            
+            if random.random() < STUMMI_CHANCE:
+                url = random.choice(STUMMI_SHEEP_ART)
+            else:
+                url = gif_url
+
+            await self._send_animal(
+                interaction, title="🐑 Random Sheep!", image_url=url,
+                color=random.choice(colors)
+            )
+        except Exception as e:
+            e = str(e).replace(api_key, "[REDACTED]")
             await self._error(interaction, e)
 
     @app_commands.command(name="cat", description="Get a random cat gif")
