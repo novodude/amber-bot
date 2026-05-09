@@ -869,7 +869,7 @@ def build_counter_text(action: str, count: int, author_name: str, target_name: s
 # ── React back button view ────────────────────────────────────────────────────
 class React_back(discord.ui.View):
     def __init__(self, author: discord.User, user: Optional[discord.User], action: str, show_button: bool = True):
-        super().__init__()
+        super().__init__(timeout=None)
         self.message: discord.WebhookMessage | None = None
         self.author = author
         self.action = action

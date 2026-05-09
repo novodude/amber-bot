@@ -134,8 +134,7 @@ class HexColorModal(discord.ui.Modal, title="Enter your hex color"):
             )
             await db.commit()
 
-        r, g, b = int(value[1:3], 16), int(value[3:5], 16), int(value[5:7], 16)
-        preview_color = discord.Color.from_rgb(r, g, b)
+        preview_color = discord.Color.from_str(value)
 
         embed = discord.Embed(
             title="🎨 Custom color applied!",

@@ -25,7 +25,6 @@ class Money(app_commands.Group):
 
     @app_commands.command(name="daily", description="Claim your daily dabloons!")
     async def daily(self, interaction: discord.Interaction):
-        # Auto-register if needed
         user_id = await ensure_registered(interaction.user.id, str(interaction.user))
 
         async with aiosqlite.connect("data/user.db") as db:
@@ -60,7 +59,6 @@ class Money(app_commands.Group):
     @app_commands.command(name="give", description="Give dabloons to another user")
     @app_commands.describe(target="The user you want to give dabloons to", amount="Amount to give")
     async def give(self, interaction: discord.Interaction, target: discord.User, amount: int):
-        # Auto-register sender; receiver must opt in themselves (fair play)
         sender_id = await ensure_registered(interaction.user.id, str(interaction.user))
         receiver_id = await get_user_id_from_discord(target.id)
 
@@ -89,7 +87,6 @@ class Money(app_commands.Group):
 
     @app_commands.command(name="balance", description="Check your current dabloons balance")
     async def balance(self, interaction: discord.Interaction):
-        # Auto-register if needed
         user_id = await ensure_registered(interaction.user.id, str(interaction.user))
         balance = await get_dabloons(user_id)
         await interaction.response.send_message(f"You have 🪙 {balance} dabloons.")
@@ -97,7 +94,6 @@ class Money(app_commands.Group):
     @app_commands.command(name="rob", description="Attempt to rob another user of their dabloons")
     @app_commands.describe(target="The user you want to rob")
     async def rob(self, interaction: discord.Interaction, target: discord.User):
-        # Auto-register robber; victim must opt in themselves (fair play)
         robber_id = await ensure_registered(interaction.user.id, str(interaction.user))
         victim_id = await get_user_id_from_discord(target.id)
 
@@ -174,16 +170,11 @@ class Money(app_commands.Group):
             color = discord.Color.blue()
             await add_dabloons(user_id, amount)
         else:
-            title="Tough Crowd"
-            description="No one felt like giving you dabloons this time. Better luck next time! 🪙"
-            color=discord.Color.red()
-        
+            title = "Tough Crowd"
+            description = "No one felt like giving you dabloons this time. Better luck next time! 🪙"
+            color = discord.Color.red()
 
-        embed = discord.Embed(
-            title=title,
-            description=description,
-            color=color
-        )
+        embed = discord.Embed(title=title, description=description, color=color)
         await interaction.response.send_message(embed=embed)
 
 class Gamble(app_commands.Group):
@@ -193,9 +184,7 @@ class Gamble(app_commands.Group):
             description="Try your luck with some gambling games!"
         )
 
-
     SLOT_EMOJI = ["🍒", "🍋", "🍊", "🍇", "⭐", "7️⃣"]
-
 
     @app_commands.command(name="coinflip", description="Flip a coin and bet on heads or tails")
     @app_commands.describe(bet="The amount of dabloons you want to bet", choice="Your choice: heads or tails")
@@ -277,13 +266,9 @@ class Gamble(app_commands.Group):
             await interaction.response.send_message("You don't have enough dabloons to make that bet!", ephemeral=True)
             return
 
-        embed = discord.Embed(
-            title="Spinning...",
-            description="🎰",
-            color=discord.Color.yellow()
-        )
+        embed = discord.Embed(title="Spinning...", description="🎰", color=discord.Color.yellow())
         await interaction.response.send_message(embed=embed)
-            
+
         for _ in range(3):
             slot_result = [random.choice(self.SLOT_EMOJI) for _ in range(3)]
             embed = discord.Embed(
@@ -293,7 +278,6 @@ class Gamble(app_commands.Group):
             )
             await interaction.edit_original_response(embed=embed)
             await asyncio.sleep(0.7)
-
 
         result = [random.choice(self.SLOT_EMOJI) for _ in range(3)]
         embed = discord.Embed(
@@ -323,8 +307,6 @@ class Gamble(app_commands.Group):
         await interaction.edit_original_response(embed=embed)
 
 
-
-
 async def banking_setup(bot):
     bot.tree.add_command(Money())
     bot.tree.add_command(Gamble())
@@ -333,8 +315,8 @@ async def banking_setup(bot):
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     @app_commands.allowed_installs(guilds=True, users=True)
     async def profile(interaction: discord.Interaction, user: discord.User = None):
-        discord_id = interaction.user.id if user is None else user.id
-        target_user = interaction.user if user is None else user
+        discord_id  = interaction.user.id if user is None else user.id
+        target_user = interaction.user    if user is None else user
 
         if user is None:
             user_id = await ensure_registered(discord_id, str(interaction.user))
@@ -357,38 +339,40 @@ async def banking_setup(bot):
         balance = await get_dabloons(user_id)
         async with aiosqlite.connect("data/user.db") as db:
             cursor = await db.execute(
-                "SELECT bio, profile_color FROM users WHERE id = ?", (user_id,)
+                "SELECT bio, profile_color, custom_hex_color FROM users WHERE id = ?", (user_id,)
             )
             row = await cursor.fetchone()
 
-        bio = row[0] if row and row[0] else "This user has no bio set."
+        bio        = row[0] if row and row[0] else "This user has no bio set."
         color_name = row[1] if row and row[1] else "gold"
+        custom_hex = row[2] if row and row[2] else None
 
         current_hour = discord.utils.utcnow().hour
         greeting_time = (
-            "morning" if 5 <= current_hour < 12 else
+            "morning"   if 5  <= current_hour < 12 else
             "afternoon" if 12 <= current_hour < 17 else
-            "evening" if 17 <= current_hour < 21 else
+            "evening"   if 17 <= current_hour < 21 else
             "night"
         )
+
+        view = ProfileView(discord_id) if user is None else None
+        resolved_color = view.get_color(color_name, custom_hex) if view else ProfileView(discord_id).get_color(color_name, custom_hex)
 
         embed = await build_profile_embed(
             discord_id=discord_id,
             user=target_user,
             balance=balance,
             bio=bio,
-            color=ProfileView(discord_id).get_color(color_name),
+            color=resolved_color,
             greeting_time=greeting_time,
         )
 
-        view = ProfileView(discord_id) if user is None else None
         await interaction.response.send_message(embed=embed, view=view)
 
     @bot.tree.command(name="setbio", description="Set your custom bio")
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     @app_commands.allowed_installs(guilds=True, users=True)
     async def setbio(interaction: discord.Interaction, bio: str):
-        # Auto-register if needed
         await ensure_registered(interaction.user.id, str(interaction.user))
 
         async with aiosqlite.connect("data/user.db") as db:
@@ -408,7 +392,6 @@ async def banking_setup(bot):
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     @app_commands.allowed_installs(guilds=True, users=True)
     async def level(interaction: discord.Interaction):
-        # Auto-register if needed
         user_id = await ensure_registered(interaction.user.id, str(interaction.user))
 
         level = await get_level(user_id)
@@ -436,5 +419,3 @@ async def message_xp_handler(message):
             color=discord.Color.gold()
         )
         await message.channel.send(embed=embed, delete_after=10, reference=message)
-
-

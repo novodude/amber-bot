@@ -23,6 +23,10 @@ from commands.animals import animal_setup
 from commands.image import image_setup
 from commands.anime import anime_setup
 from commands.leaderboard import leaderboard_setup
+try:
+    from commands.debugging import debug_setup
+except ImportError:
+    pass
 # databases
 from utils.radio.database import init_radio_db
 from utils.userbase.database import init_user_db
@@ -76,6 +80,8 @@ async def on_ready():
     await animal_setup(bot)
     await image_setup(bot)
     await anime_setup(bot)
+    try:        await debug_setup(bot)
+    except NameError: pass
     await leaderboard_setup(bot)
     await load_extensions()
     await bot.tree.sync()

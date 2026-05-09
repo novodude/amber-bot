@@ -30,6 +30,7 @@ class PlayerState:
         self.mix_mode: bool = False
         self.voice_client: discord.VoiceClient | None = None
         self.message: discord.Message | None = None
+        self._keepalive_task: asyncio.Task | None = None
         self.user_id: int | None = None
 
 
@@ -37,7 +38,7 @@ class PlayerState:
 
 class SongsPaginator(discord.ui.View):
     def __init__(self, songs: list, playlist_name: str, user_id: int):
-        super().__init__(timeout=180)
+        super().__init__(timeout=None)
         self.songs = songs
         self.playlist_name = playlist_name
         self.user_id = user_id
@@ -161,6 +162,15 @@ class RadioCommands(app_commands.Group):
         view.add_item(_make_btn("⏹️", discord.ButtonStyle.danger,    f"radio_stop_{guild_id}",   self._btn_stop,       2))
         return view
 
+    async def _keepalive_loop(self, guild_id: int):
+        """Re-edits the player message every 5 minutes to keep buttons alive."""
+        while True:
+            await asyncio.sleep(300)  # 5 minutes
+            player = self._get_player(guild_id)
+            if not player.voice_client or not player.message:
+                break
+            await self._update_message(guild_id)
+
     async def _play_current(self, guild_id: int):
         player = self._get_player(guild_id)
         if not player.voice_client or player.voice_client.is_playing() or player.voice_client.is_paused():
@@ -185,25 +195,37 @@ class RadioCommands(app_commands.Group):
             await self._play_current(guild_id)
             return
 
+        # Capture the event loop now, before the thread callback fires
+        event_loop = asyncio.get_event_loop()
+
         def after_playing(error):
             if error:
                 print(f"[radio] playback error: {error}")
-            asyncio.run_coroutine_threadsafe(self._advance(guild_id), player.voice_client._state.loop)
+            asyncio.run_coroutine_threadsafe(self._advance(guild_id), event_loop)
 
         src = discord.FFmpegPCMAudio(stream_url, before_options=FFMPEG_STREAM_OPTIONS)
         source = discord.PCMVolumeTransformer(src, volume=player.volume)
         player.voice_client.play(source, after=after_playing)
+
+        # start keepalive only if not already running
+        if not getattr(player, '_keepalive_task', None) or player._keepalive_task.done():
+            player._keepalive_task = asyncio.create_task(self._keepalive_loop(guild_id))
+
         await self._update_message(guild_id)
 
     async def _advance(self, guild_id: int):
         player = self._get_player(guild_id)
+
         if player.loop_song:
             await self._play_current(guild_id)
             return
+
+        # advance to next track
         if player.current_index + 1 >= len(player.songs):
             player.current_index = 0 if player.loop else len(player.songs)
         else:
             player.current_index += 1
+
         await self._play_current(guild_id)
 
     async def _update_message(self, guild_id: int):
@@ -293,12 +315,8 @@ class RadioCommands(app_commands.Group):
         if not player.voice_client:
             await interaction.response.send_message("No active player.", ephemeral=True)
             return
+
         player.voice_client.stop()
-        if player.current_index + 1 < len(player.songs):
-            player.current_index += 1
-        elif player.loop:
-            player.current_index = 0
-        await self._play_current(interaction.guild_id)
         await interaction.response.defer()
 
     async def _btn_vol_down(self, interaction: discord.Interaction):
@@ -380,7 +398,6 @@ class RadioCommands(app_commands.Group):
         if source_url:
             await interaction.followup.send("🔍 Resolving stream...", ephemeral=True)
 
-            # For a direct URL we just stream it in-memory without saving to DB
             stream_url = await resolve_stream_url(source_url)
             if not stream_url:
                 await interaction.followup.send("❌ Couldn't resolve that URL.")
@@ -467,7 +484,6 @@ class RadioCommands(app_commands.Group):
             await interaction.followup.send("❌ Nothing is playing. Use `/radio play` first.", ephemeral=True)
             return
 
-        # Resolve the video ID and title without DB storage
         opts = {'format': 'bestaudio/best', 'quiet': True, 'skip_download': True, 'no_warnings': True}
         import yt_dlp
 
@@ -485,7 +501,6 @@ class RadioCommands(app_commands.Group):
         title = info.get("title", "Unknown Title")
         watch_url = f"https://www.youtube.com/watch?v={video_id}"
 
-        # Append as a tuple matching the songs schema: (id, title, artist, stream_url, duration)
         player.songs.append((None, title, info.get("uploader"), watch_url, info.get("duration", 0)))
         await interaction.followup.send(f"✅ **{title}** added to queue (position {len(player.songs)})", ephemeral=True)
         await self._update_message(guild_id)
@@ -615,7 +630,6 @@ class RadioCommands(app_commands.Group):
             await db.execute("DELETE FROM playlists WHERE id = ?", (playlist_id,))
             await db.commit()
 
-        # If this playlist is currently playing, stop it
         guild_id = interaction.guild_id
         player = self._get_player(guild_id)
         if player.playlist_id == playlist_id:
@@ -636,9 +650,9 @@ class RadioCommands(app_commands.Group):
                 cursor = await db.execute("""
                     SELECT p.id, p.name, p.owner_id, p.source_type, COUNT(s.id)
                     FROM playlists p LEFT JOIN songs s ON p.id = s.playlist_id
-                    WHERE p.is_public = 1 AND p.owner_id != ?
+                    WHERE p.is_public = 1
                     GROUP BY p.id HAVING COUNT(s.id) > 0 ORDER BY p.name
-                """, (interaction.user.id,))
+                """)
                 title = "🌐 Public Playlists"
             else:
                 cursor = await db.execute("""
