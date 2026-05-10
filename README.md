@@ -8,6 +8,8 @@ Amber is a Discord bot with a growing set of fun, creative, utility, moderation,
 The name comes from my pet duck, Amber 🦆.
 New commands and systems are added regularly as the project grows.
 
+[click here to add the bot to your server](https://discord.com/oauth2/authorize?client_id=1432674707970457703&permissions=8&integration_type=0&scope=bot)
+
 ---
 
 ## Commands
