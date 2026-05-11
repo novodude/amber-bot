@@ -44,10 +44,22 @@ class User(app_commands.Group):
 class StatsType(discord.ui.Select):
     def __init__(self):
         options = [
-            discord.SelectOption(label="Actions Received", value="actions received", emoji="🤝"),
-            discord.SelectOption(label="Actions Given", value="action given", emoji="🙌")
+            discord.SelectOption(
+                label="Actions Received",
+                value="Actions Received",
+                emoji="🤝"
+            ),
+            discord.SelectOption(
+                label="Actions Given",
+                value="Actions Given",
+                emoji="🙌"
+            )
         ]
-        super().__init__(placeholder="Select leaderboard type...", options=options)
+
+        super().__init__(
+            placeholder="Select action type...",
+            options=options
+        )
 
     async def callback(self, interaction: discord.Interaction):
         selected_type = self.values[0]
@@ -55,11 +67,14 @@ class StatsType(discord.ui.Select):
         data = await get_all_action_data(interaction.user.id, selected_type)
 
         if not data:
-            await interaction.response.send_message("No data found for you.", ephemeral=True)
+            await interaction.response.send_message(
+                "No data found for you.",
+                ephemeral=True
+            )
             return
 
         embed = discord.Embed(
-            title=f"{selected_type.capitalize()}",
+            title=selected_type,
             description=f"{interaction.user.display_name}'s {selected_type}",
             color=discord.Color.gold()
         )
@@ -71,7 +86,7 @@ class StatsType(discord.ui.Select):
                 inline=False
             )
 
-        await interaction.response.edit_message(embed=embed)
+        await interaction.response.edit_message(embed=embed, view=self.view)
 
 class StatsUI(discord.ui.View):
     def __init__(self):
@@ -104,8 +119,8 @@ class My(app_commands.Group):
                 value=f"{value} times",
                 inline=False
             )
-        veiw = StatsUI()
-        await interaction.response.send_message(embed=embed, view=veiw, ephemeral=True)
+        view = StatsUI()
+        await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
 
 
 async def user_setup(bot):
