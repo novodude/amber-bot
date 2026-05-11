@@ -1,10 +1,17 @@
 import random
+from typing import Literal
 import aiosqlite
 from utils.economy import get_user_id_from_discord, add_dabloons
 from utils.userbase.ensure_registered import ensure_registered
 
 DB_PATH = "data/user.db"
 
+ACTIONS = [
+    'hug', 'kiss', 'pat', 'poke', 'cuddle', 'bite', 'kick', 'punch',
+    'feed', 'highfive', 'dance', 'sleep', 'cry', 'smile', 'think',
+    'wave', 'laugh', 'yeet', 'facepalm', 'baka', 'peck', 'shoot',
+    'run', 'stare', 'thumbsup'
+]
 
 # ── Count helpers ─────────────────────────────────────────────────────────────
 
@@ -74,6 +81,32 @@ async def get_received_count(target_discord_id: int, action: str) -> int:
         """, (target_id, action))
         row = await cursor.fetchone()
         return row[0] if row else 0
+
+
+async def get_given_count(actor_discord_id: int, action: str) -> int:
+    """Get total times a user has given a specific action from anyone."""
+    actor_id = await get_user_id_from_discord(actor_discord_id)
+    if actor_id is None:
+        return 0
+
+    async with aiosqlite.connect(DB_PATH) as db:
+        cursor = await db.execute("""
+            SELECT COALESCE(SUM(count), 0) FROM action_counts
+            WHERE actor_id = ? AND action = ?
+        """, (actor_id, action))
+        row = await cursor.fetchone()
+        return row[0] if row else 0
+
+async def get_all_action_data(user: int, data_type: Literal["Actions Received", "Actions Given"]):
+    data = []
+    for action in ACTIONS:
+        if data_type == "Actions Given":
+            count = await get_given_count(user, action)
+            data.append([action, count])
+        else:
+            count = await get_received_count(user, action)
+            data.append([action, count])
+    return data
 
 
 async def get_total_actions_performed(actor_discord_id: int) -> int:

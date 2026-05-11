@@ -177,6 +177,8 @@ class Money(app_commands.Group):
         embed = discord.Embed(title=title, description=description, color=color)
         await interaction.response.send_message(embed=embed)
 
+@app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+@app_commands.allowed_installs(guilds=True, users=True)
 class Gamble(app_commands.Group):
     def __init__(self):
         super().__init__(

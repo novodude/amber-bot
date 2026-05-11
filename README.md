@@ -8,6 +8,8 @@ Amber is a Discord bot with a growing set of fun, creative, utility, moderation,
 The name comes from my pet duck, Amber 🦆.
 New commands and systems are added regularly as the project grows.
 
+[click here to add the bot to your server](https://discord.com/oauth2/authorize?client_id=1432674707970457703&permissions=8&integration_type=0&scope=bot)
+
 ---
 
 ## Commands
@@ -33,6 +35,25 @@ New commands and systems are added regularly as the project grows.
 | **`/mimic start [@user]`**       | Makes Amber repeat the target user's messages, with a 30% chance of sending one of their last 15 messages instead.                                                                  | Admin only. Mirrors text, attachments, and stickers.                                                   |
 | **`/say embed [message]`**       | Makes Amber send an embed message.                                                                                                                                                  | Supports text, timestamps, author display, image attachments, and 6 color options.                     |
 | **`/say text [message]`**        | Makes Amber say a text message.                                                                                                                                                     | Can send text and attachments.                                                                         |
+
+---
+
+### 👤 User & Profile Utilities
+
+Commands for looking up user info and viewing your own action stats.
+
+| **/**                     | **description**                                                                          |
+| ------------------------- | ---------------------------------------------------------------------------------------- |
+| **`/user info [user]`**   | Get a user's username, ID, and account creation date.                                    |
+| **`/user avatar [user]`** | Display a user's avatar.                                                                 |
+| **`/user banner [user]`** | Display a user's banner (if they have one).                                              |
+| **`/my stats [type]`**    | View your action stats — how many actions you've given or received, broken down by type. |
+
+**Implementation notes:**
+
+- `/user` commands work in guilds, DMs, and private channels
+- `/my stats` uses a dropdown to switch between Actions Given and Actions Received without re-running the command
+- Stats pull from the same counter system that tracks `/do` and `/look` interactions
 
 ---
 
@@ -353,6 +374,8 @@ python update.py
 - [x] 4k channel forwarding
 - [x] Streaming radio — no disk usage, up to 1500 songs/playlist, background sync with live progress bar
 - [x] Gambling system
+- [x] User info, avatar, and banner commands
+- [x] Action stats command (`/my stats`)
 
 ---
 
