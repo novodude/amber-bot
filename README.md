@@ -38,6 +38,25 @@ New commands and systems are added regularly as the project grows.
 
 ---
 
+### 👤 User & Profile Utilities
+
+Commands for looking up user info and viewing your own action stats.
+
+| **/**                     | **description**                                                                          |
+| ------------------------- | ---------------------------------------------------------------------------------------- |
+| **`/user info [user]`**   | Get a user's username, ID, and account creation date.                                    |
+| **`/user avatar [user]`** | Display a user's avatar.                                                                 |
+| **`/user banner [user]`** | Display a user's banner (if they have one).                                              |
+| **`/my stats [type]`**    | View your action stats — how many actions you've given or received, broken down by type. |
+
+**Implementation notes:**
+
+- `/user` commands work in guilds, DMs, and private channels
+- `/my stats` uses a dropdown to switch between Actions Given and Actions Received without re-running the command
+- Stats pull from the same counter system that tracks `/do` and `/look` interactions
+
+---
+
 ### 🌸 Anime
 
 A unified `/anime` command group for anime images and quotes. Images are fetched from [nekos.best](https://nekos.best) and quotes from [yurippe](https://yurippe.vercel.app).
@@ -355,6 +374,8 @@ python update.py
 - [x] 4k channel forwarding
 - [x] Streaming radio — no disk usage, up to 1500 songs/playlist, background sync with live progress bar
 - [x] Gambling system
+- [x] User info, avatar, and banner commands
+- [x] Action stats command (`/my stats`)
 
 ---
 

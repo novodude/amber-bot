@@ -4,7 +4,6 @@ from discord import app_commands, ui
 # ─────────────────────────────────────────────
 # Command data — update this when adding commands
 # ─────────────────────────────────────────────
-import discord
 
 COMMANDS = {
     "🎭 Fun": [
@@ -93,10 +92,14 @@ COMMANDS = {
         ("/image swirl [image/url]",             "Apply swirl/warp effect"),
     ],
     "⚙️ Utils": [
-        ("/say embed [message]", "Make Amber say your message in embed"),
-        ("/say text [message]",  "Make Amber say your message in text"),
-        ("/download [url]",      "Download audio from YouTube"),
-        ("/melody",              "Generate a short WAV melody"),
+        ("/say embed [message]",          "Make Amber say your message in embed"),
+        ("/say text [message]",           "Make Amber say your message in text"),
+        ("/download [url]",               "Download audio from YouTube"),
+        ("/melody",                       "Generate a short WAV melody"),
+        ("/user info [user]",             "Get information about a user"),
+        ("/user avatar [user]",           "Get a user's avatar"),
+        ("/user banner [user]",           "Get a user's banner"),
+        ("/my stats [type]",              "View your action stats — given or received"),
     ],
     "🎮 Games": [
         ("/games duck_clicker",              "Click ducks to earn dabloons — 2 per 5 clicks (4 with Double Points). Auto Clicker ticks every 60s in the background."),

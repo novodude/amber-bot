@@ -23,6 +23,7 @@ from commands.animals import animal_setup
 from commands.image import image_setup
 from commands.anime import anime_setup
 from commands.leaderboard import leaderboard_setup
+from commands.user import user_setup
 try:
     from commands.debugging import debug_setup
 except ImportError:
@@ -83,6 +84,7 @@ async def on_ready():
     try:        await debug_setup(bot)
     except NameError: pass
     await leaderboard_setup(bot)
+    await user_setup(bot)
     await load_extensions()
     await bot.tree.sync()
     print("Commands synced.")
