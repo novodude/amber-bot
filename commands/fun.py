@@ -1,8 +1,8 @@
 from commands.image import ImageGenerator
 from utils.economy import get_4k_channel_id
+from typing import Optional, Literal
 from discord import app_commands
 from discord.ext import commands
-from typing import Optional
 from pathlib import Path
 import statistics
 import discord
@@ -142,45 +142,74 @@ async def fun_setup(bot: commands.Bot):
     @bot.tree.command(name="rate", description="give you detailed rating")
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     @app_commands.allowed_installs(guilds=True, users=True)
-    async def rate(interaction: discord.Interaction, user: Optional[discord.User] = None):
+    @app_commands.describe(
+        stat="Choose a specific stat to rate (optional)",
+        user="The user to rate (optional, defaults to you)"
+    )
+    async def rate(
+        interaction: discord.Interaction,
+        stat: Literal[
+                "Smort", "Funny", "Rizz",
+                "Hot", "Cute","Gay"
+            ] | None = None,
+        user: Optional[discord.User] = None
+    ):
         try:
             await interaction.response.defer()
             user = user or interaction.user
             
-            ratings = {
-                "Smort": random.randint(0, 100),
-                "Funny": random.randint(0, 100),
-                "Rizz": random.randint(0, 100),
-                "Hot": random.randint(0, 100),
-                "cute": random.randint(0, 100),
-                "gay": random.randint(0, 100)
-            }
 
-            mean_rating = statistics.mean(ratings.values())
+            if not stat:
+                ratings = {
+                    "Smort": random.randint(0, 100),
+                    "Funny": random.randint(0, 100),
+                    "Rizz": random.randint(0, 100),
+                    "Hot": random.randint(0, 100),
+                    "cute": random.randint(0, 100),
+                    "gay": random.randint(0, 100)
+                }
 
-            with open("assets/fun/rating.json", "r") as f:
-                data = json.load(f)
+                mean_rating = statistics.mean(ratings.values())
 
-            if mean_rating >= 75:
-                description = data.get("high", [])
-            elif mean_rating >= 40:
-                description = data.get("medium", [])
+                with open("assets/fun/rating.json", "r") as f:
+                    data = json.load(f)
+
+                if mean_rating >= 75:
+                    description = data.get("high", [])
+                elif mean_rating >= 40:
+                    description = data.get("medium", [])
+                else:
+                    description = data.get("low", [])
+
+                embed = discord.Embed(
+                    title=f"Rating for {user.display_name}",
+                    color=discord.Color.pink(),
+                    description=random.choice(description).format(**ratings)
+                )
+                embed.set_thumbnail(url=user.display_avatar.url)
+                embed.add_field(name="Smort", value=f"**{ratings['Smort']}%** 🤓", inline=True)
+                embed.add_field(name="Funny", value=f"**{ratings['Funny']}%** 😜", inline=True)
+                embed.add_field(name="Rizz", value=f"**{ratings['Rizz']}%** 😗", inline=True)
+                embed.add_field(name="Hot", value=f"**{ratings['Hot']}%** 🔥", inline=True)
+                embed.add_field(name="Cute", value=f"**{ratings['cute']}%** 🫶", inline=True)
+                embed.add_field(name="Gay", value=f"**{ratings['gay']}%** 🏳️‍🌈", inline=True)
             else:
-                description = data.get("low", [])
+                rating_value = random.randint(0, 100)
+                emoji_map = {
+                    "Smort": "🤓",
+                    "Funny": "😜",
+                    "Rizz": "😗",
+                    "Hot": "🔥",
+                    "Cute": "🫶",
+                    "gay": "🏳️‍🌈"
+                }
 
-            embed = discord.Embed(
-                title=f"Rating for {user.display_name}",
-                color=discord.Color.pink(),
-                description=random.choice(description).format(**ratings)
-            )
-            embed.set_thumbnail(url=user.display_avatar.url)
-            embed.add_field(name="Smort", value=f"**{ratings['Smort']}%** 🤓", inline=True)
-            embed.add_field(name="Funny", value=f"**{ratings['Funny']}%** 😜", inline=True)
-            embed.add_field(name="Rizz", value=f"**{ratings['Rizz']}%** 😗", inline=True)
-            embed.add_field(name="Hot", value=f"**{ratings['Hot']}%** 🔥", inline=True)
-            embed.add_field(name="Cute", value=f"**{ratings['cute']}%** 🫶", inline=True)
-            embed.add_field(name="Gay", value=f"**{ratings['gay']}%** 🏳️‍🌈", inline=True)
-            
+                embed = discord.Embed(
+                    title=f"{stat} Rating for {user.display_name}",
+                    color=discord.Color.pink(),
+                )
+                embed.set_thumbnail(url=user.display_avatar.url)
+                embed.add_field(name=stat, value=f"**{rating_value}% {emoji_map[stat]}**", inline=False)
             await interaction.followup.send(embed=embed)
             
         except Exception as e:
