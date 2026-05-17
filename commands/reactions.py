@@ -25,8 +25,8 @@ async def setup_reactions(bot):
         action: Literal[
             'hug', 'kiss', 'pat', 'poke', 'cuddle', 'bite', 'kick', 'punch',
             'feed', 'highfive', 'dance', 'sleep', 'cry', 'smile', 'think',
-            'wave', 'laugh', 'yeet', 'facepalm', 'baka', 'peck', 'shoot',
-            'run', 'stare', 'thumbsup'
+            'wave', 'laugh', 'yeet', 'facepalm', 'baka', 'peck',
+            'run', 'stare', 'thumbsup', 'nya'
         ],
         user: Optional[discord.User] = None,
         everyone: Optional[bool] = False
@@ -114,7 +114,8 @@ async def setup_reactions(bot):
         interaction: discord.Interaction,
         reaction: Literal[
             'blush', 'shrug', 'yawn', 'angry', 'bored', 'happy',
-            'nope', 'smug', 'lurk', 'pout', 'nod'
+            'nope', 'smug', 'lurk', 'pout', 'nod', 'wink', 'wag',
+            'bleh'
         ]
     ):
         await interaction.response.defer()

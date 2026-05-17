@@ -165,8 +165,8 @@ async def fun_setup(bot: commands.Bot):
                     "Funny": random.randint(0, 100),
                     "Rizz": random.randint(0, 100),
                     "Hot": random.randint(0, 100),
-                    "cute": random.randint(0, 100),
-                    "gay": random.randint(0, 100)
+                    "Cute": random.randint(0, 100),
+                    "Gay": random.randint(0, 100)
                 }
 
                 mean_rating = statistics.mean(ratings.values())
@@ -191,8 +191,8 @@ async def fun_setup(bot: commands.Bot):
                 embed.add_field(name="Funny", value=f"**{ratings['Funny']}%** 😜", inline=True)
                 embed.add_field(name="Rizz", value=f"**{ratings['Rizz']}%** 😗", inline=True)
                 embed.add_field(name="Hot", value=f"**{ratings['Hot']}%** 🔥", inline=True)
-                embed.add_field(name="Cute", value=f"**{ratings['cute']}%** 🫶", inline=True)
-                embed.add_field(name="Gay", value=f"**{ratings['gay']}%** 🏳️‍🌈", inline=True)
+                embed.add_field(name="Cute", value=f"**{ratings['Cute']}%** 🫶", inline=True)
+                embed.add_field(name="Gay", value=f"**{ratings['Gay']}%** 🏳️‍🌈", inline=True)
             else:
                 rating_value = random.randint(0, 100)
                 emoji_map = {
@@ -201,7 +201,7 @@ async def fun_setup(bot: commands.Bot):
                     "Rizz": "😗",
                     "Hot": "🔥",
                     "Cute": "🫶",
-                    "gay": "🏳️‍🌈"
+                    "Gay": "🏳️‍🌈"
                 }
 
                 embed = discord.Embed(

@@ -574,30 +574,29 @@ ACTIONS = {
             'you give {user.display_name} a cute little peck',
         ],
     },
-    'shoot': {
-        'act': 'shoots',
-        'color': discord.Color.red(),
-        'emoji': '🔫',
+    'nya': {
+        'act': 'says nya to',
+        'color': discord.Color.magenta(),
+        'emoji': '🐱',
         'lone': False,
         'link': '',
         'desc_everyone': [
-            'pew pew everyone! 🔫',
-            'nobody is safe! pew pew! 💥',
-            'shooting gallery: server edition',
-            'trigger happy today huh >:3',
+            'nyaaa~ everyone gets some cat energy! 🐱',
+            'spreading the nyan vibes to the whole server! 🐱',
+            'a wave of cuteness washes over everyone! nya~',
+            'the nyan invasion has begun! 🐱',
         ],
         'desc_self': [
-            'dont shoot yourself! D:',
-            'please put that down!! 😟',
-            'bad idea bad idea bad idea D:',
-            'someone take that away from them!!',
+            'you say nya to yourself... embracing the inner cat? :P',
+            'nyaaa~ self-cat energy activated! 🐱',
+            'talking to yourself in cat language, interesting choice :P',
+            'the nyan spirit is strong with you! 🐱',
         ],
         'desc_other': [
-            'gotcha! *pew* 🎯',
-            'BANG! 🔫',
-            '{user.display_name} is down! 💥',
-            'sniper mode activated 🎯',
-            'clean shot! >:D',
+            'nyaaa~ {user.display_name} gets some cat energy! 🐱',
+            'spreading the nyan vibes to {user.display_name}! 🐱',
+            'a wave of cuteness washes over {user.display_name}! nya~',
+            '{user.display_name} has been nyan-ified! 🐱',
         ],
     },
     'run': {
@@ -795,6 +794,36 @@ REACTION = {
             'seal of acknowledgement granted ✨',
         ],
         'color': discord.Color.green()
+    },
+    'wink': {
+        'title': '{author.display_name} winks',
+        'description': [
+            'someone is feeling cheeky ;)',
+            'that wink says it all :P',
+            'winking at you from across the server :P',
+            'the most charming wink 🥰',
+        ],
+        'color': discord.Color.magenta()
+    },
+    'wag': {
+        'title': '{author.display_name} is wagging their tail',
+        'description': [
+            'someone is a happy pupper! 🐶',
+            'tail wagging intensifies! 🐕',
+            'the happiest tail in the server! 🐾',
+            'spreading the doggo vibes! 🐶',
+        ],
+        'color': discord.Color.light_grey()
+    },
+    'bleh': {
+        'title': '{author.display_name} says bleh',
+        'description': [
+            'bleh to the whole server! :P',
+            'spreading the bleh vibes! 😝',
+            'the most bleh moment ever! 😜',
+            'everyone is feeling bleh now! :P',
+        ],
+        'color': discord.Color.dark_red()
     }
 }
 
@@ -821,7 +850,7 @@ ACTION_PAST_TENSE = {
     'facepalm': 'facepalmed',
     'baka':     'baka\'d',
     'peck':     'pecked',
-    'shoot':    'shot',
+    'nya':      'nya\'d',
     'run':      'ran',
     'stare':    'stared',
     'thumbsup': 'given a thumbs up',
@@ -837,6 +866,9 @@ ACTION_PAST_TENSE = {
     'lurk':     'lurked',
     'pout':     'pouted',
     'nod':      'nodded',
+    'wink':     'winked',
+    'wag':      'wagged their tail',
+    'bleh':     'said bleh',
 }
 
 # Actions that use private counter format: "{author} kissed {user} X times"
