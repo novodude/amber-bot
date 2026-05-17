@@ -104,6 +104,7 @@ A unified `/image` command group for manipulating images. Accepts both uploaded 
 | **`/image posterize [image/url]`**         | Apply a posterize effect.                             |
 | **`/image glitch [image/url]`**            | Apply a glitch effect.                                |
 | **`/image swirl [image/url]`**             | Apply a swirl/warp effect.                            |
+| **`/image familytree [users]`**            | Generate a randomized family tree image with 7 users. |
 
 **Implementation notes:**
 

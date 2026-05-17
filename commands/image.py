@@ -522,6 +522,42 @@ class ImageGenerator:
         
         return img
 
+    async def family_tree(self, users: list[discord.User]) -> Image.Image:
+        base_img_path = self.root_dir / "assets" / "fun" / "family_tree.png"
+        user_avatars = []
+        for user in users:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(user.display_avatar.url) as resp:
+                    avatar_bytes = await resp.read()
+                    avatar = Image.open(BytesIO(avatar_bytes)).convert("RGBA").resize((200,200), Image.Resampling.LANCZOS)
+                    user_avatars.append((user.display_name, avatar))
+
+        # Create a simple family tree image
+
+        base_img = Image.open(base_img_path).convert("RGBA")
+        draw = ImageDraw.Draw(base_img)
+        image_positions = [
+            (153, 23), (153, 271), (153, 513), (153, 783),
+            (872, 230), (872, 611), (1514, 414)
+        ]
+
+        for (name, avatar), pos in zip(user_avatars, image_positions):
+            base_img.paste(avatar, pos, avatar)
+            font_path = self.font_dir / "quote.ttf"
+            try:
+                font = self.get_fitting_font(str(font_path), name, 200, 30)
+            except OSError:
+                font = ImageFont.load_default()
+            text_bbox = draw.textbbox((0, 0), name, font=font)
+            text_width = text_bbox[2] - text_bbox[0]
+            text_x = pos[0] + (200 - text_width) // 2
+            text_y = pos[1] + 200 + 5
+            draw.text((text_x, text_y), name, font=font, fill=(0, 0, 0))
+        return base_img
+
+        
+        
+
 
 @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
 @app_commands.allowed_installs(guilds=True, users=True)
@@ -612,6 +648,37 @@ class ImageCommands(app_commands.Group):
             embed = discord.Embed(title="What do you see?")
             embed.set_image(url="attachment://inkblot.png")
             await interaction.response.send_message(embed=embed, file=file)
+
+    @app_commands.command(name="familytree", description="Create a family tree image using 7 users")
+    @app_commands.describe(
+        user_one="The first family member.",
+        user_two="The second family member.",
+        user_three="The third family member.",
+        user_four="The fourth family member.",
+        user_five="The fifth family member.",
+        user_six="The sixth family member.",
+        user_seven="The seventh family member."
+    )
+    async def familytree(
+            self, interaction: discord.Interaction,
+            user_one: discord.User, user_two: discord.User,
+            user_three: discord.User, user_four: discord.User,
+            user_five: discord.User, user_six: discord.User,
+            user_seven: discord.User
+    ):
+        users = [user_one, user_two, user_three, user_four, user_five, user_six, user_seven]
+        random.shuffle(users)
+        await interaction.response.defer()
+
+        try:
+            family_image = await self.img_gen.family_tree(users)
+            with io.BytesIO() as image_binary:
+                family_image.save(image_binary, 'PNG')
+                image_binary.seek(0)
+                file = discord.File(fp=image_binary, filename='family_tree.png')
+                await interaction.followup.send(file=file)
+        except Exception as e:
+            await interaction.followup.send(f"An error occurred:\n ```\n{str(e)}\n```")
 
     @app_commands.command(name="caption", description="Add a caption to an image")
     @app_commands.describe(

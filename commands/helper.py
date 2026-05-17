@@ -90,6 +90,7 @@ COMMANDS = {
         ("/image posterize [image/url]",         "Apply posterize effect"),
         ("/image glitch [image/url]",            "Apply glitch effect"),
         ("/image swirl [image/url]",             "Apply swirl/warp effect"),
+        ("/image familytree [users]",             "Generate a randomized family tree image with 7 users"),
     ],
     "⚙️ Utils": [
         ("/say embed [message]",          "Make Amber say your message in embed"),
