@@ -726,7 +726,7 @@ class ModerationCog(commands.Cog):
             await interaction.followup.send(f"An error occurred: {str(e)}", ephemeral=True)
 
     @admin.command(name="lockdown", description="Toggle lockdown mode for the channel")
-    @app_commands.checks.has_permissions(manage_channels=True)
+    @app_commands.checks.has_permissions(manage_roles=True)
     @app_commands.guild_only()
     async def lockdown(self, interaction: discord.Interaction):
         await interaction.response.defer()
@@ -758,12 +758,12 @@ class ModerationCog(commands.Cog):
             log_embed.add_field(name="Changed At", value=discord.utils.format_dt(discord.utils.utcnow(), style='d'), inline=True)
             await self.send_log(interaction.guild_id, log_embed)
         except discord.Forbidden:
-            await interaction.followup.send("I don't have permission to manage channels!", ephemeral=True)
+            await interaction.followup.send("I don't have permission to manage roles!", ephemeral=True)
         except Exception as e:
             await interaction.followup.send(f"An error occurred: {str(e)}", ephemeral=True)
 
     @admin.command(name="unlockdown", description="Lift lockdown mode for the channel")
-    @app_commands.checks.has_permissions(manage_channels=True)
+    @app_commands.checks.has_permissions(manage_roles=True)
     @app_commands.guild_only()
     async def unlockdown(self, interaction: discord.Interaction):
         await interaction.response.defer()
@@ -785,7 +785,7 @@ class ModerationCog(commands.Cog):
             log_embed.add_field(name="Changed At", value=discord.utils.format_dt(discord.utils.utcnow(), style='d'), inline=True)
             await self.send_log(interaction.guild_id, log_embed)
         except discord.Forbidden:
-            await interaction.followup.send("I don't have permission to manage channels!", ephemeral=True)
+            await interaction.followup.send("I don't have permission to manage roles!", ephemeral=True)
         except Exception as e:
             await interaction.followup.send(f"An error occurred: {str(e)}", ephemeral=True)
 
