@@ -161,12 +161,12 @@ async def fun_setup(bot: commands.Bot):
 
             if not stat:
                 ratings = {
-                    "Smort": random.randint(0, 100),
-                    "Funny": random.randint(0, 100),
-                    "Rizz": random.randint(0, 100),
-                    "Hot": random.randint(0, 100),
-                    "Cute": random.randint(0, 100),
-                    "Gay": random.randint(0, 100)
+                    "smort": random.randint(0, 100),
+                    "funny": random.randint(0, 100),
+                    "rizz": random.randint(0, 100),
+                    "hot": random.randint(0, 100),
+                    "cute": random.randint(0, 100),
+                    "gay": random.randint(0, 100)
                 }
 
                 mean_rating = statistics.mean(ratings.values())
