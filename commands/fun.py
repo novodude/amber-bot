@@ -187,12 +187,12 @@ async def fun_setup(bot: commands.Bot):
                     description=random.choice(description).format(**ratings)
                 )
                 embed.set_thumbnail(url=user.display_avatar.url)
-                embed.add_field(name="Smort", value=f"**{ratings['Smort']}%** 🤓", inline=True)
-                embed.add_field(name="Funny", value=f"**{ratings['Funny']}%** 😜", inline=True)
-                embed.add_field(name="Rizz", value=f"**{ratings['Rizz']}%** 😗", inline=True)
-                embed.add_field(name="Hot", value=f"**{ratings['Hot']}%** 🔥", inline=True)
-                embed.add_field(name="Cute", value=f"**{ratings['Cute']}%** 🫶", inline=True)
-                embed.add_field(name="Gay", value=f"**{ratings['Gay']}%** 🏳️‍🌈", inline=True)
+                embed.add_field(name="Smort", value=f"**{ratings['smort']}%** 🤓", inline=True)
+                embed.add_field(name="Funny", value=f"**{ratings['funny']}%** 😜", inline=True)
+                embed.add_field(name="Rizz", value=f"**{ratings['rizz']}%** 😗", inline=True)
+                embed.add_field(name="Hot", value=f"**{ratings['hot']}%** 🔥", inline=True)
+                embed.add_field(name="Cute", value=f"**{ratings['cute']}%** 🫶", inline=True)
+                embed.add_field(name="Gay", value=f"**{ratings['gay']}%** 🏳️‍🌈", inline=True)
             else:
                 rating_value = random.randint(0, 100)
                 emoji_map = {
