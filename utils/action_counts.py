@@ -9,7 +9,7 @@ DB_PATH = "data/user.db"
 ACTIONS = [
     'hug', 'kiss', 'pat', 'poke', 'cuddle', 'bite', 'kick', 'punch',
     'feed', 'highfive', 'dance', 'sleep', 'cry', 'smile', 'think',
-    'wave', 'laugh', 'yeet', 'facepalm', 'baka', 'peck', 'shoot',
+    'wave', 'laugh', 'yeet', 'facepalm', 'baka', 'peck', 'nya',
     'run', 'stare', 'thumbsup'
 ]
 

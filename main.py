@@ -96,7 +96,7 @@ async def on_message(message: discord.Message):
         return
 
     await handle_4k(bot, message)
-    await handle_pin(bot, message)
+    await handle_pin(message)
     await message_xp_handler(message)
     await message_quest_handler(message)
 

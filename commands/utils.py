@@ -1,13 +1,54 @@
 from datetime import datetime
 from discord import app_commands
 from typing import Literal, Optional
+import tempfile
 import aiohttp
 import asyncio
 import discord
+import spotipy
+import yt_dlp
 import io
 import os
 import re
-import spotipy
+
+async def upload_to_catbox(session, file_path, filename):
+    """Upload a file to Catbox anonymously and return the URL"""
+    url = "https://catbox.moe/user/api.php"
+    with open(file_path, "rb") as f:
+        form = aiohttp.FormData()
+        form.add_field("reqtype", "fileupload")
+        form.add_field("userhash", "")
+        form.add_field("fileToUpload", f, filename=filename, content_type="audio/mpeg")
+        async with session.post(url, data=form, timeout=120) as resp:
+            return await resp.text()
+
+def download_with_ytdlp(video_url, output_path):
+    """Download audio using yt-dlp library, return (file_path, title)"""
+    ydl_opts = {
+        "format": "bestaudio/best",
+        "outtmpl": os.path.join(output_path, "%(title)s.%(ext)s"),
+        "postprocessors": [{
+            "key": "FFmpegExtractAudio",
+            "preferredcodec": "mp3",
+            "preferredquality": "0",
+        }],
+        "quiet": True,
+        "no_warnings": True,
+    }
+
+    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        info = ydl.extract_info(video_url, download=True)
+        title = info.get("title", "audio")
+        file_path = os.path.join(output_path, f"{title}.mp3")
+        return file_path, title
+
+async def resolve_spotify(url):
+    """Return a yt-dlp search query from a Spotify track URL"""
+    sp = spotipy.Spotify()
+    track = sp.track(url)
+    artist = track["artists"][0]["name"]
+    title = track["name"]
+    return f"ytsearch1:{artist} - {title}", f"{artist} - {title}"
 
 async def download_and_upload(interaction, session, download_url, title, status_msg):
     """Download file and upload to Catbox"""
@@ -38,7 +79,6 @@ async def download_and_upload(interaction, session, download_url, title, status_
         await status_msg.edit(content="❌ Download timed out. File may be too large or server is slow.")
     except Exception as e:
         await status_msg.edit(content=f"❌ Error during download/upload: {str(e)}")
-
 
 def extract_youtube_id(url):
     """Extract YouTube video ID from various URL formats"""
@@ -145,173 +185,65 @@ async def utils_setup(bot):
     bot.tree.add_command(SayCommands())
 
     # ── download command ────────────────────────────────────────────────
-    @bot.tree.command(name="download", description="Download audio from a URL.")
-    @discord.app_commands.describe(url="The URL of the audio to download.")
+    @bot.tree.command(name="download", description="Download audio from a YouTube or Spotify URL.")
+    @discord.app_commands.describe(url="YouTube or Spotify URL")
     @discord.app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     @discord.app_commands.allowed_installs(guilds=True, users=True)
     async def download(interaction: discord.Interaction, url: str):
         await interaction.response.defer()
-        
+        status_msg = await interaction.followup.send("🔄 Processing your request...")
+
         try:
-            video_url = url
-            title = "audio"
+            search_query = url
+            display_name = None
 
             if "spotify.com" in url:
-                sp = spotipy.Spotify()
                 try:
-                    track_info = sp.track(url)
-                    artist = track_info['artists'][0]['name']
-                    title = track_info['name']
-                    await interaction.followup.send(
-                        f"🔍 Spotify track: **{artist} - {title}**\n"
-                        f"Please search this on YouTube and use `/download` with the YouTube URL."
+                    await status_msg.edit(content="🔍 Resolving Spotify track...")
+                    search_query, display_name = await resolve_spotify(url)
+                    await status_msg.edit(content=f"🎵 Found: **{display_name}** — searching YouTube...")
+                except Exception as e:
+                    await status_msg.edit(content=f"❌ Couldn't resolve Spotify track: {e}")
+                    return
+
+            await status_msg.edit(content="⬇️ Downloading audio...")
+
+            with tempfile.TemporaryDirectory() as tmpdir:
+                try:
+                    file_path, title = await asyncio.get_event_loop().run_in_executor(
+                        None, lambda: download_with_ytdlp(search_query, tmpdir)
                     )
+                except TimeoutError:
+                    await status_msg.edit(content="❌ Download timed out.")
                     return
                 except Exception as e:
-                    await interaction.followup.send(f"❌ Error: {str(e)}", ephemeral=True)
+                    await status_msg.edit(content=f"❌ yt-dlp error: {e}")
                     return
-            
-            status_msg = await interaction.followup.send("🔄 Processing your request...")
-            
-            async with aiohttp.ClientSession() as session:
-                
-                video_id = extract_youtube_id(video_url)
-                
-                if not video_id:
-                    await status_msg.edit(content="❌ Please provide a valid YouTube URL")
-                    return
-                
-                try:
-                    rapidapi_key = os.getenv('RAPIDAPI_KEY')
-                    
-                    if rapidapi_key:
-                        await status_msg.edit(content="🎵 Fetching download link...")
-                        
-                        api_url = f"https://youtube-mp36.p.rapidapi.com/dl"
-                        
-                        params = {"id": video_id}
-                        
-                        headers = {
-                            "X-RapidAPI-Key": rapidapi_key,
-                            "X-RapidAPI-Host": "youtube-mp36.p.rapidapi.com"
-                        }
-                        
-                        async with session.get(api_url, params=params, headers=headers, timeout=30) as response:
-                            if response.status == 200:
-                                data = await response.json()
-                                
-                                if data.get("status") == "ok":
-                                    download_url = data.get("link")
-                                    title = data.get("title", "audio")
-                                    
-                                    if download_url:
-                                        await download_and_upload(interaction, session, download_url, title, status_msg)
-                                        return
+
+                file_size_mb = os.path.getsize(file_path) / (1024 * 1024)
+                filename = os.path.basename(file_path)
+                label = display_name or title
+
+                if file_size_mb <= 25:
+                    await status_msg.edit(content=f"📤 Uploading to Discord ({file_size_mb:.1f}MB)...")
+                    discord_file = discord.File(fp=file_path, filename=filename)
+                    await interaction.followup.send(content=f"✅ **{label}**", file=discord_file)
+                    await status_msg.edit(content="✅ Done.")
+                else:
+                    await status_msg.edit(content=f"📦 File is {file_size_mb:.1f}MB — uploading to Catbox...")
+                    async with aiohttp.ClientSession() as session:
+                        catbox_url = await upload_to_catbox(session, file_path, filename)
+                    if catbox_url.startswith("https://"):
+                        await interaction.followup.send(content=f"✅ **{label}**\n{catbox_url}")
+                        await status_msg.edit(content="✅ Done.")
                     else:
-                        print("RAPIDAPI_KEY not found in .env, skipping Method 1")
-                
-                except Exception as e:
-                    print(f"RapidAPI method failed: {e}")
-                
-                try:
-                    await status_msg.edit(content="🔄 Trying alternative method...")
-                    
-                    search_url = "https://yt1s.com/api/ajaxSearch/index"
-                    
-                    search_payload = {
-                        "q": f"https://www.youtube.com/watch?v={video_id}",
-                        "vt": "mp3"
-                    }
-                    
-                    headers = {
-                        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-                        "Content-Type": "application/x-www-form-urlencoded",
-                        "Origin": "https://yt1s.com",
-                        "Referer": "https://yt1s.com/"
-                    }
-                    
-                    async with session.post(search_url, data=search_payload, headers=headers, timeout=30) as response:
-                        if response.status == 200:
-                            data = await response.json()
-                            
-                            if data.get("status") == "ok":
-                                title = data.get("title", "audio")
-                                vid = data.get("vid")
-                                
-                                mp3_links = data.get("links", {}).get("mp3", {})
-                                if mp3_links:
-                                    best_quality = max(mp3_links.keys())
-                                    k_value = mp3_links[best_quality].get("k")
-                                    
-                                    await status_msg.edit(content="🎵 Converting to MP3...")
-                                    
-                                    convert_url = "https://yt1s.com/api/ajaxConvert/convert"
-                                    convert_payload = {
-                                        "vid": vid,
-                                        "k": k_value
-                                    }
-                                    
-                                    async with session.post(convert_url, data=convert_payload, headers=headers, timeout=60) as conv_response:
-                                        if conv_response.status == 200:
-                                            conv_data = await conv_response.json()
-                                            
-                                            if conv_data.get("status") == "ok":
-                                                download_url = conv_data.get("dlink")
-                                                
-                                                if download_url:
-                                                    await download_and_upload(interaction, session, download_url, title, status_msg)
-                                                    return
-                
-                except Exception as e:
-                    print(f"YT1S method failed: {e}")
-                
-                try:
-                    await status_msg.edit(content="🔄 Trying third method...")
-                    
-                    savefrom_url = f"https://api.savefrom.net/info"
-                    
-                    params = {
-                        "url": f"https://www.youtube.com/watch?v={video_id}"
-                    }
-                    
-                    headers = {
-                        "User-Agent": "Mozilla/5.0"
-                    }
-                    
-                    async with session.get(savefrom_url, params=params, headers=headers, timeout=30) as response:
-                        if response.status == 200:
-                            text = await response.text()
-                            import json
-                            data = json.loads(text.strip('[]'))
-                            
-                            if data and isinstance(data, dict):
-                                urls = data.get("url", [])
-                                title = data.get("meta", {}).get("title", "audio")
-                                
-                                for url_data in urls:
-                                    if url_data.get("type") == "audio" or "audio" in url_data.get("ext", ""):
-                                        download_url = url_data.get("url")
-                                        if download_url:
-                                            await download_and_upload(interaction, session, download_url, title, status_msg)
-                                            return
-                
-                except Exception as e:
-                    print(f"SaveFrom method failed: {e}")
-                
-                await status_msg.edit(
-                    content="❌ All download methods failed.\n\n"
-                    "**If you haven't set up RapidAPI yet:**\n"
-                    "1. Get a free key from https://rapidapi.com/ytjar/api/youtube-mp36\n"
-                    "2. Add `RAPIDAPI_KEY=your_key_here` to your .env file\n"
-                    "3. Free tier: 500 requests/month\n\n"
-                    "Alternatively, try a different/shorter YouTube video."
-                )
-        
+                        await status_msg.edit(content=f"❌ Catbox upload failed: {catbox_url}")
+
         except Exception as e:
-            await interaction.followup.send(f"❌ Error: {str(e)}")
+            await status_msg.edit(content=f"❌ Unexpected error: {e}")
 
 
-async def handle_pin(bot, message):
+async def handle_pin(message):
     content = (message.content or "").lower().strip()
     if content.startswith("!"):
         content = content[1:]
