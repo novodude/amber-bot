@@ -93,6 +93,11 @@ async def update_pet(user_id: int, **kwargs):
         await db.execute(f"UPDATE pets SET {cols} WHERE user_id = ?", vals)
         await db.commit()
 
+async def delete_pet(user_id: int):
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute("DELETE FROM pets WHERE user_id = ?", (user_id,))
+        await db.commit()
+
 async def add_pet_xp(user_id: int, amount: int) -> int | None:
     """Add XP to pet. Returns new level if levelled up, else None."""
     pet = await get_pet(user_id)

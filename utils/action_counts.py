@@ -13,17 +13,20 @@ ACTIONS = [
     'run', 'stare', 'thumbsup'
 ]
 
+REACTIONS = [
+    'blush', 'shrug', 'yawn', 'angry', 'bored', 'happy',
+    'nope', 'smug', 'lurk', 'pout', 'nod', 'wink', 'wag',
+    'bleh'
+]
+
 # ── Count helpers ─────────────────────────────────────────────────────────────
 
 async def increment_action_count(actor_discord_id: int, target_discord_id: int | None, action: str) -> int:
     """
-    Increment the action count for actor -> target -> action and return the new count.
+    Increment the action count for actor -> target -> action.
     target_discord_id can be None for /look or @everyone actions.
     """
     actor_id = await get_user_id_from_discord(actor_discord_id)
-    if actor_id is None:
-        return 0
-
     target_id = None
     if target_discord_id is not None:
         # Register them if they haven't been yet — this is the fix for count always being 0/1
@@ -41,12 +44,6 @@ async def increment_action_count(actor_discord_id: int, target_discord_id: int |
         """, (actor_id, target_id, action))
         await db.commit()
 
-        cursor = await db.execute("""
-            SELECT count FROM action_counts
-            WHERE actor_id = ? AND target_id IS ? AND action = ?
-        """, (actor_id, target_id, action))
-        row = await cursor.fetchone()
-        return row[0] if row else 1
 
 
 async def get_action_count(actor_discord_id: int, target_discord_id: int | None, action: str) -> int:
@@ -97,15 +94,20 @@ async def get_given_count(actor_discord_id: int, action: str) -> int:
         row = await cursor.fetchone()
         return row[0] if row else 0
 
-async def get_all_action_data(user: int, data_type: Literal["Actions Received", "Actions Given"]):
+async def get_all_action_data(user: int, data_type: Literal["Actions Received", "Actions Given", "Reactions Made"]):
     data = []
-    for action in ACTIONS:
-        if data_type == "Actions Given":
+    if data_type == "Actions Given":
+        for action in ACTIONS:
             count = await get_given_count(user, action)
             data.append([action, count])
-        else:
+    elif data_type == "Actions Received":
+        for action in ACTIONS:
             count = await get_received_count(user, action)
             data.append([action, count])
+    elif data_type == "Reactions Made":
+        for reaction in REACTIONS:
+            count = await get_given_count(user, reaction)
+            data.append([reaction, count])
     return data
 
 

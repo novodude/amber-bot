@@ -1,7 +1,7 @@
 from typing import Literal
 import discord
 from discord import app_commands
-from utils.reactions import ACTIONS
+from utils.reactions import ACTIONS, REACTIONS
 from utils.action_counts import get_all_action_data
 
 @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
@@ -53,6 +53,11 @@ class StatsType(discord.ui.Select):
                 label="Actions Given",
                 value="Actions Given",
                 emoji="🙌"
+            ),
+            discord.SelectOption(
+                label="Reactions Made",
+                value="Reactions Made",
+                emoji="❤️"
             )
         ]
 
@@ -81,7 +86,7 @@ class StatsType(discord.ui.Select):
 
         for action, value in data:
             embed.add_field(
-                name=f"{action} | {ACTIONS[action]['emoji']}",
+                name=f"{action} | {REACTIONS[action]['emoji'] if selected_type == 'Reactions Made' else ACTIONS[action]['emoji']}",
                 value=f"{value} times",
                 inline=False
             )
@@ -99,7 +104,7 @@ class My(app_commands.Group):
     """commands for managing and viewing data stored inside amber db"""
     @app_commands.command(name="stats", description="show your action stats")
     @app_commands.describe(type="hugs you gave or received")
-    async def stats(self, interaction: discord.Interaction, type: Literal["Actions Given", "Actions Received"]):
+    async def stats(self, interaction: discord.Interaction, type: Literal["Actions Given", "Actions Received", "Reactions Made"] = "Actions Given"):
         
         data = await get_all_action_data(interaction.user.id, type)
 
@@ -115,7 +120,7 @@ class My(app_commands.Group):
 
         for action, value in data:
             embed.add_field(
-                name=f"{action} | {ACTIONS[action]['emoji']}",
+                name=f"{action} | {REACTIONS[action]['emoji'] if type == 'Reactions Made' else ACTIONS[action]['emoji']}",
                 value=f"{value} times",
                 inline=False
             )

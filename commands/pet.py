@@ -6,13 +6,13 @@ from datetime import datetime, timedelta
 from discord import app_commands
 from discord.ext import commands, tasks
 
-from utils.userbase.database import DB_PATH
+from utils.userbase.database import DB_PATH, check_pet_muted, switch_pet_muted
 from utils.userbase.ensure_registered import ensure_registered
 from utils.pet import (
     get_pet, create_pet, update_pet, add_pet_xp, feed_pet,
     equip_accessory, touch_owner_activity,
     get_unlocked_slots, get_hat_emoji, get_toy_style,
-    xp_to_next_level, apply_decay, SLOT_LABELS,
+    xp_to_next_level, apply_decay, SLOT_LABELS, delete_pet
 )
 from utils.cat_model import build_check_in_message
 
@@ -89,11 +89,11 @@ class PetCog(commands.Cog):
             # Send via DM (no per-guild user mapping exists in the DB to pick
             # a specific guild channel, so DM is the only safe delivery path)
             try:
-                await user.send(message)
-                await update_pet(pet["user_id"], last_message_sent=now.isoformat())
+                if not await check_pet_muted(pet["user_id"]):
+                    await user.send(message)
+                    await update_pet(pet["user_id"], last_message_sent=now.isoformat())
             except Exception:
                 pass
-
     @check_in_loop.before_loop
     async def before_loop(self):
         await self.bot.wait_until_ready()
@@ -127,6 +127,9 @@ class PetCog(commands.Cog):
                 "They start with full hunger and happiness.\n"
                 "Feed them with `/pet feed`, play with `/pet play`, and check in with `/pet status`.\n\n"
                 "Your cat will message you when you've been away for a while 🐾"
+                "You can mute/unmute these messages with `/pet mute` if they get too clingy."
+                "if you don't want a cat, you can delete it with `/pet delete` and adopt a new one later."
+                "Have fun taking care of your new feline friend!"
             ),
             color=discord.Color.orange()
         )
@@ -196,7 +199,7 @@ class PetCog(commands.Cog):
         if slot_lines:
             embed.add_field(name="🎀 Accessories", value="\n".join(slot_lines), inline=False)
 
-        embed.set_footer(text="Use /pet feed, /pet play, /pet equip to interact!")
+        embed.set_footer(text="Use /pet mute to mute/unmute the cat")
         await interaction.response.send_message(embed=embed)
         # Update activity
         await touch_owner_activity(user_id)
@@ -479,6 +482,43 @@ class PetCog(commands.Cog):
                 inline=False
             )
         await interaction.response.send_message(embed=embed)
+
+    @pet_group.command(name="mute", description="Toggle whether your cat can message you when you're inactive")
+    @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+    @app_commands.allowed_installs(guilds=True, users=True)
+    async def mute(self, interaction: discord.Interaction):
+        user_id = await ensure_registered(interaction.user.id, str(interaction.user))
+        pet = await get_pet(user_id)
+        if not pet:
+            await interaction.response.send_message("You don't have a cat yet!", ephemeral=True)
+            return
+
+        new_state = await switch_pet_muted(user_id)
+
+        if new_state:
+            await interaction.response.send_message(
+                "Your cat has been muted. They won't message you when you're inactive.", ephemeral=True
+            )
+        else:
+            await interaction.response.send_message(
+                "Your cat has been unmuted. They will message you when you're inactive.", ephemeral=True
+            )
+
+    @pet_group.command(name="delete", description="Delete your cat and all its progress (use with caution!)")
+    @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+    @app_commands.allowed_installs(guilds=True, users=True)
+    async def delete(self, interaction: discord.Interaction):
+        user_id = await ensure_registered(interaction.user.id, str(interaction.user))
+        pet = await get_pet(user_id)
+        if not pet:
+            await interaction.response.send_message("You don't have a cat yet!", ephemeral=True)
+            return
+
+        await delete_pet(user_id)
+        await interaction.response.send_message(
+            f"Your cat **{pet['name']}** has been deleted. You can adopt a new one with `/pet adopt`.", ephemeral=True
+        )
+
 
 
 async def pet_setup(bot: commands.Bot):

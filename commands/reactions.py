@@ -3,10 +3,10 @@ import discord
 from discord import app_commands
 from typing import Counter, Optional, Literal
 from utils.userbase.ensure_registered import ensure_registered
-from utils.action_counts import get_received_count, increment_action_count, maybe_reward_dabloons
+from utils.action_counts import get_given_count, get_received_count, increment_action_count, maybe_reward_dabloons
 from utils.reactions import (
     build_embed, build_title, build_counter_text,
-    ACTIONS, REACTION, React_back, get_counter_text
+    ACTIONS, REACTIONS, React_back, get_counter_text
 )
 
 # ── Command setup ─────────────────────────────────────────────────────────────
@@ -122,12 +122,13 @@ async def setup_reactions(bot):
         try:
             await ensure_registered(interaction.user.id, str(interaction.user))
 
-            reaction_data = REACTION[reaction]
+            reaction_data = REACTIONS[reaction]
             title = reaction_data['title'].format(author=interaction.user)
             base_desc = random.choice(reaction_data['description']).format(author=interaction.user)
 
             # Counter: "{user} blushed X times"
-            count = await increment_action_count(interaction.user.id, None, reaction)
+            await increment_action_count(interaction.user.id, None, reaction)
+            count = await get_given_count(interaction.user.id, reaction)
             counter = build_counter_text(reaction, count, interaction.user.display_name, None, is_look=True)
 
             # Dabloon reward

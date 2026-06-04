@@ -684,7 +684,7 @@ ACTIONS = {
 # Supports {author} format placeholder in title and description.
 # description is a list — one entry is chosen randomly on each use
 # Counter text: "{user} blushed X times"
-REACTION = {
+REACTIONS = {
     'blush': {
         'title': '{author.display_name} is blushing',
         'description': [
@@ -693,7 +693,8 @@ REACTION = {
             'the redness cannot be hidden :P',
             'too cute for words 💕',
         ],
-        'color': discord.Color.pink()
+        'color': discord.Color.pink(),
+        'emoji': '😊'
     },
     'shrug': {
         'title': '{author.display_name} shrugs',
@@ -703,7 +704,8 @@ REACTION = {
             'the ultimate response 🤷',
             'couldnt care less lol',
         ],
-        'color': discord.Color.dark_purple()
+        'color': discord.Color.dark_purple(),
+        'emoji': '🤷'
     },
     'yawn': {
         'title': '{author.display_name} yawned',
@@ -713,7 +715,8 @@ REACTION = {
             'so tired... zzz 💤',
             'the yawn is contagious now thanks :P',
         ],
-        'color': discord.Color.pink()
+        'color': discord.Color.pink(),
+        'emoji': '😴'
     },
     'angry': {
         'title': '{author.display_name} is angy >:(',
@@ -723,7 +726,8 @@ REACTION = {
             'someone woke up and chose violence :P',
             'do not approach. do not make eye contact.',
         ],
-        'color': discord.Color.red()
+        'color': discord.Color.red(),
+        'emoji': '😠'
     },
     'bored': {
         'title': '{author.display_name} is bored to the bone',
@@ -733,7 +737,8 @@ REACTION = {
             'the void is more interesting rn',
             'staring at the ceiling again huh :P',
         ],
-        'color': discord.Color.gold()
+        'color': discord.Color.gold(),
+        'emoji': '😩'
     },
     'happy': {
         'title': '{author.display_name} is happy :3',
@@ -743,7 +748,8 @@ REACTION = {
             'good vibes only ✨',
             'the happiest person right now 🥳',
         ],
-        'color': discord.Color.yellow()
+        'color': discord.Color.yellow(),
+        'emoji': '😊'
     },
     'nope': {
         'title': '{author.display_name} noped out of here',
@@ -753,7 +759,8 @@ REACTION = {
             'left the chat mentally 💨',
             'not today satan :P',
         ],
-        'color': discord.Color.brand_green()
+        'color': discord.Color.brand_green(),
+        'emoji': '🚫'
     },
     'smug': {
         'title': '{author.display_name} looks smug',
@@ -763,7 +770,8 @@ REACTION = {
             'that smirk says everything :P',
             'certified smug moment ✨',
         ],
-        'color': discord.Color.purple()
+        'color': discord.Color.purple(),
+        'emoji': '😏'
     },
     'lurk': {
         'title': '{author.display_name} is lurking',
@@ -773,7 +781,8 @@ REACTION = {
             'silent but present :P',
             'lurk mode: activated 👀',
         ],
-        'color': discord.Color.dark_grey()
+        'color': discord.Color.dark_grey(),
+        'emoji': '👀'
     },
     'pout': {
         'title': '{author.display_name} is pouting',
@@ -783,7 +792,8 @@ REACTION = {
             'someone give them what they want!! :P',
             'the poutest pout to ever pout 🥺',
         ],
-        'color': discord.Color.purple()
+        'color': discord.Color.purple(),
+        'emoji': '🥺'
     },
     'nod': {
         'title': '{author.display_name} nods',
@@ -793,7 +803,8 @@ REACTION = {
             'silent agreement mode :)',
             'seal of acknowledgement granted ✨',
         ],
-        'color': discord.Color.green()
+        'color': discord.Color.green(),
+        'emoji': '👍'
     },
     'wink': {
         'title': '{author.display_name} winks',
@@ -803,7 +814,8 @@ REACTION = {
             'winking at you from across the server :P',
             'the most charming wink 🥰',
         ],
-        'color': discord.Color.magenta()
+        'color': discord.Color.magenta(),
+        'emoji': '😉'
     },
     'wag': {
         'title': '{author.display_name} is wagging their tail',
@@ -813,7 +825,8 @@ REACTION = {
             'the happiest tail in the server! 🐾',
             'spreading the doggo vibes! 🐶',
         ],
-        'color': discord.Color.light_grey()
+        'color': discord.Color.light_grey(),
+        'emoji': '🐶'
     },
     'bleh': {
         'title': '{author.display_name} says bleh',
@@ -823,7 +836,8 @@ REACTION = {
             'the most bleh moment ever! 😜',
             'everyone is feeling bleh now! :P',
         ],
-        'color': discord.Color.dark_red()
+        'color': discord.Color.dark_red(),
+        'emoji': '😝'
     }
 }
 

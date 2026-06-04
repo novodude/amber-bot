@@ -181,7 +181,9 @@ async def init_user_db():
             "ALTER TABLE user_purchases ADD COLUMN active INTEGER DEFAULT 1",
             "ALTER TABLE user_purchases ADD COLUMN custom_value TEXT",
             "ALTER TABLE users ADD COLUMN is_private INTEGER DEFAULT 0",
-            "ALTER TABLE guild_config ADD COLUMN four_k_channel INTEGER"
+            "ALTER TABLE guild_config ADD COLUMN four_k_channel INTEGER",
+            "ALTER TABLE users ADD COLUMN mute_update INTEGER DEFAULT 0",
+            "ALTER TABLE users ADD COLUMN mute_pet INTEGER DEFAULT 0"
         ]
 
         for sql in migrations:
@@ -230,3 +232,38 @@ async def init_user_db():
 
 
         await db.commit()
+
+
+async def check_update_muted(user_id):
+    """Check if the user has muted profile updates"""
+    async with aiosqlite.connect(DB_PATH) as db:
+        cursor = await db.execute("SELECT mute_update FROM users WHERE id = ?", (user_id,))
+        row = await cursor.fetchone()
+        return row and row[0] == 1
+
+async def check_pet_muted(user_id):
+    """Check if the user has muted pet messages"""
+    async with aiosqlite.connect(DB_PATH) as db:
+        cursor = await db.execute("SELECT mute_pet FROM users WHERE id = ?", (user_id,))
+        row = await cursor.fetchone()
+        return row and row[0] == 1
+        
+async def switch_update_muted(user_id):
+    """Toggle the user's profile update mute setting"""
+    async with aiosqlite.connect(DB_PATH) as db:
+        cursor = await db.execute("SELECT mute_update FROM users WHERE id = ?", (user_id,))
+        row = await cursor.fetchone()
+        new_value = 0 if row and row[0] == 1 else 1
+        await db.execute("UPDATE users SET mute_update = ? WHERE id = ?", (new_value, user_id))
+        await db.commit()
+        return new_value == 1
+
+async def switch_pet_muted(user_id):
+    """Toggle the user's pet message mute setting"""
+    async with aiosqlite.connect(DB_PATH) as db:
+        cursor = await db.execute("SELECT mute_pet FROM users WHERE id = ?", (user_id,))
+        row = await cursor.fetchone()
+        new_value = 0 if row and row[0] == 1 else 1
+        await db.execute("UPDATE users SET mute_pet = ? WHERE id = ?", (new_value, user_id))
+        await db.commit()
+        return new_value == 1
