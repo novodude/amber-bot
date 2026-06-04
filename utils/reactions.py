@@ -6,7 +6,8 @@ from typing import Optional
 from utils.action_counts import (
     increment_action_count,
     maybe_reward_dabloons,
-    get_received_count
+    get_received_count,
+    get_action_between_users
 )
 
 # ── Action definitions ────────────────────────────────────────────────────────
@@ -1029,11 +1030,13 @@ async def get_counter_text(interaction, action, user=None, is_button=False):
 
     if action in PRIVATE_COUNTER_ACTIONS:
         if not is_button:
-            count = await increment_action_count(author.id, user.id, action)
+            await increment_action_count(author.id, user.id, action)
+            count = await get_action_between_users(author.id, user.id, action)
             counter = build_counter_text(action, count, author.display_name, user.display_name)
         else:
             # clicker (author) is kissing back the original sender (user)
-            count = await increment_action_count(author.id, user.id, action)
+            await increment_action_count(author.id, user.id, action)
+            count = await get_action_between_users(author.id, user.id, action)
             counter = build_counter_text(action, count, author.display_name, user.display_name)
     else:
         if not is_button:

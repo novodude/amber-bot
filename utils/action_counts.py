@@ -94,6 +94,21 @@ async def get_given_count(actor_discord_id: int, action: str) -> int:
         row = await cursor.fetchone()
         return row[0] if row else 0
 
+async def get_action_between_users(actor_discord_id: int, target_discord_id: int, action: str) -> int:
+    """Get total times a user has performed a specific action on another user."""
+    actor_id = await get_user_id_from_discord(actor_discord_id)
+    target_id = await get_user_id_from_discord(target_discord_id)
+    if actor_id is None or target_id is None:
+        return 0
+
+    async with aiosqlite.connect(DB_PATH) as db:
+        cursor = await db.execute("""
+            SELECT count FROM action_counts
+            WHERE actor_id = ? AND target_id = ? AND action = ?
+        """, (actor_id, target_id, action))
+        row = await cursor.fetchone()
+        return row[0] if row else 0
+
 async def get_all_action_data(user: int, data_type: Literal["Actions Received", "Actions Given", "Reactions Made"]):
     data = []
     if data_type == "Actions Given":
