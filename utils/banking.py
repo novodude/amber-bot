@@ -1,6 +1,7 @@
 import discord
 import aiosqlite
 from discord import ui
+from utils.userbase.owner import is_owner
 from utils.economy import get_dabloons, get_user_id_from_discord
 from utils.action_counts import get_total_actions_performed, get_received_count
 
@@ -175,16 +176,13 @@ class ProfileView(ui.View):
 
         balance = await get_dabloons(await get_user_id_from_discord(self.discord_id))
 
-        current_hour = discord.utils.utcnow().hour
-        greeting_time = (
-            "morning"   if 5  <= current_hour < 12 else
-            "afternoon" if 12 <= current_hour < 17 else
-            "evening"   if 17 <= current_hour < 21 else
-            "night"
-        )
+        if is_owner(discord_id):
+            greeting = "Look it's the owner of Amber! 👑"
+        else:
+            greeting = f"hello there, duckling!"
 
         embed = discord.Embed(
-            title=f"good {greeting_time}, {interaction.user.name}!",
+            title=f"good {greeting}, {interaction.user.name}!",
             description=bio,
             color=self.get_color(color_name, custom_hex)
         )
@@ -323,12 +321,12 @@ async def build_profile_embed(
     balance: int,
     bio: str,
     color: discord.Color,
-    greeting_time: str,
+    greeting: str,
 ) -> discord.Embed:
     """Build the full profile embed including action stats."""
 
     embed = discord.Embed(
-        title=f"good {greeting_time}, {user.name}!",
+        title=f"{greeting}, {user.name}",
         description=bio,
         color=color,
     )

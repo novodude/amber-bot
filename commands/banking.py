@@ -5,6 +5,7 @@ import aiosqlite
 import asyncio
 from discord import app_commands
 from datetime import datetime, timedelta
+from utils.userbase.owner import is_owner
 from utils.banking import ProfileView, build_profile_embed
 from utils.userbase.ensure_registered import ensure_registered
 from utils.economy import (
@@ -86,10 +87,24 @@ class Money(app_commands.Group):
         )
 
     @app_commands.command(name="balance", description="Check your current dabloons balance")
-    async def balance(self, interaction: discord.Interaction):
-        user_id = await ensure_registered(interaction.user.id, str(interaction.user))
-        balance = await get_dabloons(user_id)
-        await interaction.response.send_message(f"You have 🪙 {balance} dabloons.")
+    @app_commands.describe(user="Check another user's balance")
+    async def balance(self, interaction: discord.Interaction, user: discord.User | None):
+        if user is not None:
+            user_id = await get_user_id_from_discord(user.id)
+            if user_id is None:
+                await interaction.response.send_message(
+                    f"{user.mention} isn't registered yet",
+                    ephemeral=True
+                )
+                return
+            balance = await get_dabloons(user_id)
+            await interaction.response.send_message(f"{user.mention} has 🪙 {balance} dabloons.")
+        else:
+            user_id = await ensure_registered(interaction.user.id, str(interaction.user))
+            balance = await get_dabloons(user_id)
+            await interaction.response.send_message(f"You have 🪙 {balance} dabloons.")
+
+
 
     @app_commands.command(name="rob", description="Attempt to rob another user of their dabloons")
     @app_commands.describe(target="The user you want to rob")
@@ -348,14 +363,11 @@ async def banking_setup(bot):
         bio        = row[0] if row and row[0] else "This user has no bio set."
         color_name = row[1] if row and row[1] else "gold"
         custom_hex = row[2] if row and row[2] else None
-
-        current_hour = discord.utils.utcnow().hour
-        greeting_time = (
-            "morning"   if 5  <= current_hour < 12 else
-            "afternoon" if 12 <= current_hour < 17 else
-            "evening"   if 17 <= current_hour < 21 else
-            "night"
-        )
+        
+        if is_owner(discord_id):
+            greeting = "Look it's the owner of Amber! 👑"
+        else:
+            greeting = f"hello there, duckling!"
 
         view = ProfileView(discord_id) if user is None else None
         resolved_color = view.get_color(color_name, custom_hex) if view else ProfileView(discord_id).get_color(color_name, custom_hex)
@@ -366,7 +378,7 @@ async def banking_setup(bot):
             balance=balance,
             bio=bio,
             color=resolved_color,
-            greeting_time=greeting_time,
+            greeting=greeting,
         )
 
         await interaction.response.send_message(embed=embed, view=view)

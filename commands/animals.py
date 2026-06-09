@@ -18,10 +18,11 @@ STUMMI_SHEEP_ART = [
     "https://cdn.discordapp.com/attachments/1403112075005530143/1488422441012297849/Untitled155_20260331021858.png?ex=69fd806b&is=69fc2eeb&hm=f30e2e83e02894a324455394ef81e2251d8189ec73293a99e7402d8345ee3d1c&",
     "https://cdn.discordapp.com/attachments/1403112075005530143/1488422441590980718/Untitled155_20260331021902.png?ex=69fd806b&is=69fc2eeb&hm=25188b190f3bcbf09807bd67eb26a400cfc5a22e5dc67dd6719466ca895adb29&",
     "https://cdn.discordapp.com/attachments/1403112075005530143/1486187965293138121/Untitled148_20260324221932.png?ex=69fd4866&is=69fbf6e6&hm=e03ee79ad495cd85c0986be46c320cb1085a179d01aac3db1baa3a79bc809d78&",
-    "https://cdn.discordapp.com/attachments/1403112075005530143/1486212539564949625/Untitled148_20260324235031.png?ex=69fd5f49&is=69fc0dc9&hm=99473e1bc14ca12ebee4537047ca25b0c5fa4c70d077a5fce3bdcb86e53f703d&"
+    "https://cdn.discordapp.com/attachments/1403112075005530143/1486212539564949625/Untitled148_20260324235031.png?ex=69fd5f49&is=69fc0dc9&hm=99473e1bc14ca12ebee4537047ca25b0c5fa4c70d077a5fce3bdcb86e53f703d&",
+    "https://cdn.discordapp.com/attachments/1403112075005530143/1505576287689769050/Untitled208_20260517101528.png?ex=6a28ca6f&is=6a2778ef&hm=0d6e9fb36a0ec75322570a8735076b9f0c1ccf5d7dd4e65be52c215a83d7ddee&"
 ]
 
-STUMMI_CHANCE = 0.1
+STUMMI_CHANCE = 0.01 # 1% chance to show Stummi instead of a regular sheep
 
 @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
 @app_commands.allowed_installs(guilds=True, users=True)
@@ -124,12 +125,15 @@ class AnimalCommands(app_commands.Group):
             
             if random.random() < STUMMI_CHANCE:
                 url = random.choice(STUMMI_SHEEP_ART)
+                desc = "Surprise! It's Stummi the sheep! 🐑✨"
             else:
                 url = gif_url
+                desc = None
 
             await self._send_animal(
                 interaction, title="🐑 Random Sheep!", image_url=url,
-                color=random.choice(colors)
+                color=random.choice(colors),
+                fact=desc
             )
         except Exception as e:
             e = str(e).replace(api_key, "[REDACTED]")

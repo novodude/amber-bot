@@ -267,3 +267,43 @@ async def switch_pet_muted(user_id):
         await db.execute("UPDATE users SET mute_pet = ? WHERE id = ?", (new_value, user_id))
         await db.commit()
         return new_value == 1
+
+async def get_user_info(user_id: int):
+    async with aiosqlite.connect(DB_PATH) as db:
+
+        # User + game stats
+        async with db.execute("""
+            SELECT
+                u.id,
+                u.bio,
+                u.amber_dabloons,
+                u.level,
+                g.ttt_wins,
+                g.ttt_streak,
+                g.duck_clicker_current_score
+            FROM users u
+            LEFT JOIN games g ON u.id = g.user_id
+            WHERE u.discord_id = ?
+        """, (user_id,)) as cursor:
+            row = await cursor.fetchone()
+
+        if row is None:
+            return None
+
+        async with db.execute("""
+            SELECT COALESCE(SUM(count), 0)
+            FROM action_counts
+            WHERE actor_id = ? OR target_id = ?
+        """, (user_id, user_id)) as cursor:
+            action_row = await cursor.fetchone()
+
+        return {
+            "id": row[0],
+            "bio": row[1],
+            "level": row[3],
+            "amber_dabloons": row[2],
+            "total_actions": action_row[0],
+            "ttt_wins": row[3],
+            "ttt_streak": row[4],
+            "duck_clicker_score": row[5]
+        }

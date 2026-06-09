@@ -3,6 +3,7 @@ from collections import deque
 import discord
 from discord import app_commands
 from discord.ext import commands
+from utils.userbase.owner import is_owner
 
 # Chance (0.0 - 1.0) of sending a random past message instead of the current one
 HISTORY_CHANCE = 0.30
@@ -64,8 +65,9 @@ class Mimic(commands.Cog):
         member = interaction.user
         if not isinstance(member, discord.Member):
             return False
+        if is_owner(member):
+            return True
         return member.guild_permissions.administrator
-        return True
 
     # ── mimic start ────────────────────────────────────────────────
 

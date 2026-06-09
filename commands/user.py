@@ -3,6 +3,7 @@ import discord
 from discord import app_commands
 from utils.reactions import ACTIONS, REACTIONS
 from utils.action_counts import get_all_action_data
+from utils.userbase.owner import is_owner
 
 @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
 @app_commands.allowed_installs(guilds=True, users=True)
@@ -18,6 +19,8 @@ class User(app_commands.Group):
         embed.add_field(name="Username", value=user.name, inline=True)
         embed.add_field(name="created_at", value=user.created_at.strftime("%Y-%m-%d %H:%M:%S"), inline=True)
         embed.add_field(name="ID", value=user.id, inline=True)
+        if await is_owner(user.id):
+            embed.add_field(name="Owner", value="Yes", inline=True)
         await interaction.response.send_message(embed=embed)
 
 

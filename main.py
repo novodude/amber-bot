@@ -24,6 +24,7 @@ from commands.image import image_setup
 from commands.anime import anime_setup
 from commands.leaderboard import leaderboard_setup
 from commands.user import user_setup
+from commands.amber import amber_setup
 try:
     from commands.debugging import debug_setup
 except ImportError:
@@ -31,6 +32,7 @@ except ImportError:
 # databases
 from utils.radio.database import init_radio_db
 from utils.userbase.database import init_user_db
+from utils.userbase.owner import init_owner_db
 from utils.quests import message_quest_handler
 from utils.pet import touch_owner_activity
 from utils.economy import get_user_id_from_discord
@@ -67,6 +69,8 @@ async def on_ready():
     print(f"we are quacking here, {bot.user.name}")
     await init_user_db()
     await init_radio_db()
+    await init_owner_db()
+    await amber_setup(bot)
     await setup_reactions(bot)
     await melody_setup(bot)
     await fun_setup(bot)
