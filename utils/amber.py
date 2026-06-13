@@ -37,6 +37,13 @@ class ReplyModal(discord.ui.Modal, title="Reply to User Message"):
             return
 
         try:
+            data = await owner.get_inbox_message(self.inbox_data["id"])
+            if not data:
+                await interaction.response.send_message("This inbox thread no longer exists.", ephemeral=True)
+                return
+
+            self.inbox_data = data  # Update with the latest data from the database
+
             user = await interaction.client.fetch_user(self.inbox_data["user_id"])
             # owner_id may be NULL if no owner has claimed the thread yet
             owner_user = await interaction.client.fetch_user(self.inbox_data["owner_id"]) if self.inbox_data.get("owner_id") else None
@@ -45,12 +52,15 @@ class ReplyModal(discord.ui.Modal, title="Reply to User Message"):
             owner_view = OwnerView(owner_user, self.inbox_data) if owner_user else None
 
             if await owner.is_owner(interaction.user.id):
-                # Owner is replying → claim the thread if not already claimed, then DM the user
+                # Owner is replying -> claim the thread if not already claimed, then DM the user
+                if await owner.is_inbox_claimed(self.inbox_data["id"]) and self.inbox_data.get("owner_id") != interaction.user.id:
+                    await interaction.response.send_message("This thread has already been claimed by another owner.", ephemeral=True)
+                    return
                 await owner.claim_inbox_message(self.inbox_data["id"], interaction.user.id)
-                await user.send(f"Reply from the bot developers:\n\n{reply_message}", view=user_view)
+                await user.send(f"Reply from the bot developers:\n\n{reply_message}\n\n{owner_user.display_name}", view=user_view)
                 await interaction.response.send_message("Your reply has been sent to the user.", ephemeral=True)
             else:
-                # User is replying back → send embed to the owner who claimed the thread
+                # User is replying back -> send embed to the owner who claimed the thread
                 if not owner_user:
                     await interaction.response.send_message("No owner has responded to this thread yet.", ephemeral=True)
                     return
@@ -97,7 +107,7 @@ class OwnerView(discord.ui.View):
             button.disabled = True
             await interaction.message.edit(view=self)
     
-    @discord.ui.button(label="Mark as Resolved", style=discord.ButtonStyle.success)
+    @discord.ui.button(label="Mark as Resolved", style=discord.ButtonStyle.red)
     async def resolve_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         inbox_id = self.inbox_data.get("id")
         is_updated = await owner.update_inbox_status(inbox_id=inbox_id, new_status="resolved")
@@ -107,6 +117,8 @@ class OwnerView(discord.ui.View):
             await owner.log_action(interaction, f"Message with ID {inbox_id} marked as resolved by owner {interaction.user.id}")
             await interaction.response.send_message("This message has been marked as resolved.", ephemeral=True)
             button.disabled = True
+            button.style = discord.ButtonStyle.success
+            button.label = "Resolved"
             await interaction.message.edit(view = self)
         else:
             await interaction.response.send_message("Failed to update the message status. Please try again later.", ephemeral=True)

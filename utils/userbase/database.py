@@ -237,7 +237,7 @@ async def init_user_db():
 async def check_update_muted(user_id):
     """Check if the user has muted profile updates"""
     async with aiosqlite.connect(DB_PATH) as db:
-        cursor = await db.execute("SELECT mute_update FROM users WHERE id = ?", (user_id,))
+        cursor = await db.execute("SELECT mute_update FROM users WHERE discord_id = ?", (user_id,))
         row = await cursor.fetchone()
         return row and row[0] == 1
 
@@ -251,10 +251,10 @@ async def check_pet_muted(user_id):
 async def switch_update_muted(user_id):
     """Toggle the user's profile update mute setting"""
     async with aiosqlite.connect(DB_PATH) as db:
-        cursor = await db.execute("SELECT mute_update FROM users WHERE id = ?", (user_id,))
+        cursor = await db.execute("SELECT mute_update FROM users WHERE discord_id = ?", (user_id,))
         row = await cursor.fetchone()
         new_value = 0 if row and row[0] == 1 else 1
-        await db.execute("UPDATE users SET mute_update = ? WHERE id = ?", (new_value, user_id))
+        await db.execute("UPDATE users SET mute_update = ? WHERE discord_id = ?", (new_value, user_id))
         await db.commit()
         return new_value == 1
 
@@ -307,3 +307,20 @@ async def get_user_info(user_id: int):
             "ttt_streak": row[4],
             "duck_clicker_score": row[5]
         }
+
+async def list_users():
+    async with aiosqlite.connect(DB_PATH) as db:
+        async with db.execute("SELECT discord_id FROM users") as cursor:
+            rows = await cursor.fetchall()
+            return [row[0] for row in rows]
+
+async def get_userbase_stats():
+    async with aiosqlite.connect(DB_PATH) as db:
+        async with db.execute("SELECT COUNT(*), AVG(level), SUM(amber_dabloons), AVG(amber_dabloons) FROM users") as cursor:
+            row = await cursor.fetchone()
+            return {
+                "total_users": row[0],
+                "average_level": row[1] or 0,
+                "total_dabloons": row[2] or 0,
+                "average_dabloons": row[3] or 0
+            }

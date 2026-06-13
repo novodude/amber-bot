@@ -855,7 +855,7 @@ ACTION_PAST_TENSE = {
     'feed':     'fed',
     'highfive': 'high-fived',
     'dance':    'danced',
-    'sleep':    'slept',
+    'sleep':    'slept with',
     'cry':      'cried',
     'smile':    'smiled',
     'think':    'thought',

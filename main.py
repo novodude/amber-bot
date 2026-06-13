@@ -25,6 +25,7 @@ from commands.anime import anime_setup
 from commands.leaderboard import leaderboard_setup
 from commands.user import user_setup
 from commands.amber import amber_setup
+from commands.owner import owner_setup, updates_handler
 try:
     from commands.debugging import debug_setup
 except ImportError:
@@ -85,6 +86,7 @@ async def on_ready():
     await animal_setup(bot)
     await image_setup(bot)
     await anime_setup(bot)
+    await owner_setup(bot)
     try:        await debug_setup(bot)
     except NameError: pass
     await leaderboard_setup(bot)
@@ -103,6 +105,7 @@ async def on_message(message: discord.Message):
     await handle_pin(message)
     await message_xp_handler(message)
     await message_quest_handler(message)
+    await updates_handler(bot, message)
 
     user_id = await get_user_id_from_discord(message.author.id)
     if user_id:

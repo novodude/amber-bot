@@ -346,7 +346,7 @@ async def banking_setup(bot):
                 )
                 return
 
-        if await is_private_account(discord_id):
+        if  user is not None and await is_private_account(discord_id) and not is_owner(discord_id):
             await interaction.response.send_message(
                 f"{user.mention} isn't registered yet",
                 ephemeral=True

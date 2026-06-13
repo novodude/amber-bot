@@ -1,9 +1,9 @@
-import discord
-from discord import app_commands
-from utils.userbase.database import switch_pet_muted, switch_update_muted, get_user_info
+from utils.userbase.database import switch_pet_muted, switch_update_muted, get_user_info, list_users
 from utils.amber import make_inbox_embed, OwnerView
-from utils.userbase.owner import add_user, list_users
+from utils.userbase.owner import list_users
 import utils.userbase.owner as owner
+from discord import app_commands
+import discord
 
 
 
@@ -21,7 +21,7 @@ class AmberCommands(app_commands.Group):
     @app_commands.command(name="mute_updates", description="Mute or unmute update notifications from the bot.")
     async def mute_updates(self, interaction: discord.Interaction):
         user_id = interaction.user.id
-        new_status = switch_update_muted(user_id)
+        new_status = await switch_update_muted(user_id)
         status_text = "muted" if new_status else "unmuted"
         await interaction.response.send_message(f"Update notifications have been {status_text}.", ephemeral=True)
 

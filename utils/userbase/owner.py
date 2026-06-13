@@ -26,8 +26,8 @@ async def init_owner_db():
             await db.execute("""
                 CREATE TABLE IF NOT EXISTS config (
                     id INTEGER PRIMARY KEY CHECK (id = 1),
-                    update_channel_id INTEGER NOT NULL,
-                    log_channel_id INTEGER NOT NULL
+                    update_channel_id INTEGER,
+                    log_channel_id INTEGER
                  );
             """)
 
@@ -123,6 +123,12 @@ async def claim_inbox_message(inbox_id: int, owner_id: int) -> None:
         await db.execute("UPDATE inbox_chats SET owner_id = ? WHERE id = ?", (owner_id, inbox_id))
         await db.commit()
 
+async def is_inbox_claimed(inbox_id: int) -> bool:
+    async with aiosqlite.connect(DB_PATH) as db:
+        async with db.execute("SELECT owner_id FROM inbox_chats WHERE id = ?", (inbox_id,)) as cursor:
+            result = await cursor.fetchone()
+            return result[0] is not None if result else False
+
 async def get_inbox_message(inbox_id: int) -> dict:
     async with aiosqlite.connect(DB_PATH) as db:
         async with db.execute("SELECT id, owner_id, user_id, message, status, timestamp FROM inbox_chats WHERE id = ?", (inbox_id,)) as cursor:
@@ -143,6 +149,15 @@ async def get_inbox_status(inbox_id: int) -> str:
         async with db.execute("SELECT status FROM inbox_chats WHERE id = ?", (inbox_id,)) as cursor:
             result = await cursor.fetchone()
             return result[0] if result else None
+
+async def list_inbox_messages(status: str = None) -> list:
+    async with aiosqlite.connect(DB_PATH) as db:
+        if status:
+            async with db.execute("SELECT id, owner_id, user_id, message, status, timestamp FROM inbox_chats WHERE status = ?", (status,)) as cursor:
+                return [dict(zip(["id", "owner_id", "user_id", "message", "status", "timestamp"], row)) for row in await cursor.fetchall()]
+        else:
+            async with db.execute("SELECT id, owner_id, user_id, message, status, timestamp FROM inbox_chats") as cursor:
+                return [dict(zip(["id", "owner_id", "user_id", "message", "status", "timestamp"], row)) for row in await cursor.fetchall()]
 
 async def update_inbox_status(inbox_id: int, new_status: str):
     try:

@@ -20,6 +20,19 @@ async def add_dabloons(user_id: int, amount: int):
         )
         await db.commit()
 
+async def add_dabloons_to_all(amount: int):
+    """Add dabloons to all users' accounts
+    
+    Args:
+        amount: Amount of dabloons to add (can be negative to subtract)
+    """
+    async with aiosqlite.connect("data/user.db") as db:
+        await db.execute(
+            "UPDATE users SET amber_dabloons = amber_dabloons + ?",
+            (amount,)
+        )
+        await db.commit()
+
 async def get_dabloons(user_id: int) -> int:
     """Get a user's current dabloon balance
     
@@ -233,3 +246,4 @@ async def get_4k_channel_id(message: discord.Message) -> int | None:
     if four_k_channel_id is None:
         return
     return four_k_channel_id
+
