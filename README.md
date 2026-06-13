@@ -9,6 +9,8 @@ The name comes from my pet duck, Amber 🦆.
 New commands and systems are added regularly as the project grows.
 
 [click here to add the bot to your server](https://discord.com/oauth2/authorize?client_id=1432674707970457703&permissions=8&integration_type=0&scope=bot)
+![Python](https://img.shields.io/badge/Python-3.11-blue)
+![discord.py](https://img.shields.io/badge/discord.py-2.x-5865F2)
 
 ---
 
@@ -312,6 +314,52 @@ A full-featured moderation suite with logging, warnings, and server configuratio
 | **`/server set_log [channel]`**        | Set the channel for moderation logs.                                  | Administrator           |
 | **`/server set_4k_channel [channel]`** | Set a channel where 4k image results are forwarded automatically.     | Manage Channels         |
 | **`/server set_4k_channel_off`**       | Disable 4k channel forwarding.                                        | Manage Channels         |
+
+---
+
+### 🤖 Amber Bot Commands (`/amber ...`)
+
+Commands related to Amber itself — notifications, suggestions, and contacting the developers.
+
+| **/**                        | **what it does**                                                    |
+| ---------------------------- | ------------------------------------------------------------------- |
+| **`/amber mute_updates`**    | Toggle update broadcast notifications on or off.                    |
+| **`/amber mute_all_notif`**  | Toggle all bot notifications at once (updates + pet notifications). |
+| **`/amber inbox [message]`** | Send a message or suggestion directly to the bot developers via DM. |
+
+**Implementation notes:**
+
+- `/amber mute_updates` and `/amber mute_all_notif` toggle silently — no confirmation prompt, just instant feedback
+- `/amber mute_all_notif` reports mixed states (e.g. one muted, one unmuted) so you always know exactly what changed
+- `/amber inbox` creates a tracked record in the owner inbox and delivers it as an embed to all registered bot owners
+- If an owner has DMs disabled, delivery continues to others — you're still notified if something went wrong
+
+---
+
+### 👑 Owner Commands (`/owner ...`)
+
+Bot owner-only commands for managing the userbase, economy, inbox, and broadcast system.
+All commands are restricted to registered bot owners and respond ephemerally.
+
+| **/**                                                         | **what it does**                                                                    |
+| ------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| **`/owner list_inbox`**                                       | List all submitted inbox messages in a paginated embed (5 per page).                |
+| **`/owner claim_inbox [inbox_id] [reply]`**                   | Claim an inbox message by ID and send a reply to the user via DM.                   |
+| **`/owner userbase`**                                         | Show userbase statistics — total users, average level, total and average dabloons.  |
+| **`/owner give_dabloons [user] [amount] [evryone] [reason]`** | Give dabloons to a specific user or to everyone at once.                            |
+| **`/owner set_log_channel [channel]`**                        | Set the channel where owner action logs and broadcast failure reports are sent.     |
+| **`/owner set_update_channel [channel]`**                     | Set the channel the bot watches for update announcements to broadcast to all users. |
+
+**Update broadcast system:**
+
+When you send a message in the configured update channel, the bot will:
+
+- React with 🦆 to confirm it was picked up
+- DM all registered users who haven't muted notifications
+- Forward any file attachments included in the message
+- Report the number of failed DMs to the log channel when the broadcast finishes
+
+Users who receive a broadcast get two buttons — one to unsubscribe from future updates, and one to submit a suggestion via `/amber inbox`.
 
 ---
 
