@@ -1,6 +1,8 @@
-from discord import app_commands
 from utils.economy import get_leaderboard, set_private_account, is_private_account
+from utils.userbase.owner import is_owner
+from discord import app_commands
 import discord
+
 
 
 EMOJI_MAP = {
@@ -43,7 +45,7 @@ class LeaderboardType(discord.ui.Select):
 
         for rank, (username, value) in enumerate(leaderboard, start=1):
             embed.add_field(
-                name=f"{rank}. {username}",
+                name=f"{rank}. {username}{" - owner" if await is_owner(interaction.user.id) else ""}",
                 value=f"{EMOJI_MAP.get(selected_type, '')} {value}",
                 inline=False
             )

@@ -180,7 +180,8 @@ def build_overview_embed() -> discord.Embed:
         title="🦆 Amber — Help",
         description=(
             "Pick a category from the dropdown to browse commands.\n"
-            "Use the **🔍 Search** button to find a specific command.\n\n"
+            "Use the **🔍 Search** button to find a specific command.\n"
+            "Use our own wiki for better details: [wiki](https://novodude.me/amber/wiki.html)\n\n"
             + "\n".join(
                 f"{cat} — **{len(cmds)}** command{'s' if len(cmds) != 1 else ''}"
                 for cat, cmds in COMMANDS.items()
@@ -228,7 +229,7 @@ class SearchModal(ui.Modal, title="🔍 Search Commands"):
         if not results:
             embed = discord.Embed(
                 title=f'🔍 No results for "{self.query}"',
-                description="Try a different keyword.",
+                description="Try a different keyword.\n\nExamples: `ban`, `dabloons`, `radio`, `welcome`\n Use our own wiki for better details: [wiki](https://novodude.me/amber/wiki.html)",
                 color=discord.Color.red()
             )
         else:
