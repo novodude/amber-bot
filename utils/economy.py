@@ -76,7 +76,7 @@ async def clean_leaderboard_data(data: list[tuple[str, int]]) -> list[tuple[str,
     cleaned_data = []
     for discord_id, value in data:
         if not await is_private_account(discord_id):
-            cleaned_data.append((f"<@{discord_id}>", value))
+            cleaned_data.append((f"<@{discord_id}>", value, discord_id))
     return cleaned_data
 
 async def get_leaderboard(type: Literal["money", "level", "actions received", "action given", "duck clicker", "ttt", "ttt streak"]) -> list[tuple[int, int]]:

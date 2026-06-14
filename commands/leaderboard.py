@@ -43,9 +43,9 @@ class LeaderboardType(discord.ui.Select):
             color=discord.Color.gold()
         )
 
-        for rank, (username, value) in enumerate(leaderboard, start=1):
+        for rank, (username, value, discord_id) in enumerate(leaderboard, start=1):
             embed.add_field(
-                name=f"{rank}. {username}{" - owner" if await is_owner(interaction.user.id) else ""}",
+                name=f"{rank}. {username}{" - owner" if await is_owner(discord_id) else ""}",
                 value=f"{EMOJI_MAP.get(selected_type, '')} {value}",
                 inline=False
             )
@@ -71,7 +71,7 @@ async def leaderboard_setup(bot):
         status = "private" if new_privacy else "public"
         await interaction.response.send_message(f"Your account is now {status} for leaderboards.", ephemeral=True)
 
-    @bot.tree.command(name="leaderboard", description="View the dabloon leaderboard!")
+    @bot.tree.command(name="leaderboard", description="View the leaderboards!")
     async def leaderboard(interaction: discord.Interaction):
         leaderboard = await get_leaderboard("level")
 
@@ -85,7 +85,11 @@ async def leaderboard_setup(bot):
             color=discord.Color.gold()
         )
 
-        for rank, (username, value) in enumerate(leaderboard, start=1):
-            embed.add_field(name=f"{rank}. {username}", value=f"{EMOJI_MAP['level']} {value}", inline=False)
+        for rank, (username, value, discord_id) in enumerate(leaderboard, start=1):
+            embed.add_field(
+                name=f"{rank}. {username}{" - owner" if await is_owner(discord_id) else ""}",
+                value=f"{EMOJI_MAP['level']} {value}",
+                inline=False
+            )
 
         await interaction.response.send_message(embed=embed, view=LeaderboardUI())
