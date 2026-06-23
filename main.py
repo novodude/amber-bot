@@ -37,6 +37,7 @@ from utils.userbase.owner import init_owner_db
 from utils.quests import message_quest_handler
 from utils.pet import touch_owner_activity
 from utils.economy import get_user_id_from_discord
+from utils.amber import handle_delete_reply
 
 load_dotenv()
 token = os.getenv("DISCORD_TOKEN")
@@ -106,6 +107,7 @@ async def on_message(message: discord.Message):
     await message_xp_handler(message)
     await message_quest_handler(message)
     await updates_handler(bot, message)
+    await handle_delete_reply(bot, message)
 
     user_id = await get_user_id_from_discord(message.author.id)
     if user_id:

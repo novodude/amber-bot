@@ -106,7 +106,7 @@ class PetCog(commands.Cog):
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     @app_commands.allowed_installs(guilds=True, users=True)
     async def adopt(self, interaction: discord.Interaction, name: str):
-        user_id = await ensure_registered(interaction.user.id, str(interaction.user))
+        user_id = await ensure_registered(interaction.user.id, interaction.user.display_name)
         existing = await get_pet(user_id)
         if existing:
             await interaction.response.send_message(
@@ -141,7 +141,7 @@ class PetCog(commands.Cog):
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     @app_commands.allowed_installs(guilds=True, users=True)
     async def status(self, interaction: discord.Interaction):
-        user_id = await ensure_registered(interaction.user.id, str(interaction.user))
+        user_id = await ensure_registered(interaction.user.id, interaction.user.display_name)
         pet = await get_pet(user_id)
         if not pet:
             await interaction.response.send_message(
@@ -210,7 +210,7 @@ class PetCog(commands.Cog):
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     @app_commands.allowed_installs(guilds=True, users=True)
     async def feed(self, interaction: discord.Interaction, item: str):
-        user_id = await ensure_registered(interaction.user.id, str(interaction.user))
+        user_id = await ensure_registered(interaction.user.id, interaction.user.display_name)
         pet = await get_pet(user_id)
         if not pet:
             await interaction.response.send_message("You don't have a cat yet!", ephemeral=True)
@@ -267,7 +267,7 @@ class PetCog(commands.Cog):
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     @app_commands.allowed_installs(guilds=True, users=True)
     async def play(self, interaction: discord.Interaction):
-        user_id = await ensure_registered(interaction.user.id, str(interaction.user))
+        user_id = await ensure_registered(interaction.user.id, interaction.user.display_name)
         pet = await get_pet(user_id)
         if not pet:
             await interaction.response.send_message("You don't have a cat yet!", ephemeral=True)
@@ -338,7 +338,7 @@ class PetCog(commands.Cog):
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     @app_commands.allowed_installs(guilds=True, users=True)
     async def rename(self, interaction: discord.Interaction, name: str):
-        user_id = await ensure_registered(interaction.user.id, str(interaction.user))
+        user_id = await ensure_registered(interaction.user.id, interaction.user.display_name)
         pet = await get_pet(user_id)
         if not pet:
             await interaction.response.send_message("You don't have a cat yet!", ephemeral=True)
@@ -374,7 +374,7 @@ class PetCog(commands.Cog):
             )
             return
 
-        user_id = await ensure_registered(interaction.user.id, str(interaction.user))
+        user_id = await ensure_registered(interaction.user.id, interaction.user.display_name)
 
         # Check inventory (case-insensitive match to get canonical item name)
         async with aiosqlite.connect(DB_PATH) as db:
@@ -419,7 +419,7 @@ class PetCog(commands.Cog):
             )
             return
 
-        user_id = await ensure_registered(interaction.user.id, str(interaction.user))
+        user_id = await ensure_registered(interaction.user.id, interaction.user.display_name)
         await equip_accessory(user_id, slot_key, None)
         await interaction.response.send_message(
             f"Removed item from **{slot}** slot.", ephemeral=True
@@ -444,7 +444,7 @@ class PetCog(commands.Cog):
             return
         item = canonical_candy
 
-        user_id = await ensure_registered(interaction.user.id, str(interaction.user))
+        user_id = await ensure_registered(interaction.user.id, interaction.user.display_name)
         pet = await get_pet(user_id)
         if not pet:
             await interaction.response.send_message("You don't have a cat yet!", ephemeral=True)
@@ -487,7 +487,7 @@ class PetCog(commands.Cog):
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     @app_commands.allowed_installs(guilds=True, users=True)
     async def mute(self, interaction: discord.Interaction):
-        user_id = await ensure_registered(interaction.user.id, str(interaction.user))
+        user_id = await ensure_registered(interaction.user.id, interaction.user.display_name)
         pet = await get_pet(user_id)
         if not pet:
             await interaction.response.send_message("You don't have a cat yet!", ephemeral=True)
@@ -508,7 +508,7 @@ class PetCog(commands.Cog):
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     @app_commands.allowed_installs(guilds=True, users=True)
     async def delete(self, interaction: discord.Interaction):
-        user_id = await ensure_registered(interaction.user.id, str(interaction.user))
+        user_id = await ensure_registered(interaction.user.id, interaction.user.display_name)
         pet = await get_pet(user_id)
         if not pet:
             await interaction.response.send_message("You don't have a cat yet!", ephemeral=True)

@@ -1,6 +1,7 @@
 import random
 from typing import Literal
 import aiosqlite
+import discord
 from utils.economy import get_user_id_from_discord, add_dabloons
 from utils.userbase.ensure_registered import ensure_registered
 
@@ -21,19 +22,19 @@ REACTIONS = [
 
 # ── Count helpers ─────────────────────────────────────────────────────────────
 
-async def increment_action_count(actor_discord_id: int, target_discord_id: int | None, action: str) -> int:
+async def increment_action_count(actor_discord: discord.User, target_discord: discord.User | None, action: str) -> int:
     """
     Increment the action count for actor -> target -> action.
     target_discord_id can be None for /look or @everyone actions.
     """
-    actor_id = await get_user_id_from_discord(actor_discord_id)
+    actor_id = await get_user_id_from_discord(actor_discord.id)
     target_id = None
-    if target_discord_id is not None:
+    if target_discord is not None:
         # Register them if they haven't been yet — this is the fix for count always being 0/1
-        target_id = await get_user_id_from_discord(target_discord_id)
+        target_id = await get_user_id_from_discord(target_discord.id)
         if target_id is None:
-            await ensure_registered(target_discord_id, str(target_discord_id))
-            target_id = await get_user_id_from_discord(target_discord_id)
+            await ensure_registered(target_discord.id, str(target_discord.display_name))
+            target_id = await get_user_id_from_discord(target_discord.id)
 
     async with aiosqlite.connect(DB_PATH) as db:
         await db.execute("""
@@ -46,7 +47,7 @@ async def increment_action_count(actor_discord_id: int, target_discord_id: int |
 
 
 
-async def get_action_count(actor_discord_id: int, target_discord_id: int | None, action: str) -> int:
+async def get_action_count(actor_discord_id: int, target_discor_id: int | None, action: str) -> int:
     """Get the current count for actor -> target -> action."""
     actor_id = await get_user_id_from_discord(actor_discord_id)
     if actor_id is None:
@@ -161,13 +162,13 @@ async def get_top_received_actions(target_discord_id: int, limit: int = 3) -> li
 
 # ── Dabloon reward helper ─────────────────────────────────────────────────────
 
-async def maybe_reward_dabloons(discord_id: int) -> int | None:
+async def maybe_reward_dabloons(discord_id: int, username: str) -> int | None:
     """
     Increment the user's total action use count.
     If they've hit their next reward threshold, award 5-10 dabloons and set a new threshold.
     Returns the amount awarded, or None if no reward this time.
     """
-    user_id = await ensure_registered(discord_id, str(discord_id))
+    user_id = await ensure_registered(discord_id, username)
 
     async with aiosqlite.connect(DB_PATH) as db:
         cursor = await db.execute(

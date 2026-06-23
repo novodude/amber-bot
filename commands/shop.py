@@ -155,7 +155,7 @@ class ShopCog(commands.Cog):
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     @app_commands.allowed_installs(guilds=True, users=True)
     async def browse(self, interaction: discord.Interaction):
-        user_id = await ensure_registered(interaction.user.id, str(interaction.user))
+        user_id = await ensure_registered(interaction.user.id, interaction.user.display_name)
         balance = await get_dabloons(user_id)
 
         items   = await get_shop_items("games")
@@ -169,7 +169,7 @@ class ShopCog(commands.Cog):
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     @app_commands.allowed_installs(guilds=True, users=True)
     async def buy(self, interaction: discord.Interaction, item: str):
-        user_id = await ensure_registered(interaction.user.id, str(interaction.user))
+        user_id = await ensure_registered(interaction.user.id, interaction.user.display_name)
 
         async with aiosqlite.connect(DB_PATH) as db:
             db.row_factory = aiosqlite.Row
@@ -286,7 +286,7 @@ class ShopCog(commands.Cog):
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     @app_commands.allowed_installs(guilds=True, users=True)
     async def inventory(self, interaction: discord.Interaction):
-        user_id = await ensure_registered(interaction.user.id, str(interaction.user))
+        user_id = await ensure_registered(interaction.user.id, interaction.user.display_name)
         items   = await get_inventory(user_id)
 
         if not items:
@@ -312,7 +312,7 @@ class ShopCog(commands.Cog):
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     @app_commands.allowed_installs(guilds=True, users=True)
     async def mypurchases(self, interaction: discord.Interaction):
-        user_id = await ensure_registered(interaction.user.id, str(interaction.user))
+        user_id = await ensure_registered(interaction.user.id, interaction.user.display_name)
         async with aiosqlite.connect(DB_PATH) as db:
             cursor = await db.execute(
                 "SELECT item_name, purchased_at FROM user_purchases WHERE user_id = ? AND active = 1 ORDER BY purchased_at DESC",

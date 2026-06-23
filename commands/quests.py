@@ -78,7 +78,7 @@ class QuestsView(discord.ui.View):
                 await interaction.response.send_message("These aren't your quests!", ephemeral=True)
                 return
 
-            success, message, dabloons, xp = await claim_quest(interaction.user.id, daily_quest_id)
+            success, message, dabloons, xp = await claim_quest(interaction.user.id, interaction.user.display_name, daily_quest_id)
 
             if not success:
                 await interaction.response.send_message(message, ephemeral=True)
@@ -111,7 +111,7 @@ class QuestsCog(commands.Cog):
     async def quests(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral=True)
 
-        await ensure_registered(interaction.user.id, str(interaction.user))
+        await ensure_registered(interaction.user.id, interaction.user.display_name)
         quests = await get_user_daily_quests(interaction.user.id)
 
         if not quests:

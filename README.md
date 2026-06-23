@@ -34,7 +34,7 @@ New commands and systems are added regularly as the project grows.
 | **`/no`**                        | Random rejection reasons.                                                                                                                                                           | Fetches from `naas.isalman.dev/no` API.                                                                |
 | **`/yes`**                       | Random agreement reasons.                                                                                                                                                           | Static response pool from `assets/fun/yes.json`.                                                       |
 | **`/rate [user]`**               | Rates you or another user across 6 categories.                                                                                                                                      | Random scoring with description tiers from `assets/fun/rating.json`.                                   |
-| **`/download [url]`**            | Downloads audio from a YouTube (or supported) URL using yt‑dlp and sends the file directly to Discord.                                                                              | Simplified implementation – no RapidAPI key required.                                                  |
+| **`/download [url] [format]`**   | Downloads audio or video from a YouTube or Spotify URL using yt‑dlp. Files under 25MB are sent directly to Discord; larger files are uploaded to Catbox and the link is shared.     | Uses yt‑dlp + ffmpeg. Spotify tracks are resolved to YouTube automatically via spotipy.                |
 | **`/mimic start [@user]`**       | Makes Amber repeat the target user's messages, with a 30% chance of sending one of their last 15 messages instead.                                                                  | Admin only. Mirrors text, attachments, and stickers.                                                   |
 | **`/say embed [message]`**       | Makes Amber send an embed message.                                                                                                                                                  | Supports text, timestamps, author display, image attachments, and 6 color options.                     |
 | **`/say text [message]`**        | Makes Amber say a text message.                                                                                                                                                     | Can send text and attachments.                                                                         |
@@ -235,16 +235,29 @@ A streaming radio player that pulls tracks from YouTube and Spotify playlists an
 Uses `yt-dlp` for stream resolution, `spotipy` for Spotify metadata, and `aiosqlite` for playlist storage.
 All commands live under the `/radio` group.
 
-| **/**                                                   | **what it does**                                                                                                                       |
-| ------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| **`/radio play [playlist_id] [source_url] [mix_mode]`** | Play a saved playlist by ID, stream a single YouTube URL directly, or shuffle all accessible playlists with mix mode.                  |
-| **`/radio queue [source_url]`**                         | Add a YouTube URL to the end of the current queue without interrupting playback.                                                       |
-| **`/radio add [name] [url] [public]`**                  | Create a new playlist from a YouTube or Spotify URL. Syncs in the background with a live progress bar — up to 1500 songs per playlist. |
-| **`/radio sync [playlist_id]`**                         | Re-sync a playlist from its source URL. Runs in the background with a progress bar.                                                    |
-| **`/radio libraries [public]`**                         | List your saved playlists, or browse public ones with `public: True`.                                                                  |
-| **`/radio remove [playlist_id]`**                       | Delete a playlist and all its song entries (owner only).                                                                               |
-| **`/radio songs [playlist_id]`**                        | View all songs in a playlist (paginated, 10 per page).                                                                                 |
-| **`/radio stop`**                                       | Stop playback and disconnect from voice.                                                                                               |
+| **/**                                                   | **what it does**                                                                                                                                                                                                          |
+| ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **`/radio play [playlist_id] [source_url] [mix_mode]`** | Play a saved playlist by ID, stream a single YouTube URL directly, or shuffle all accessible playlists with mix mode. Running it with no arguments opens the player so you can pick from the dropdown or search directly. |
+| **`/radio search [query]`**                             | Search YouTube and browse results one at a time — like, add to a playlist, or queue songs directly from the results.                                                                                                      |
+| **`/radio queue [source_url]`**                         | Add a YouTube URL to the end of the current queue without interrupting playback.                                                                                                                                          |
+| **`/radio add [name] [url] [public]`**                  | Create a new playlist from a YouTube or Spotify URL. Syncs in the background with a live progress bar — up to 1500 songs per playlist.                                                                                    |
+| **`/radio sync [playlist_id]`**                         | Re-sync a playlist from its source URL. Runs in the background with a progress bar. Leave ID empty to pick from a dropdown.                                                                                               |
+| **`/radio libraries [public]`**                         | List your saved playlists, or browse public ones with `public: True`.                                                                                                                                                     |
+| **`/radio songs [playlist_id]`**                        | View all songs in a playlist (paginated, 10 per page). Leave ID empty to pick from a dropdown.                                                                                                                            |
+| **`/radio remove [playlist_id]`**                       | Delete a playlist and all its song entries (owner only). Leave ID empty to pick from a dropdown.                                                                                                                          |
+| **`/radio remove-song [playlist_id]`**                  | Remove a specific song from one of your playlists — pick the playlist then pick the song from a dropdown.                                                                                                                 |
+| **`/radio privacy [playlist_id]`**                      | Toggle a playlist between public and private. Leave ID empty to pick from a dropdown.                                                                                                                                     |
+| **`/radio stop`**                                       | Stop playback and disconnect from voice.                                                                                                                                                                                  |
+
+**Player controls:**
+
+The `/radio play` player embed has three rows of buttons:
+
+- Row 1: ⏮️ Previous • ⏸️ Pause/Resume • ⏭️ Next • 🤍 Like (toggle)
+- Row 2: 🔉 Vol Down • 🔁 Loop (playlist → song → off) • 🔊 Vol Up • ⏹️ Stop
+- Row 3: 🔍 Search • 🔀 Shuffle queue
+
+The 🤍 button saves the current song to your **liked songs** playlist (press again to unlike). The 🔍 button opens a search modal — results show one at a time with ▶️ Play Now, ⏭️ Play Next, 📋 Add to Queue, 🤍 Like, and ➕ Add to Playlist buttons.
 
 **How syncing works:**
 
@@ -371,6 +384,7 @@ Users who receive a broadcast get two buttons — one to unsubscribe from future
 | Reply with **`4k`**    | Quote the replied message as an image. Also forwards to the configured 4k channel if set. |
 | Reply with **`pin`**   | Pin the replied message.                                                                  |
 | Reply with **`unpin`** | Unpin the replied message.                                                                |
+| Reply with **`🗑️`** or | Delete the replied-to Amber message. Only works on messages sent by the bot.              |
 
 ---
 
@@ -413,8 +427,6 @@ python update.py
 - [x] Full moderation system (kick, ban, timeout, warn, purge, lockdown)
 - [x] Moderation logging
 - [x] Welcome messages with custom modal
-- [x] Autorole system
-- [x] Custom server prefix
 - [x] Shop system with upgrades, food, accessories, colors
 - [x] Pet system — cat companion powered by domesticated-LLM
 - [x] LLM integration (domesticated-LLM — cat-speak fine-tune of SmolLM2-135M)
@@ -423,6 +435,9 @@ python update.py
 - [x] Shop upgrades fully implemented (Auto Clicker, Double Points, Custom X/O)
 - [x] 4k channel forwarding
 - [x] Streaming radio — no disk usage, up to 1500 songs/playlist, background sync with live progress bar
+- [x] Radio search — YouTube search from within the player or via `/radio search`, with like/queue/playlist actions
+- [x] Radio playlist management — remove songs, toggle privacy, dropdown-driven UX for all commands
+- [x] Liked songs — personal favorites playlist powered by the 🤍 button in the radio player
 - [x] Gambling system
 - [x] User info, avatar, and banner commands
 - [x] Action stats command (`/my stats`)

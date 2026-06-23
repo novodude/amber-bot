@@ -1,10 +1,12 @@
 from discord.ext import commands
 import utils.userbase.owner as owner_utils
 import utils.userbase.database as database
+from utils.userbase.database import DB_PATH
 import utils.amber as amber_utils
 from utils.amber import InboxView
 from discord import app_commands
 from utils import economy
+import aiosqlite
 import functools
 import asyncio
 import discord
@@ -17,6 +19,138 @@ def is_owner(function):
             return
         return await function(self, interaction, *args, **kwargs)
     return wrapper
+
+
+def build_username_sync_embed(
+    updated: int,
+    skipped: int,
+    total: int,
+    last_username: str | None,
+    done: bool = False,
+    error: str | None = None,
+) -> discord.Embed:
+    if error:
+        return discord.Embed(
+            title="❌ Username Sync Failed",
+            description=error,
+            color=discord.Color.red(),
+        )
+ 
+    if done:
+        embed = discord.Embed(
+            title="✅ Username Sync Complete",
+            description=f"Checked **{total}** users in the database.",
+            color=discord.Color.green(),
+        )
+        embed.add_field(name="Updated", value=str(updated), inline=True)
+        embed.add_field(name="Skipped", value=str(skipped), inline=True)
+        return embed
+ 
+    processed = updated + skipped
+    if total > 0:
+        filled = int((processed / total) * 20)
+        bar = "█" * filled + "░" * (20 - filled)
+        progress_text = f"`{bar}` {processed}/{total}"
+    else:
+        progress_text = "no users to process"
+ 
+    embed = discord.Embed(
+        title="🔄 Syncing Usernames",
+        description=progress_text,
+        color=discord.Color.blurple(),
+    )
+    embed.add_field(name="Updated", value=str(updated), inline=True)
+    embed.add_field(name="Skipped", value=str(skipped), inline=True)
+    if last_username:
+        embed.add_field(name="Last updated", value=last_username, inline=False)
+    embed.set_footer(text="Running in the background — you can keep using the bot")
+    return embed
+
+USERNAME_SYNC_UPDATE_EVERY = 5   # db is small — update progress every 5 users
+USERNAME_SYNC_DELAY = 1          # seconds between fetch_user() calls
+
+async def sync_usernames_background(
+    *,
+    bot,
+    progress_message: discord.Message,
+    requester: discord.User,
+):
+    """
+    Walks every discord_id in the users table, re-fetches their current
+    Discord username via bot.fetch_user(), and updates the username column.
+    Skips (and counts) users who can't be fetched — left Discord, deactivated,
+    or otherwise unreachable — rather than aborting the whole run.
+    """
+    updated = 0
+    skipped = 0
+    last_username: str | None = None
+ 
+    async def edit_progress(done=False, error=None):
+        try:
+            embed = build_username_sync_embed(
+                updated=updated,
+                skipped=skipped,
+                total=total,
+                last_username=last_username,
+                done=done,
+                error=error,
+            )
+            await progress_message.edit(embed=embed)
+        except Exception:
+            pass
+ 
+    try:
+        async with aiosqlite.connect(DB_PATH) as db:
+            cursor = await db.execute("SELECT discord_id FROM users")
+            rows = await cursor.fetchall()
+ 
+        discord_ids = [row[0] for row in rows]
+        total = len(discord_ids)
+ 
+        if total == 0:
+            await edit_progress(error="No users found in the database.")
+            return
+ 
+        await edit_progress()  # show 0/total right away
+ 
+        async with aiosqlite.connect(DB_PATH) as db:
+            for discord_id in discord_ids:
+                try:
+                    user = await bot.fetch_user(discord_id)
+                except (discord.NotFound, discord.HTTPException):
+                    skipped += 1
+                else:
+                    await db.execute(
+                        "UPDATE users SET username = ? WHERE discord_id = ?",
+                        (user.display_name, discord_id)
+                    )
+                    await db.commit()
+                    updated += 1
+                    last_username = user.display_name
+ 
+                processed = updated + skipped
+                if processed % USERNAME_SYNC_UPDATE_EVERY == 0:
+                    await edit_progress()
+ 
+                await asyncio.sleep(USERNAME_SYNC_DELAY)
+ 
+        await edit_progress(done=True)
+ 
+        # DM the owner who triggered it when complete
+        try:
+            dm_embed = discord.Embed(
+                title="✅ Username Sync Complete!",
+                description=f"Checked **{total}** users.",
+                color=discord.Color.green(),
+            )
+            dm_embed.add_field(name="Updated", value=str(updated), inline=True)
+            dm_embed.add_field(name="Skipped", value=str(skipped), inline=True)
+            await requester.send(embed=dm_embed)
+        except discord.Forbidden:
+            pass  # DMs closed, no big deal
+ 
+    except Exception as e:
+        await edit_progress(error=str(e))
 
 class SuggestionModal(discord.ui.Modal, title="Submit a Suggestion"):
     suggestion = discord.ui.TextInput(
@@ -227,46 +361,60 @@ class OwnerCommands(app_commands.Group):
         await interaction.response.send_message(f"Update channel set to {channel.mention}.", ephemeral=True)
 
 
+ 
+    @app_commands.command(name="sync_usernames", description="Re-fetch and update stored usernames for all registered users.")
+    @is_owner
+    async def sync_usernames(self, interaction: discord.Interaction):
+        await interaction.response.defer(thinking=True)
+ 
+        progress_embed = build_username_sync_embed(
+            updated=0, skipped=0, total=0, last_username=None
+        )
+        progress_msg = await interaction.followup.send(
+            content="🔄 Syncing usernames in the background...",
+            embed=progress_embed,
+        )
+ 
+        asyncio.create_task(sync_usernames_background(
+            bot=interaction.client,
+            progress_message=progress_msg,
+            requester=interaction.user,
+        ))
+
+
 async def updates_handler(bot: commands.Bot, message: discord.Message):
     if message.author.bot:
         return
-
     update_channel_id = await owner_utils.get_update_channel()
     if not message.channel.id == update_channel_id:
         return
-
     await message.add_reaction("🦆")
-
     users = await database.list_users()
-
-    files = []
-    for attachment in message.attachments:
-        files.append(await attachment.to_file())
-
     failed = 0
     for user_id in users:
         try:
             user = await bot.fetch_user(user_id)
             view = UpdateView(user_id)
             if not await database.check_update_muted(user_id):
+                files = [await attachment.to_file() for attachment in message.attachments]
                 await user.send(
                     content=message.content or None,
                     files=files,
                     view=view
                 )
                 await asyncio.sleep(1)
+            else:
+                failed += 1
         except discord.Forbidden:
             failed += 1
         except discord.HTTPException:
             failed += 1
-            await asyncio.sleep(3)  # back off if we're hitting limits
-
+            await asyncio.sleep(3)
     log_channel_id = await owner_utils.get_log_channel()
     if failed:
         channel = bot.get_channel(log_channel_id)
         if channel:
             await channel.send(f"Broadcast done. Failed to DM {failed} users.")
-        
 
 
 async def owner_setup(bot):

@@ -934,7 +934,7 @@ class React_back(discord.ui.View):
             await interaction.response.send_message(f"Only {self.user.display_name} can react back!", ephemeral=True)
             return
 
-        reward = await maybe_reward_dabloons(interaction.user.id)
+        reward = await maybe_reward_dabloons(interaction.user.id, interaction.user.display_name)
 
         title = build_title(self.action, self.action_data, self.author.display_name, interaction.user.display_name, react_back=True)
         base_desc = random.choice(self.action_data['desc_other']).format(user=self.user, author=interaction.user)
@@ -1030,22 +1030,22 @@ async def get_counter_text(interaction, action, user=None, is_button=False):
 
     if action in PRIVATE_COUNTER_ACTIONS:
         if not is_button:
-            await increment_action_count(author.id, user.id, action)
+            await increment_action_count(author, user, action)
             count = await get_action_between_users(author.id, user.id, action)
             counter = build_counter_text(action, count, author.display_name, user.display_name)
         else:
             # clicker (author) is kissing back the original sender (user)
-            await increment_action_count(author.id, user.id, action)
+            await increment_action_count(author, user, action)
             count = await get_action_between_users(author.id, user.id, action)
             counter = build_counter_text(action, count, author.display_name, user.display_name)
     else:
         if not is_button:
-            await increment_action_count(author.id, user.id, action)
+            await increment_action_count(author, user, action)
             count = await get_received_count(user.id, action)
             counter = build_counter_text(action, count, author.display_name, user.display_name)
         else:
             # clicker (author) is acting on the original sender (user)
-            await increment_action_count(author.id, user.id, action)
+            await increment_action_count(author, user, action)
             count = await get_received_count(user.id, action)
             counter = build_counter_text(action, count, author.display_name, user.display_name)
 

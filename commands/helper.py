@@ -95,12 +95,15 @@ COMMANDS = {
     "⚙️ Utils": [
         ("/say embed [message]",          "Make Amber say your message in embed"),
         ("/say text [message]",           "Make Amber say your message in text"),
-        ("/download [url]",               "Download audio from YouTube"),
+        ("/download [url]",               "Download audio/video from YouTube"),
         ("/melody",                       "Generate a short WAV melody"),
         ("/user info [user]",             "Get information about a user"),
         ("/user avatar [user]",           "Get a user's avatar"),
         ("/user banner [user]",           "Get a user's banner"),
-        ("/my stats [type]",              "View your action stats — given or received"),
+        ("/my stats [type]",              "View your stats"),
+        ("/amber mute_update",            "Mute or unmute update messages from amber"),
+        ("/amber mute_all_notif",         "Mute or unmute all notifications from the bot"),
+        ("/amber inbox",                  "send a message to the bot owner")
     ],
     "🎮 Games": [
         ("/games duck_clicker",              "Click ducks to earn dabloons — 2 per 5 clicks (4 with Double Points). Auto Clicker ticks every 60s in the background."),
@@ -109,12 +112,15 @@ COMMANDS = {
     ],
     "📻 Radio": [
         ("/radio play [playlist_id] [source_url] [mix_mode]", "Play a saved playlist, stream a direct YouTube URL, or shuffle everything with mix mode"),
+        ("/radio search [query]",                             "Search YouTube and add songs to your library or queue"),
         ("/radio queue [source_url]",                         "Add a YouTube URL to the current queue without interrupting playback"),
         ("/radio add [name] [url] [public]",                  "Create a playlist from a YouTube or Spotify URL — syncs in the background with a live progress bar"),
         ("/radio sync [playlist_id]",                         "Re-sync a playlist from its source URL — runs in the background"),
         ("/radio libraries [public]",                         "Browse your playlists or public ones"),
-        ("/radio remove [playlist_id]",                       "Delete a playlist and all its songs (owner only)"),
         ("/radio songs [playlist_id]",                        "View all songs in a playlist (paginated)"),
+        ("/radio remove [playlist_id]",                       "Delete a playlist and all its songs (owner only)"),
+        ("/radio remove-song [playlist_id]",                  "Remove a specific song from one of your playlists"),
+        ("/radio privacy [playlist_id]",                      "Toggle a playlist between public and private"),
         ("/radio stop",                                       "Stop playback and disconnect from voice"),
     ],
     "🛡️ Admin": [
@@ -148,6 +154,7 @@ COMMANDS = {
     ("Reply with `4k`",    "Quote the replied message as an image — also forwards to the 4k channel if configured"),
     ("Reply with `pin`",   "Pin the replied message"),
     ("Reply with `unpin`", "Unpin the replied message"),
+    ("Reply with '🗑️' or  '🗑' to amber", "Delete amber's message")
     ],
     "🎲 Gamble": [
         ("/gamble coinflip [bet] [choice]", "Double your dabloons on a 50/50 flip"),

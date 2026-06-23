@@ -264,12 +264,12 @@ async def increment_quest_progress(discord_id: int, quest_type: str, amount: int
 
 # ── Quest claiming ────────────────────────────────────────────────────────────
 
-async def claim_quest(discord_id: int, daily_quest_id: int) -> tuple[bool, str, int, int]:
+async def claim_quest(discord_id: int, username: str, daily_quest_id: int) -> tuple[bool, str, int, int]:
     """
     Claim a completed quest reward.
     Returns (success, message, dabloons_rewarded, xp_rewarded).
     """
-    user_id = await ensure_registered(discord_id, str(discord_id))
+    user_id = await ensure_registered(discord_id, username)
     quests = await get_or_create_daily_quests()
 
     quest = next((q for q in quests if q["daily_quest_id"] == daily_quest_id), None)

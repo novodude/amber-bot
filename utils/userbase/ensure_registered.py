@@ -4,7 +4,7 @@ from utils.economy import get_user_id_from_discord
 DB_PATH = "data/user.db"
 
 
-async def ensure_registered(discord_id: int, username: str) -> int:
+async def ensure_registered(discord_id: int, display_name: str) -> int:
     """
     Returns the internal user_id for a Discord user.
     If they aren't registered yet, silently registers them with 50 starter dabloons.
@@ -21,7 +21,7 @@ async def ensure_registered(discord_id: int, username: str) -> int:
     async with aiosqlite.connect(DB_PATH) as db:
         cursor = await db.execute(
             "INSERT INTO users (discord_id, amber_dabloons, username) VALUES (?, ?, ?)",
-            (discord_id, 50, username)
+            (discord_id, 50, display_name)
         )
         new_user_id = cursor.lastrowid
 

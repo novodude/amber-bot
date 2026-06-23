@@ -26,7 +26,7 @@ class Money(app_commands.Group):
 
     @app_commands.command(name="daily", description="Claim your daily dabloons!")
     async def daily(self, interaction: discord.Interaction):
-        user_id = await ensure_registered(interaction.user.id, str(interaction.user))
+        user_id = await ensure_registered(interaction.user.id, interaction.user.display_name)
 
         async with aiosqlite.connect("data/user.db") as db:
             cursor = await db.execute(
@@ -60,7 +60,7 @@ class Money(app_commands.Group):
     @app_commands.command(name="give", description="Give dabloons to another user")
     @app_commands.describe(target="The user you want to give dabloons to", amount="Amount to give")
     async def give(self, interaction: discord.Interaction, target: discord.User, amount: int):
-        sender_id = await ensure_registered(interaction.user.id, str(interaction.user))
+        sender_id = await ensure_registered(interaction.user.id, interaction.user.display_name)
         receiver_id = await get_user_id_from_discord(target.id)
 
         if receiver_id is None:
@@ -100,7 +100,7 @@ class Money(app_commands.Group):
             balance = await get_dabloons(user_id)
             await interaction.response.send_message(f"{user.mention} has 🪙 {balance} dabloons.")
         else:
-            user_id = await ensure_registered(interaction.user.id, str(interaction.user))
+            user_id = await ensure_registered(interaction.user.id, interaction.user.display_name)
             balance = await get_dabloons(user_id)
             await interaction.response.send_message(f"You have 🪙 {balance} dabloons.")
 
@@ -109,7 +109,7 @@ class Money(app_commands.Group):
     @app_commands.command(name="rob", description="Attempt to rob another user of their dabloons")
     @app_commands.describe(target="The user you want to rob")
     async def rob(self, interaction: discord.Interaction, target: discord.User):
-        robber_id = await ensure_registered(interaction.user.id, str(interaction.user))
+        robber_id = await ensure_registered(interaction.user.id, interaction.user.display_name)
         victim_id = await get_user_id_from_discord(target.id)
 
         if victim_id is None:
@@ -162,7 +162,7 @@ class Money(app_commands.Group):
 
     @app_commands.command(name="beg", description="Beg for dabloons from other users")
     async def beg(self, interaction: discord.Interaction):
-        user_id = await ensure_registered(interaction.user.id, str(interaction.user))
+        user_id = await ensure_registered(interaction.user.id, interaction.user.display_name)
         big_chance = 0.1
         medium_chance = 0.3
         small_chance = 0.5
@@ -206,7 +206,7 @@ class Gamble(app_commands.Group):
     @app_commands.command(name="coinflip", description="Flip a coin and bet on heads or tails")
     @app_commands.describe(bet="The amount of dabloons you want to bet", choice="Your choice: heads or tails")
     async def coinflip(self, interaction: discord.Interaction, bet: int, choice: Literal["heads", "tails"]):
-        user_id = await ensure_registered(interaction.user.id, str(interaction.user))
+        user_id = await ensure_registered(interaction.user.id, interaction.user.display_name)
         balance = await get_dabloons(user_id)
 
         if bet <= 0:
@@ -239,7 +239,7 @@ class Gamble(app_commands.Group):
     @app_commands.command(name="roll", description="Roll a 6-sided die and bet on the outcome")
     @app_commands.describe(bet="The amount of dabloons you want to bet", choice="Your choice: a number from 1 to 6")
     async def roll(self, interaction: discord.Interaction, bet: int, choice: Literal[1, 2, 3, 4, 5, 6]):
-        user_id = await ensure_registered(interaction.user.id, str(interaction.user))
+        user_id = await ensure_registered(interaction.user.id, interaction.user.display_name)
         balance = await get_dabloons(user_id)
 
         if bet <= 0:
@@ -272,7 +272,7 @@ class Gamble(app_commands.Group):
     @app_commands.command(name="slots", description="Spin the slot machine and bet on the outcome")
     @app_commands.describe(bet="The amount of dabloons you want to bet")
     async def slots(self, interaction: discord.Interaction, bet: int):
-        user_id = await ensure_registered(interaction.user.id, str(interaction.user))
+        user_id = await ensure_registered(interaction.user.id, interaction.user.display_name)
         balance = await get_dabloons(user_id)
 
         if bet <= 0:
@@ -336,7 +336,7 @@ async def banking_setup(bot):
         target_user = interaction.user    if user is None else user
 
         if user is None:
-            user_id = await ensure_registered(discord_id, str(interaction.user))
+            user_id = await ensure_registered(discord_id, interaction.user.display_name)
         else:
             user_id = await get_user_id_from_discord(discord_id)
             if user_id is None:
@@ -364,7 +364,7 @@ async def banking_setup(bot):
         color_name = row[1] if row and row[1] else "gold"
         custom_hex = row[2] if row and row[2] else None
         
-        if is_owner(discord_id):
+        if await is_owner(discord_id):
             greeting = "Look it's the owner of Amber! 👑"
         else:
             greeting = f"hello there, duckling!"
@@ -387,7 +387,7 @@ async def banking_setup(bot):
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     @app_commands.allowed_installs(guilds=True, users=True)
     async def setbio(interaction: discord.Interaction, bio: str):
-        await ensure_registered(interaction.user.id, str(interaction.user))
+        await ensure_registered(interaction.user.id, interaction.user.display_name)
 
         async with aiosqlite.connect("data/user.db") as db:
             await db.execute(
@@ -406,7 +406,7 @@ async def banking_setup(bot):
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     @app_commands.allowed_installs(guilds=True, users=True)
     async def level(interaction: discord.Interaction):
-        user_id = await ensure_registered(interaction.user.id, str(interaction.user))
+        user_id = await ensure_registered(interaction.user.id, interaction.user.display_name)
 
         level = await get_level(user_id)
         xp = await get_xp(user_id)
@@ -424,7 +424,7 @@ async def message_xp_handler(message):
     if message.author.bot:
         return
 
-    user_id = await ensure_registered(message.author.id, str(message.author))
+    user_id = await ensure_registered(message.author.id, message.author.display_name)
     new_level = await add_xp(user_id, None, message.content)
     if new_level:
         embed = discord.Embed(

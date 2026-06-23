@@ -4,7 +4,7 @@ import aiosqlite
 import discord
 
 async def increment_ttt_wins(user: discord.User):
-    user_id = await ensure_registered(user.id, str(user))
+    user_id = await ensure_registered(user.id, str(user.display_name))
     async with aiosqlite.connect(DB_PATH) as db:
         await db.execute("""
             UPDATE games
@@ -14,7 +14,7 @@ async def increment_ttt_wins(user: discord.User):
         await db.commit()
 
 async def increment_ttt_wins_streak(user: discord.User):
-    user_id = await ensure_registered(user.id, str(user))
+    user_id = await ensure_registered(user.id, str(user.display_name))
     async with aiosqlite.connect(DB_PATH) as db:
         await db.execute("""
             UPDATE games
@@ -24,7 +24,7 @@ async def increment_ttt_wins_streak(user: discord.User):
         await db.commit()
 
 async def reset_ttt_wins_streak(user: discord.User):
-    user_id = await ensure_registered(user.id, str(user))
+    user_id = await ensure_registered(user.id, str(user.display_name))
     async with aiosqlite.connect(DB_PATH) as db:
         await db.execute("""
             UPDATE games

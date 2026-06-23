@@ -1,6 +1,7 @@
 from datetime import datetime
 from discord import app_commands
 from typing import Literal, Optional
+import mimetypes
 import tempfile
 import aiohttp
 import asyncio
@@ -18,13 +19,18 @@ async def upload_to_catbox(session, file_path, filename):
         form = aiohttp.FormData()
         form.add_field("reqtype", "fileupload")
         form.add_field("userhash", "")
-        form.add_field("fileToUpload", f, filename=filename, content_type="audio/mpeg")
+        mime_type, _ = mimetypes.guess_type(filename)
+        form.add_field(
+            "fileToUpload",
+            f,
+            filename=filename,
+            content_type=mime_type or "application/octet-stream"
+        )
         async with session.post(url, data=form, timeout=120) as resp:
             return await resp.text()
 
-def download_with_ytdlp(video_url, output_path):
-    """Download audio using yt-dlp library, return (file_path, title)"""
-    ydl_opts = {
+def download_with_ytdlp(video_url, output_path, audio_only=True):
+    ydl_opts_audio = {
         "format": "bestaudio/best",
         "outtmpl": os.path.join(output_path, "%(title)s.%(ext)s"),
         "postprocessors": [{
@@ -32,15 +38,35 @@ def download_with_ytdlp(video_url, output_path):
             "preferredcodec": "mp3",
             "preferredquality": "0",
         }],
+        "max_filesize": 200 * 1024 * 1024,
         "quiet": True,
-        "no_warnings": True,
+        "no_warnings": True
     }
+
+    ydl_opts_video = {
+        "format": "bestvideo+bestaudio/best",
+        "outtmpl": os.path.join(output_path, "%(title)s.%(ext)s"),
+        "merge_output_format": "mp4",
+        "max_filesize": 200 * 1024 * 1024,
+        "quiet": True,
+        "no_warnings": True
+    }
+
+    ydl_opts = ydl_opts_audio if audio_only else ydl_opts_video
 
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         info = ydl.extract_info(video_url, download=True)
-        title = info.get("title", "audio")
-        file_path = os.path.join(output_path, f"{title}.mp3")
-        return file_path, title
+
+        title = info.get("title", "download")
+
+        downloaded_files = [
+            os.path.join(output_path, file)
+            for file in os.listdir(output_path)
+        ]
+
+        newest_file = max(downloaded_files, key=os.path.getmtime)
+
+        return newest_file, title
 
 async def resolve_spotify(url):
     """Return a yt-dlp search query from a Spotify track URL"""
@@ -53,7 +79,9 @@ async def resolve_spotify(url):
 async def download_and_upload(interaction, session, download_url, title, status_msg):
     """Download file and upload to Catbox"""
     try:
-        await status_msg.edit(content="⬇️ Downloading audio file...")
+        await status_msg.edit(
+            content=f"⬇️ Downloading file..."
+        )
         
         async with session.get(download_url, timeout=180) as file_response:
             if file_response.status != 200:
@@ -185,11 +213,15 @@ async def utils_setup(bot):
     bot.tree.add_command(SayCommands())
 
     # ── download command ────────────────────────────────────────────────
-    @bot.tree.command(name="download", description="Download audio from a YouTube or Spotify URL.")
-    @discord.app_commands.describe(url="YouTube or Spotify URL")
+    @bot.tree.command(name="download", description="Download audio or video from a YouTube or Spotify URL.")
+    @discord.app_commands.describe(url="YouTube or Spotify URL", format="audio or video")
     @discord.app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     @discord.app_commands.allowed_installs(guilds=True, users=True)
-    async def download(interaction: discord.Interaction, url: str):
+    async def download(
+        interaction: discord.Interaction,
+        url: str,
+        format: Literal["audio", "video"] = "audio"
+    ):
         await interaction.response.defer()
         status_msg = await interaction.followup.send("🔄 Processing your request...")
 
@@ -202,22 +234,36 @@ async def utils_setup(bot):
                     await status_msg.edit(content="🔍 Resolving Spotify track...")
                     search_query, display_name = await resolve_spotify(url)
                     await status_msg.edit(content=f"🎵 Found: **{display_name}** — searching YouTube...")
-                except Exception as e:
-                    await status_msg.edit(content=f"❌ Couldn't resolve Spotify track: {e}")
+                except Exception:
+                    await status_msg.edit(content="❌ Couldn't find that Spotify track. Make sure it's a valid track URL (not a playlist or album).")
                     return
 
-            await status_msg.edit(content="⬇️ Downloading audio...")
+            await status_msg.edit(content=f"⬇️ Downloading {format}...")
 
             with tempfile.TemporaryDirectory() as tmpdir:
                 try:
                     file_path, title = await asyncio.get_event_loop().run_in_executor(
-                        None, lambda: download_with_ytdlp(search_query, tmpdir)
+                        None,
+                        lambda: download_with_ytdlp(search_query, tmpdir, audio_only=(format == "audio"))
                     )
                 except TimeoutError:
-                    await status_msg.edit(content="❌ Download timed out.")
+                    await status_msg.edit(content="❌ Download timed out — the file might be too large or the server is slow.")
                     return
-                except Exception as e:
-                    await status_msg.edit(content=f"❌ yt-dlp error: {e}")
+                except yt_dlp.utils.DownloadError as e:
+                    msg = str(e)
+                    if "Private video" in msg:
+                        await status_msg.edit(content="❌ That video is private.")
+                    elif "This video is not available" in msg or "Video unavailable" in msg:
+                        await status_msg.edit(content="❌ That video isn't available (it may be region-locked or deleted).")
+                    elif "age" in msg.lower():
+                        await status_msg.edit(content="❌ That video is age-restricted and can't be downloaded.")
+                    elif "max filesize" in msg.lower() or "File is larger" in msg:
+                        await status_msg.edit(content="❌ That file exceeds the 200MB limit.")
+                    else:
+                        await status_msg.edit(content="❌ Couldn't download that video. It may be unavailable or unsupported.")
+                    return
+                except Exception:
+                    await status_msg.edit(content="❌ Something went wrong during download. Try a different URL.")
                     return
 
                 file_size_mb = os.path.getsize(file_path) / (1024 * 1024)
@@ -227,20 +273,25 @@ async def utils_setup(bot):
                 if file_size_mb <= 25:
                     await status_msg.edit(content=f"📤 Uploading to Discord ({file_size_mb:.1f}MB)...")
                     discord_file = discord.File(fp=file_path, filename=filename)
-                    await interaction.followup.send(content=f"✅ **{label}**", file=discord_file)
+                    await interaction.followup.send(content=f"✅ **{label}** ({format})", file=discord_file)
                     await status_msg.edit(content="✅ Done.")
                 else:
-                    await status_msg.edit(content=f"📦 File is {file_size_mb:.1f}MB — uploading to Catbox...")
-                    async with aiohttp.ClientSession() as session:
-                        catbox_url = await upload_to_catbox(session, file_path, filename)
-                    if catbox_url.startswith("https://"):
-                        await interaction.followup.send(content=f"✅ **{label}**\n{catbox_url}")
-                        await status_msg.edit(content="✅ Done.")
-                    else:
-                        await status_msg.edit(content=f"❌ Catbox upload failed: {catbox_url}")
+                    await status_msg.edit(content=f"📦 File is {file_size_mb:.1f}MB — too large for Discord, uploading to Catbox...")
+                    try:
+                        async with aiohttp.ClientSession() as session:
+                            catbox_url = await upload_to_catbox(session, file_path, filename)
+                        if catbox_url.startswith("https://"):
+                            await interaction.followup.send(content=f"✅ **{label}** ({format})\n{catbox_url}")
+                            await status_msg.edit(content="✅ Done.")
+                        else:
+                            await status_msg.edit(content="❌ Catbox upload failed. Try a shorter video or try again later.")
+                    except asyncio.TimeoutError:
+                        await status_msg.edit(content="❌ Catbox upload timed out. The file might be too large.")
+                    except Exception:
+                        await status_msg.edit(content="❌ Couldn't upload to Catbox. Try again later.")
 
         except Exception as e:
-            await status_msg.edit(content=f"❌ Unexpected error: {e}")
+            await status_msg.edit(content=f"❌ Something unexpected went wrong. Try again later.\n\n Error: ```log\n{str(e)}```")
 
 
 async def handle_pin(message):

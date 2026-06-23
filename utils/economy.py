@@ -3,7 +3,6 @@ import aiosqlite
 import random
 
 import discord
-from discord.abc import T
 from utils.userbase.database import DB_PATH
 
 async def add_dabloons(user_id: int, amount: int):
@@ -69,14 +68,14 @@ async def set_private_account(discord_id: int, is_private: bool):
         )
         await db.commit()
 
-async def clean_leaderboard_data(data: list[tuple[str, int]]) -> list[tuple[str, int]]:
+async def clean_leaderboard_data(data: list[tuple[str, int, str]]) -> list[tuple[str, int]]:
     """
     Remove private accounts from leaderboard data and replace discord IDs with mentions.
     """
     cleaned_data = []
-    for discord_id, value in data:
+    for discord_id, value, username in data:
         if not await is_private_account(discord_id):
-            cleaned_data.append((f"<@{discord_id}>", value, discord_id))
+            cleaned_data.append((f"@{username}", value, discord_id))
     return cleaned_data
 
 async def get_leaderboard(type: Literal["money", "level", "actions received", "action given", "duck clicker", "ttt", "ttt streak"]) -> list[tuple[int, int]]:
@@ -85,7 +84,7 @@ async def get_leaderboard(type: Literal["money", "level", "actions received", "a
     if type == "money":
         async with aiosqlite.connect("data/user.db") as db:
             cursor = await db.execute(
-                "SELECT discord_id, amber_dabloons FROM users ORDER BY amber_dabloons DESC LIMIT 10"
+                "SELECT discord_id, amber_dabloons, username FROM users ORDER BY amber_dabloons DESC LIMIT 10"
             )
             data = await cursor.fetchall()
             return await clean_leaderboard_data(data)
@@ -93,7 +92,7 @@ async def get_leaderboard(type: Literal["money", "level", "actions received", "a
     elif type == "level":
         async with aiosqlite.connect("data/user.db") as db:
             cursor = await db.execute(
-                "SELECT discord_id, level FROM users ORDER BY level DESC, experience DESC LIMIT 10"
+                "SELECT discord_id, level, username FROM users ORDER BY level DESC, experience DESC LIMIT 10"
             )
             data = await cursor.fetchall()
             return await clean_leaderboard_data(data)
@@ -101,7 +100,7 @@ async def get_leaderboard(type: Literal["money", "level", "actions received", "a
     elif type == "actions received":
         async with aiosqlite.connect("data/user.db") as db:
             cursor = await db.execute("""
-                SELECT u.discord_id, SUM(ac.count) AS total_received
+                SELECT u.discord_id, SUM(ac.count) AS total_received, u.username
                 FROM action_counts ac
                 JOIN users u ON u.id = ac.target_id
                 GROUP BY ac.target_id
@@ -114,7 +113,7 @@ async def get_leaderboard(type: Literal["money", "level", "actions received", "a
     elif type == "action given":
         async with aiosqlite.connect("data/user.db") as db:
             cursor = await db.execute("""
-                SELECT u.discord_id, SUM(ac.count) AS total_given
+                SELECT u.discord_id, SUM(ac.count) AS total_given, u.username
                 FROM action_counts ac
                 JOIN users u ON u.id = ac.actor_id
                 GROUP BY ac.actor_id
@@ -127,7 +126,7 @@ async def get_leaderboard(type: Literal["money", "level", "actions received", "a
     elif type == "duck clicker":
         async with aiosqlite.connect("data/user.db") as db:
             cursor = await db.execute("""
-                SELECT u.discord_id, g.duck_clicker_current_score AS score
+                SELECT u.discord_id, g.duck_clicker_current_score AS score, u.username
                 FROM games g
                 JOIN users u ON u.id = g.user_id
                 ORDER BY score DESC
@@ -139,7 +138,7 @@ async def get_leaderboard(type: Literal["money", "level", "actions received", "a
     elif type == "ttt":
         async with aiosqlite.connect("data/user.db") as db:
             cursor = await db.execute("""
-                SELECT u.discord_id, g.ttt_wins AS wins
+                SELECT u.discord_id, g.ttt_wins AS wins, u.username
                 FROM games g
                 JOIN users u ON u.id = g.user_id
                 ORDER BY wins DESC
@@ -151,7 +150,7 @@ async def get_leaderboard(type: Literal["money", "level", "actions received", "a
     elif type == "ttt streak":
         async with aiosqlite.connect("data/user.db") as db:
             cursor = await db.execute("""
-                SELECT u.discord_id, g.ttt_streak AS streak
+                SELECT u.discord_id, g.ttt_streak AS streak, u.username
                 FROM games g
                 JOIN users u ON u.id = g.user_id
                 ORDER BY streak DESC

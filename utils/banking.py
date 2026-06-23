@@ -176,7 +176,7 @@ class ProfileView(ui.View):
 
         balance = await get_dabloons(await get_user_id_from_discord(self.discord_id))
 
-        if is_owner(discord_id):
+        if await is_owner(self.discord_id):
             greeting = "Look it's the owner of Amber! 👑"
         else:
             greeting = f"hello there, duckling!"

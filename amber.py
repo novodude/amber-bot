@@ -10,10 +10,11 @@ uses the built-in synthesis engine for cat messages instead.
 
 import os
 import sys
+import sqlite3
 import subprocess
 import platform
-import json
 from pathlib import Path
+
 
 REPO_URL     = "https://github.com/novodude/amber-bot.git"
 HF_MODEL_ID  = "Novodude/domesticated-LLM"   # HuggingFace repo
@@ -51,6 +52,18 @@ def yesno(prompt: str, default_yes: bool = False) -> bool:
         return default_yes
     return answer in ("y", "yes")
 
+def require(prompt: str) -> str:
+    while True:
+        value = input(f"  {prompt}").strip()
+        if value:
+            return value
+        print("  This field is required. Please enter a value.")
+
+def add_owner_id(user_id: int):
+    with sqlite3.connect("data/owner.db") as db:
+        db.execute("INSERT INTO user (user_id, role) VALUES (?, owner)", (user_id))
+        db.commit()
+
 def using_ai():
     global USING_AI
     print("  The domesticated-LLM generates AI cat messages.")
@@ -69,7 +82,7 @@ def using_ai():
 # ── Steps ─────────────────────────────────────────────────────────────────────
 
 def step_check_git():
-    banner("1/7 — Checking for updates")
+    banner("1/8 — Checking for updates")
     if Path(".git").exists():
         code = run(["git", "pull", "--ff-only"])
         if code != 0:
@@ -80,7 +93,7 @@ def step_check_git():
 
 
 def step_venv():
-    banner("2/7 — Setting up virtual environment")
+    banner("2/8 — Setting up virtual environment")
     if not VENV_DIR.exists():
         run([PYTHON, "-m", "venv", str(VENV_DIR)])
         print("  Virtual environment created.")
@@ -89,9 +102,8 @@ def step_venv():
 
 
 
-
 def step_install():
-    banner("3/7 — Installing dependencies")
+    banner("3/8 — Installing dependencies")
 
     using_ai()
 
@@ -124,7 +136,7 @@ def step_model():
     if not USING_AI:
         return
 
-    banner("4/7 — domesticated-LLM")
+    banner("4/8 — domesticated-LLM")
 
     # Already downloaded — nothing to decide
     if MODEL_DIR.exists() and any(MODEL_DIR.iterdir()):
@@ -156,7 +168,7 @@ print("Model saved to domesticated-LLM/")
 
 
 def step_check_files():
-    banner("5/7 — Checking required files")
+    banner("5/8 — Checking required files")
     required      = ["main.py", "requirements.txt"]
     required_dirs = ["commands", "utils"]
     all_ok        = True
@@ -181,7 +193,7 @@ def step_check_files():
 
 
 def step_env():
-    banner("6/7 — API keys setup")
+    banner("6/8 — API keys setup")
 
     existing = {}
     if ENV_FILE.exists():
@@ -220,9 +232,14 @@ def step_env():
     else:
         print("  All keys present.")
 
+def step_add_owner():
+    banner("7/8 — adding bot owner")
+    user_id = int(require("Enter your Discord user ID (the bot owner): "))
+    add_owner_id(user_id)
+    print(f"  Bot owner added with ID: {user_id}")
 
 def step_run():
-    banner("7/7 — Starting Amber")
+    banner("8/8 — Starting Amber")
 
     # Remind user which message engine is active
     if MODEL_DIR.exists() and any(MODEL_DIR.iterdir()):
@@ -250,4 +267,5 @@ if __name__ == "__main__":
     step_model()
     step_check_files()
     step_env()
+    step_add_owner()
     step_run()

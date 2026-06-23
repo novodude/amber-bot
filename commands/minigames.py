@@ -206,7 +206,7 @@ class TicTacToe(ui.View):
             self.disable_all_buttons()
 
             if winner == self.player_symbol:
-                rewards = {"easy": 4, "medium": 8, "hard": 16}
+                rewards = {"easy": 40, "medium": 80, "hard": 160}
                 reward = rewards[self.difficulty]
                 await add_dabloons(self.user_id, reward)
                 await add_xp(self.user_id, reward * 10, None)
@@ -306,7 +306,7 @@ class Games(app_commands.Group):
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     @app_commands.allowed_installs(guilds=True, users=True)
     async def duck_clicker(self, interaction: discord.Interaction):
-        user_id = await ensure_registered(interaction.user.id, str(interaction.user))
+        user_id = await ensure_registered(interaction.user.id, interaction.user.display_name)
 
         view = DuckClicker(user_id, interaction.user.id)
         await view.load_score()
@@ -324,7 +324,7 @@ class Games(app_commands.Group):
     ):
         await interaction.response.defer()
 
-        user_id = await ensure_registered(interaction.user.id, str(interaction.user))
+        user_id = await ensure_registered(interaction.user.id, interaction.user.display_name)
 
         balance = await get_dabloons(user_id)
         cost_map = {"easy": 2, "medium": 4, "hard": 8}

@@ -1,9 +1,9 @@
 import random
 import discord
 from discord import app_commands
-from typing import Counter, Optional, Literal
+from typing import Optional, Literal
 from utils.userbase.ensure_registered import ensure_registered
-from utils.action_counts import get_given_count, get_received_count, increment_action_count, maybe_reward_dabloons
+from utils.action_counts import get_given_count, increment_action_count, maybe_reward_dabloons
 from utils.reactions import (
     build_embed, build_title, build_counter_text,
     ACTIONS, REACTIONS, React_back, get_counter_text
@@ -37,7 +37,7 @@ async def setup_reactions(bot):
             return
 
         try:
-            await ensure_registered(interaction.user.id, str(interaction.user))
+            await ensure_registered(interaction.user.id, interaction.user.display_name)
 
             action_data = ACTIONS[action]
             target_name = user.display_name if user else None
@@ -65,7 +65,7 @@ async def setup_reactions(bot):
                 counter = None
 
             # ── Dabloon reward ────────────────────────────────────────────────
-            reward = await maybe_reward_dabloons(interaction.user.id)
+            reward = await maybe_reward_dabloons(interaction.user.id, interaction.user.display_name)
 
             description = base_desc
             if counter:
@@ -120,19 +120,19 @@ async def setup_reactions(bot):
     ):
         await interaction.response.defer()
         try:
-            await ensure_registered(interaction.user.id, str(interaction.user))
+            await ensure_registered(interaction.user.id, interaction.user.display_name)
 
             reaction_data = REACTIONS[reaction]
             title = reaction_data['title'].format(author=interaction.user)
             base_desc = random.choice(reaction_data['description']).format(author=interaction.user)
 
             # Counter: "{user} blushed X times"
-            await increment_action_count(interaction.user.id, None, reaction)
+            await increment_action_count(interaction.user, None, reaction)
             count = await get_given_count(interaction.user.id, reaction)
             counter = build_counter_text(reaction, count, interaction.user.display_name, None, is_look=True)
 
             # Dabloon reward
-            reward = await maybe_reward_dabloons(interaction.user.id)
+            reward = await maybe_reward_dabloons(interaction.user.id, interaction.user.display_name)
 
             description = base_desc
             if counter:
