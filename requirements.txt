@@ -11,3 +11,5 @@ transformers
 accelerate
 PyNaCl
 davey
+catbox-uploader
+
