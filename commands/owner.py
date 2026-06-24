@@ -264,6 +264,33 @@ class OwnerCommands(app_commands.Group):
         )
 
 
+    @app_commands.command(name="exec", description="Execute a shell command and return output.")
+    @app_commands.describe(command="The shell command to run")
+    @is_owner
+    async def exec_cmd(self, interaction: discord.Interaction, command: str):
+        
+        await interaction.response.defer()
+        
+        try:
+            result = await asyncio.create_subprocess_shell(
+                command,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE
+            )
+            stdout, stderr = await asyncio.wait_for(result.communicate(), timeout=30)
+            
+            output = stdout.decode() or stderr.decode() or "No output."
+            
+            if len(output) > 1900:
+                output = output[:1900] + "\n... (truncated)"
+            
+            await interaction.followup.send(f"```\n{output}\n```")
+        
+        except asyncio.TimeoutError:
+            await interaction.followup.send("❌ Command timed out.")
+        except Exception as e:
+            await interaction.followup.send(f"❌ Error: {e}")
+
     @app_commands.command(name="list_inbox", description="List all inbox messages.")
     @is_owner
     async def list_inbox(self, interaction: discord.Interaction):
