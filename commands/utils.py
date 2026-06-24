@@ -55,19 +55,21 @@ def download_with_ytdlp(video_url, output_path, audio_only=True):
             "preferredcodec": "mp3",
             "preferredquality": "0",
         }],
-        "max_filesize": 400 * 1024 * 1024,
+        "max_filesize": 600 * 1024 * 1024,
         "quiet": True,
         "no_warnings": True
     }
 
     ydl_opts_video = {
-        "format": "bestvideo+bestaudio/best",
+        # Caps the video resolution at 480p, then adds best audio. 
+        "format": "bestvideo[height<=480]+bestaudio/best[height<=480]/best",
         "outtmpl": os.path.join(output_path, "%(title)s.%(ext)s"),
         "merge_output_format": "mp4",
-        "max_filesize": 400 * 1024 * 1024,
+        "max_filesize": 600 * 1024 * 1024,
         "quiet": True,
         "no_warnings": True
     }
+
 
     ydl_opts = ydl_opts_audio if audio_only else ydl_opts_video
 
@@ -109,7 +111,7 @@ async def download_and_upload(interaction, session, download_url, title, status_
             file_size_mb = len(file_data) / (1024 * 1024)
             
             if file_size_mb > 200:
-                await status_msg.edit(content=f"❌ File too large: {file_size_mb:.1f}MB (max 400MB)")
+                await status_msg.edit(content=f"❌ File too large: {file_size_mb:.1f}MB (max 600MB)")
                 return
             
             await status_msg.edit(content=f"📤 Sending file to Discord ({file_size_mb:.1f}MB)...")
