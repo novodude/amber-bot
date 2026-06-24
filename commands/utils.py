@@ -15,10 +15,17 @@ import re
 async def upload_to_catbox(session, file_path, filename):
     """Upload a file to Catbox anonymously and return the URL"""
     url = "https://catbox.moe/user/api.php"
+    
+    # Spoof a standard browser to bypass Cloudflare/bot blocks
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+    }
+    
     with open(file_path, "rb") as f:
         form = aiohttp.FormData()
         form.add_field("reqtype", "fileupload")
-        form.add_field("userhash", "")
+        # Omitted userhash entirely for anonymous uploads
+        
         mime_type, _ = mimetypes.guess_type(filename)
         form.add_field(
             "fileToUpload",
@@ -26,16 +33,25 @@ async def upload_to_catbox(session, file_path, filename):
             filename=filename,
             content_type=mime_type or "application/octet-stream"
         )
-        async with session.post(url, data=form, timeout=120) as resp:
+        
+        # Pass the headers here
+        async with session.post(url, data=form, headers=headers, timeout=120) as resp:
             return await resp.text()
 
 async def upload_to_litterbox(session, file_path, filename):
     """Upload a file to Litterbox anonymously and return the URL"""
     url = "https://litterbox.catbox.moe/user/api.php"
+    
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+    }
+    
     with open(file_path, "rb") as f:
         form = aiohttp.FormData()
         form.add_field("reqtype", "fileupload")
-        form.add_field("userhash", "")
+        
+        form.add_field("time", "24h") 
+        
         mime_type, _ = mimetypes.guess_type(filename)
         form.add_field(
             "fileToUpload",
@@ -43,7 +59,8 @@ async def upload_to_litterbox(session, file_path, filename):
             filename=filename,
             content_type=mime_type or "application/octet-stream"
         )
-        async with session.post(url, data=form, timeout=120) as resp:
+        
+        async with session.post(url, data=form, headers=headers, timeout=120) as resp:
             return await resp.text()
 
 def download_with_ytdlp(video_url, output_path, audio_only=True):
