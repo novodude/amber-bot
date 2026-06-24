@@ -29,6 +29,23 @@ async def upload_to_catbox(session, file_path, filename):
         async with session.post(url, data=form, timeout=120) as resp:
             return await resp.text()
 
+async def upload_to_litterbox(session, file_path, filename):
+    """Upload a file to Litterbox anonymously and return the URL"""
+    url = "https://litterbox.catbox.moe/user/api.php"
+    with open(file_path, "rb") as f:
+        form = aiohttp.FormData()
+        form.add_field("reqtype", "fileupload")
+        form.add_field("userhash", "")
+        mime_type, _ = mimetypes.guess_type(filename)
+        form.add_field(
+            "fileToUpload",
+            f,
+            filename=filename,
+            content_type=mime_type or "application/octet-stream"
+        )
+        async with session.post(url, data=form, timeout=120) as resp:
+            return await resp.text()
+
 def download_with_ytdlp(video_url, output_path, audio_only=True):
     ydl_opts_audio = {
         "format": "bestaudio/best",
@@ -38,7 +55,7 @@ def download_with_ytdlp(video_url, output_path, audio_only=True):
             "preferredcodec": "mp3",
             "preferredquality": "0",
         }],
-        "max_filesize": 200 * 1024 * 1024,
+        "max_filesize": 400 * 1024 * 1024,
         "quiet": True,
         "no_warnings": True
     }
@@ -47,7 +64,7 @@ def download_with_ytdlp(video_url, output_path, audio_only=True):
         "format": "bestvideo+bestaudio/best",
         "outtmpl": os.path.join(output_path, "%(title)s.%(ext)s"),
         "merge_output_format": "mp4",
-        "max_filesize": 200 * 1024 * 1024,
+        "max_filesize": 400 * 1024 * 1024,
         "quiet": True,
         "no_warnings": True
     }
@@ -92,7 +109,7 @@ async def download_and_upload(interaction, session, download_url, title, status_
             file_size_mb = len(file_data) / (1024 * 1024)
             
             if file_size_mb > 200:
-                await status_msg.edit(content=f"❌ File too large: {file_size_mb:.1f}MB (max 200MB)")
+                await status_msg.edit(content=f"❌ File too large: {file_size_mb:.1f}MB (max 400MB)")
                 return
             
             await status_msg.edit(content=f"📤 Sending file to Discord ({file_size_mb:.1f}MB)...")
@@ -277,18 +294,23 @@ async def utils_setup(bot):
                     await status_msg.edit(content="✅ Done.")
                 else:
                     await status_msg.edit(content=f"📦 File is {file_size_mb:.1f}MB — too large for Discord, uploading to Catbox...")
-                    try:
-                        async with aiohttp.ClientSession() as session:
+                    async with aiohttp.ClientSession() as session:
+                        try:
                             catbox_url = await upload_to_catbox(session, file_path, filename)
-                        if catbox_url.startswith("https://"):
-                            await interaction.followup.send(content=f"✅ **{label}** ({format})\n{catbox_url}")
-                            await status_msg.edit(content="✅ Done.")
-                        else:
-                            await status_msg.edit(content="❌ Catbox upload failed. Try a shorter video or try again later.")
-                    except asyncio.TimeoutError:
-                        await status_msg.edit(content="❌ Catbox upload timed out. The file might be too large.")
-                    except Exception:
-                        await status_msg.edit(content="❌ Couldn't upload to Catbox. Try again later.")
+                            if catbox_url.startswith("https://"):
+                                await interaction.followup.send(content=f"✅ **{label}** ({format})\n{catbox_url}")
+                                await status_msg.edit(content="✅ Done.")
+                            else:
+                                catbox_url = await upload_to_litterbox(session, file_path, filename)
+                                if catbox_url.startswith("https://"):
+                                    await interaction.followup.send(content=f"✅ **{label}** ({format})\n{catbox_url}")
+                                    await status_msg.edit(content="✅ Done.")
+                                else:
+                                    await status_msg.edit(content="❌ Couldn't upload to Catbox or Litterbox. Try again later.")
+                        except asyncio.TimeoutError:
+                            await status_msg.edit(content="❌ Catbox upload timed out. The file might be too large.")
+                        except Exception:
+                            await status_msg.edit(content="❌ Couldn't upload to Catbox. Try again later.")
 
         except Exception as e:
             await status_msg.edit(content=f"❌ Something unexpected went wrong. Try again later.\n\n Error: ```log\n{str(e)}```")

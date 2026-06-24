@@ -32,7 +32,7 @@ from utils.radio.database import (
 )
 
 FFMPEG_STREAM_OPTIONS = (
-    "-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5"
+    "-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5 -vn"
 )
 
 
@@ -443,7 +443,7 @@ class RadioCommands(app_commands.Group):
             player.current_index += 1
         await self._play_current(guild_id)
 
-    async def _update_message(self, guild_id: int):
+    async def _update_message(self, guild_id: int, interaction: discord.Interaction | None = None):
         player = self._get_player(guild_id)
         if not player.message:
             return
@@ -452,7 +452,13 @@ class RadioCommands(app_commands.Group):
             content = "** **" if player._toggle else "**  **"
             embed = self._create_embed(player)
             view = await self._create_view(guild_id, player.user_id)
-            await player.message.edit(content=content, embed=embed, view=view)
+
+            # If triggered by a button, use the active interaction to respond safely
+            if interaction and not interaction.response.is_done():
+                await interaction.response.edit_message(content=content, embed=embed, view=view)
+            else:
+                # Fallback if called by an automated background task
+                await player.message.edit(content=content, embed=embed, view=view)
         except Exception as e:
             print(f"[radio] _update_message failed: {e}")
 
@@ -603,16 +609,16 @@ class RadioCommands(app_commands.Group):
         player.volume = max(0.0, player.volume - 0.1)
         if player.voice_client and player.voice_client.source:
             player.voice_client.source.volume = player.volume
-        await self._update_message(interaction.guild_id)
-        await interaction.response.send_message(f"🔉 {int(player.volume * 100)}%", ephemeral=True)
+
+        await self._update_message(interaction.guild_id, interaction=interaction)
 
     async def _btn_vol_up(self, interaction: discord.Interaction):
         player = self._get_player(interaction.guild_id)
         player.volume = min(1.0, player.volume + 0.1)
         if player.voice_client and player.voice_client.source:
             player.voice_client.source.volume = player.volume
-        await self._update_message(interaction.guild_id)
-        await interaction.response.send_message(f"🔊 {int(player.volume * 100)}%", ephemeral=True)
+
+        await self._update_message(interaction.guild_id, interaction=interaction)
 
     async def _btn_loop(self, interaction: discord.Interaction):
         player = self._get_player(interaction.guild_id)
@@ -752,18 +758,21 @@ class RadioCommands(app_commands.Group):
             player.current_index = 0
             embed = self._create_embed(player)
             view = await self._create_view(guild_id, interaction.user.id)
-            player.message = await interaction.followup.send(content="** **", embed=embed, view=view)
+            
+            await interaction.followup.send("▶️ Starting Mix Mode...", ephemeral=True)
+            
+            player.message = await interaction.channel.send(content="** **", embed=embed, view=view)
+            
             await self._play_current(guild_id)
             return
 
         if not playlist_id:
             embed = self._create_embed(player)
             view = await self._create_view(guild_id, interaction.user.id)
-            player.message = await interaction.followup.send(content="** **", embed=embed, view=view)
-            await interaction.followup.send(
-                "💡 No playlist selected — use the 🔍 button to search for songs, or pick a playlist from the dropdown.",
-                ephemeral=True,
-            )
+            
+            await interaction.followup.send("Have fun!")
+            
+            player.message = await interaction.channel.send(content="** **", embed=embed, view=view)
             return
 
         row = await get_playlist(playlist_id)
@@ -786,7 +795,11 @@ class RadioCommands(app_commands.Group):
 
         embed = self._create_embed(player)
         view = await self._create_view(guild_id, interaction.user.id)
-        player.message = await interaction.followup.send(content="** **", embed=embed, view=view)
+        
+        await interaction.followup.send(f"▶️ Starting **{name}**...")
+        
+        player.message = await interaction.channel.send(content="** **", embed=embed, view=view)
+        
         await self._play_current(guild_id)
 
     @app_commands.command(name="search", description="Search YouTube and add songs to your library")
