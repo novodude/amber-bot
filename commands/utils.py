@@ -1,7 +1,7 @@
 from datetime import datetime
 from discord import app_commands
-from catbox import CatboxUploader
 from typing import Literal, Optional
+import requests
 import shutil
 import tempfile
 import asyncio
@@ -11,6 +11,18 @@ import yt_dlp
 import io
 import os
 import re
+
+
+def upload_to_uguu(file_path, filename):
+    with open(file_path, 'rb') as f:
+        response = requests.post(
+            "https://uguu.se/upload.php",
+            files={'files[]': (filename, f)}
+        )
+    data = response.json()
+    if data.get("success"):
+        return data["files"][0]["url"]
+    return None
 
 def download_with_ytdlp(video_url, output_path, audio_only=True):
     ydl_opts_audio = {
@@ -277,27 +289,23 @@ async def utils_setup(bot):
                 await interaction.followup.send(content=f"✅ **{label}** ({format})", file=discord_file)
                 await status_msg.edit(content="✅ Done.")
             else:
-                await status_msg.edit(content=f"📦 File is {file_size_mb:.1f}MB — too large for Discord, uploading to Catbox...")
+                await status_msg.edit(content=f"📦 File is {file_size_mb:.1f}MB — too large for Discord, uploading to Uguu.se...")
                 try:
-                    uploader = CatboxUploader()
-                    
 
-                    catbox_url = await asyncio.get_event_loop().run_in_executor(
+                    url = await asyncio.get_event_loop().run_in_executor(
                         None,
-                        uploader.upload_file,
-                        file_path,
-                        600
+                        lambda: upload_to_uguu(file_path, filename)
                     )
-                    
-                    if catbox_url and catbox_url.startswith("https://"):
-                        await interaction.followup.send(content=f"✅ **{label}** ({format})\n{catbox_url}")
+
+                    if url and url.startswith("https://"):
+                        await interaction.followup.send(content=f"✅ **{label}** ({format})\n{url}")
                         await status_msg.edit(content="✅ Done.")
                     else:
-                        await status_msg.edit(content=f"❌ Couldn't upload to Litterbox. Response: {catbox_url}")
+                        await status_msg.edit(content=f"❌ Couldn't upload to uguu.se Response: {url}")
                 except asyncio.TimeoutError:
-                    await status_msg.edit(content="❌ Catbox upload timed out. The file might be too large.")
-                except Exception as e:
-                    await status_msg.edit(content="❌ Couldn't upload to Catbox. Try again later.")
+                    await status_msg.edit(content="❌ Uguu.se upload timed out. The file might be too large.")
+                except Exception:
+                    await status_msg.edit(content="❌ Couldn't upload to Uguu.se Try again later.")
 
         finally:
             try:
