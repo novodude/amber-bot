@@ -330,7 +330,7 @@ class OwnerCommands(app_commands.Group):
             await interaction.response.send_message(f"Could not send a reply to user {user}. They might have DMs disabled.", ephemeral=True)
             return
 
-        owner_utils.log_action(interaction, f"Owner {interaction.user.id} claimed inbox message {inbox_id} and sent a reply.")
+        await owner_utils.log_action(interaction, f"Owner {interaction.user.id} claimed inbox message {inbox_id} and sent a reply.")
         await interaction.response.send_message(f"You have claimed inbox message {inbox_id} and sent your reply.", ephemeral=True)
 
     @app_commands.command(name="userbase", description="Show userbase statistics.")
