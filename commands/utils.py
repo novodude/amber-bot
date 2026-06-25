@@ -28,7 +28,7 @@ def download_with_ytdlp(video_url, output_path, audio_only=True):
 
     ydl_opts_video = {
         # Caps the video resolution at 480p, then adds best audio. 
-        "format": "bestvideo+bestaudio" if not is_youtube_url(video_url) else "bestvideo[height<=480]+bestaudio/best",
+        "format": "bestvideo+bestaudio" if not is_youtube_url(video_url) else "bestvideo[height<=360]+bestaudio/best",
         "outtmpl": os.path.join(output_path, "%(title)s.%(ext)s"),
         "merge_output_format": "mp4",
         "max_filesize": 600 * 1024 * 1024,
