@@ -2,7 +2,7 @@ from datetime import datetime
 from discord.ext import commands
 import utils.userbase.owner as owner_utils
 import utils.userbase.database as database
-from utils.userbase.database import DB_PATH, get_user_info
+from utils.userbase.database import DB_PATH, get_user_id_from_discord, get_user_info
 import utils.amber as amber_utils
 from utils.amber import InboxView
 from discord import app_commands
@@ -398,7 +398,7 @@ class OwnerCommands(app_commands.Group):
             await economy.add_dabloons_to_all(amount)
             await interaction.response.send_message(f"Gave {amount} dabloons to all users. Reason: {reason}", ephemeral=True)
         else:
-            user_id = await economy.get_user_id_from_discord(user.id)
+            user_id = await get_user_id_from_discord(user.id)
             if not user_id:
                 await interaction.response.send_message(f"User {user} is not registered in the database.", ephemeral=True)
                 return
