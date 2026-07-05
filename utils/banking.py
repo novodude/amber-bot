@@ -1,8 +1,10 @@
 import discord
 import aiosqlite
 from discord import ui
+from utils.userbase.database import clear_bio, get_bio, get_profile_data, has_custom_color, set_bio, set_profile_color
 from utils.userbase.owner import is_owner
-from utils.economy import get_dabloons, get_user_id_from_discord
+from utils.economy import get_dabloons
+from utils.userbase.database import get_user_id_from_discord
 from utils.action_counts import get_total_actions_performed, get_received_count
 
 class ColorSelect(ui.Select):
@@ -37,12 +39,7 @@ class ColorSelect(ui.Select):
 
         # For "custom" we just switch to it — the hex is already stored from the shop modal.
         # If they haven't set one yet, it falls back to gold gracefully.
-        async with aiosqlite.connect("data/user.db") as db:
-            await db.execute(
-                "UPDATE users SET profile_color = ? WHERE discord_id = ?",
-                (color_value, user_id)
-            )
-            await db.commit()
+        await set_profile_color(user_id, color_value)
 
         label = color_value.replace('_', ' ').title()
         embed = discord.Embed(
@@ -69,12 +66,7 @@ class SetBioModal(ui.Modal, title="Set Your Bio"):
     async def on_submit(self, interaction: discord.Interaction):
         new_bio = self.bio_input.value
         user_id = interaction.user.id
-        async with aiosqlite.connect("data/user.db") as db:
-            await db.execute(
-                "UPDATE users SET bio = ? WHERE discord_id = ?", (new_bio, user_id)
-            )
-            await db.commit()
-
+        await set_bio(user_id, new_bio)
         embed = discord.Embed(
             title="Bio Updated",
             description=f"Your bio has been updated to:\n\n{new_bio}",
@@ -103,13 +95,7 @@ class BioEditView(ui.View):
     async def clear_bio_button(self, interaction: discord.Interaction, button: ui.Button):
         if interaction.user.id != self.user_id:
             return
-        async with aiosqlite.connect("data/user.db") as db:
-            await db.execute(
-                "UPDATE users SET bio = ? WHERE discord_id = ?",
-                ("This user has no bio set.", interaction.user.id)
-            )
-            await db.commit()
-
+        await clear_bio(interaction.user.id)
         embed = discord.Embed(
             title="Bio Cleared",
             description="Your bio has been cleared.",
@@ -163,16 +149,11 @@ class ProfileView(ui.View):
 
         return colors.get(color_name, discord.Color.gold())
 
-    async def refresh_profile_message(self, interaction: discord.Interaction):
-        async with aiosqlite.connect("data/user.db") as db:
-            cursor = await db.execute(
-                "SELECT bio, profile_color, custom_hex_color FROM users WHERE discord_id = ?",
-                (self.discord_id,)
-            )
-            row = await cursor.fetchone()
-            bio        = row[0] if row and row[0] else "This user has no bio set."
-            color_name = row[1] if row and row[1] else "gold"
-            custom_hex = row[2] if row and row[2] else None
+    async def refresh_profile(self, interaction: discord.Interaction):
+        profile_data = await get_profile_data(interaction.user.id)
+        bio        = profile_data.get('bio', "This user has no bio set.")
+        color_name = profile_data.get('profile_color', "gold")
+        custom_hex = profile_data.get('custom_hex_color', None)
 
         balance = await get_dabloons(await get_user_id_from_discord(self.discord_id))
 
@@ -181,45 +162,13 @@ class ProfileView(ui.View):
         else:
             greeting = f"hello there, duckling!"
 
-        embed = discord.Embed(
-            title=f"good {greeting}, {interaction.user.name}!",
-            description=bio,
-            color=self.get_color(color_name, custom_hex)
-        )
-        embed.set_thumbnail(url=interaction.user.display_avatar.url)
-        embed.add_field(name="Dabloons Balance", value=f"🪙 {balance} dabloons", inline=False)
-        embed.set_footer(text="quacking good!")
-
-        await interaction.message.edit(embed=embed, view=self)
-
-    async def refresh_profile(self, interaction: discord.Interaction):
-        async with aiosqlite.connect("data/user.db") as db:
-            cursor = await db.execute(
-                "SELECT bio, profile_color, custom_hex_color FROM users WHERE discord_id = ?",
-                (self.discord_id,)
-            )
-            row = await cursor.fetchone()
-            bio        = row[0] if row and row[0] else "This user has no bio set."
-            color_name = row[1] if row and row[1] else "gold"
-            custom_hex = row[2] if row and row[2] else None
-
-        balance = await get_dabloons(await get_user_id_from_discord(self.discord_id))
-
-        current_hour = discord.utils.utcnow().hour
-        greeting_time = (
-            "morning"   if 5  <= current_hour < 12 else
-            "afternoon" if 12 <= current_hour < 17 else
-            "evening"   if 17 <= current_hour < 21 else
-            "night"
-        )
-
         embed = await build_profile_embed(
             discord_id=self.discord_id,
             user=interaction.user,
             balance=balance,
             bio=bio,
             color=self.get_color(color_name, custom_hex),
-            greeting_time=greeting_time,
+            greeting=greeting,
         )
 
         try:
@@ -237,13 +186,7 @@ class ProfileView(ui.View):
     async def edit_bio(self, interaction: discord.Interaction, button: ui.Button):
         if self.discord_id != interaction.user.id:
             return
-        async with aiosqlite.connect("data/user.db") as db:
-            cursor = await db.execute(
-                "SELECT bio FROM users WHERE discord_id = ?", (self.discord_id,)
-            )
-            row = await cursor.fetchone()
-            current_bio = row[0] if row and row[0] else "This user has no bio set."
-
+        current_bio = await get_bio(self.discord_id)
         embed = discord.Embed(
             title="✏️ Edit Your Bio",
             description=f"**Current Bio:**\n{current_bio}\n\nUse the buttons below to edit or clear your bio.",
@@ -259,13 +202,9 @@ class ProfileView(ui.View):
         if self.discord_id != interaction.user.id:
             return
         async with aiosqlite.connect("data/user.db") as db:
-            cursor = await db.execute(
-                "SELECT profile_color, custom_hex_color FROM users WHERE discord_id = ?",
-                (self.discord_id,)
-            )
-            row = await cursor.fetchone()
-            current_color = row[0] if row and row[0] else "gold"
-            custom_hex    = row[1] if row and row[1] else None
+            profile_data = await get_profile_data(self.discord_id)
+            current_color = profile_data.get('profile_color', 'gold')
+            custom_hex    = profile_data.get('custom_hex_color', None)
 
         label = current_color.replace('_', ' ').title()
         desc = f"**Current Color:** {label}"
@@ -283,12 +222,7 @@ class ProfileView(ui.View):
         customize_view.add_item(ColorSelect(self))
 
         # Show "Change Custom Color" button only if they've unlocked it
-        async with aiosqlite.connect("data/user.db") as db:
-            cursor = await db.execute(
-                "SELECT id FROM user_purchases WHERE user_id = (SELECT id FROM users WHERE discord_id = ?) AND item_name = 'Custom Color' AND active = 1",
-                (self.discord_id,)
-            )
-            has_custom = await cursor.fetchone() is not None
+        has_custom = await has_custom_color(self.discord_id)
 
         if has_custom:
             from commands.shop import HexColorModal

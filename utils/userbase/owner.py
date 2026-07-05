@@ -75,7 +75,8 @@ async def log_action(interaction: discord.Interaction, action: str):
     if log_channel_id:
         log_channel = interaction.client.get_channel(log_channel_id)
         if log_channel:
-            await log_channel.send(f"Action logged: {action}")
+            embed = discord.Embed(title="Action Logged", description=action, color=discord.Color.blue())
+            await log_channel.send(embed=embed)
 
 async def set_update_channel(channel_id: int):
     async with aiosqlite.connect(DB_PATH) as db:

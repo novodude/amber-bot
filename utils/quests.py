@@ -4,7 +4,8 @@ import discord
 import aiosqlite
 from datetime import date
 from utils.userbase.database import DB_PATH
-from utils.economy import add_dabloons, add_xp, get_user_id_from_discord, get_level
+from utils.economy import add_dabloons, add_xp, get_level
+from utils.userbase.database import get_user_id_from_discord
 from utils.userbase.ensure_registered import ensure_registered
 
 # ── Emoji pool ────────────────────────────────────────────────────────────────

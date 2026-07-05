@@ -324,3 +324,69 @@ async def get_userbase_stats():
                 "total_dabloons": row[2] or 0,
                 "average_dabloons": row[3] or 0
             }
+
+async def set_bio(user_id: int, bio: str):
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute("UPDATE users SET bio = ? WHERE discord_id = ?", (bio, user_id))
+        await db.commit()
+
+async def get_bio(user_id: int) -> str:
+    async with aiosqlite.connect(DB_PATH) as db:
+        cursor = await db.execute("SELECT bio FROM users WHERE discord_id = ?", (user_id,))
+        row = await cursor.fetchone()
+        return row[0] if row else "This user has no bio set."
+
+async def clear_bio(user_id: int):
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute(
+            "UPDATE users SET bio = ? WHERE discord_id = ?",
+            ("This user has no bio set.", user_id)
+        )
+        await db.commit()
+
+async def get_profile_data(user_id: int) -> dict:
+    async with aiosqlite.connect(DB_PATH) as db:
+        cursor = await db.execute(
+            "SELECT bio, profile_color, custom_hex_color FROM users WHERE discord_id = ?",
+            (user_id)
+        )
+        row = await cursor.fetchone()
+        return {
+            "bio": row[0] if row else None,
+            "profile_color": row[1] if row else None,
+            "custom_hex_color": row[2] if row else None
+        }
+
+async def set_profile_color(user_id: int, color: str):
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute(
+            "UPDATE users SET profile_color = ? WHERE discord_id = ?",
+            (color, user_id)
+        )
+        await db.commit()
+
+async def has_custom_color(user_id: int) -> bool:
+    async with aiosqlite.connect(DB_PATH) as db:
+        cursor = await db.execute(
+            "SELECT id FROM user_purchases WHERE user_id = (SELECT id FROM users WHERE discord_id = ?) AND item_name = 'Custom Color' AND active = 1",
+            (user_id)
+        )
+        has_custom = await cursor.fetchone() is not None
+        return has_custom
+
+async def get_user_id_from_discord(discord_id: int) -> int | None:
+    """Convert Discord ID to internal user ID
+    
+    Args:
+        discord_id: The Discord user's ID
+        
+    Returns:
+        Internal user ID or None if not found
+    """
+    async with aiosqlite.connect("data/user.db") as db:
+        cursor = await db.execute(
+            "SELECT id FROM users WHERE discord_id = ?",
+            (discord_id,)
+        )
+        row = await cursor.fetchone()
+        return row[0] if row else None

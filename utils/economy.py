@@ -1,9 +1,10 @@
 from typing import Literal
 import aiosqlite
 import random
-
 import discord
-from utils.userbase.database import DB_PATH
+from utils.userbase.ensure_registered import ensure_registered
+
+DB_PATH = "data/user.db"
 
 async def add_dabloons(user_id: int, amount: int):
     """Add dabloons to a user's account
@@ -161,54 +162,57 @@ async def get_leaderboard(type: Literal["money", "level", "actions received", "a
 
     
 
-async def get_user_id_from_discord(discord_id: int) -> int | None:
-    """Convert Discord ID to internal user ID
-    
-    Args:
-        discord_id: The Discord user's ID
-        
-    Returns:
-        Internal user ID or None if not found
-    """
-    async with aiosqlite.connect("data/user.db") as db:
-        cursor = await db.execute(
-            "SELECT id FROM users WHERE discord_id = ?",
-            (discord_id,)
-        )
-        row = await cursor.fetchone()
-        return row[0] if row else None
-
-
-
-
 # ── leveling and xp ─────────────────────────────────────────────────────────────
-# uses the database user ID, not the discord ID
-async def add_xp(user_id, amount: int | None, message: str | None) -> int | None:
+async def add_xp(user_id, amount: int | None, message: str | None):
     xp_amount = random.randint(5, 25) if amount is None else amount
-    xp_amount = int(xp_amount + len(message)) // 20   if message else xp_amount
+    if message:
+        xp_amount += len(message) // 20
+
     async with aiosqlite.connect(DB_PATH) as db:
         await db.execute(
             'UPDATE users SET experience = experience + ? WHERE id = ?',
             (xp_amount, user_id)
         )
         await db.commit()
-
         cursor = await db.execute(
             'SELECT experience, level FROM users WHERE id = ?',
             (user_id,)
         )
         row = await cursor.fetchone()
+        if row is None:
+            return None, 0
         xp, level = row[0], row[1]
-        xp_needed = int(100 * (level ** 1.2))
 
-        if xp >= xp_needed:
-            new_level = level + 1
+        new_level = level
+        reward_total = 0
+        xp_needed = int(100 * (level ** 1.2))
+        while xp >= xp_needed:
+            xp -= xp_needed
+            new_level += 1
+            reward_total += 500 * new_level
+            xp_needed = int(100 * (new_level ** 1.2))
+
+        if new_level != level:
             await db.execute(
-                'UPDATE users SET level = ?, experience = 0 WHERE id = ?',
-                (new_level, user_id)
+                'UPDATE users SET level = ?, amber_dabloons = amber_dabloons + ?, experience = ? WHERE id = ?',
+                (new_level, reward_total, xp, user_id)
             )
             await db.commit()
-            return new_level
+            return new_level, reward_total
+
+        return None, 0
+
+
+async def inform_level_up(interaction: discord.Interaction):
+    user_id = await ensure_registered(interaction.user.id, interaction.user.display_name)
+    new_level, reward = await add_xp(user_id, None, None)
+    if new_level:
+        embed = discord.Embed(
+            title="Level Up!",
+            description=f"You've reached level {new_level}!\nYou gained {reward} debloons as a reward :3\nquack on, {interaction.user.mention}!",
+            color=discord.Color.gold()
+        )
+        await interaction.channel.send(embed=embed, delete_after=10, reference=interaction.message)
 
 # uses the database user ID, not the discord ID
 async def get_level(user_id) -> int:

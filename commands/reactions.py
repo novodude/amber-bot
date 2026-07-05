@@ -1,13 +1,18 @@
 import random
 import discord
+import dotenv
 from discord import app_commands
-from typing import Optional, Literal
+from typing import Literal
+from utils.economy import inform_level_up
 from utils.userbase.ensure_registered import ensure_registered
 from utils.action_counts import get_given_count, increment_action_count, maybe_reward_dabloons
 from utils.reactions import (
     build_embed, build_title, build_counter_text,
-    ACTIONS, REACTIONS, React_back, get_counter_text
+    ACTIONS, REACTIONS, React_back, get_counter_text,
+    get_everyone_counter_text
 )
+
+api_key = dotenv.get_key(".env", "GIPHY_API")
 
 # ── Command setup ─────────────────────────────────────────────────────────────
 async def setup_reactions(bot):
@@ -26,10 +31,10 @@ async def setup_reactions(bot):
             'hug', 'kiss', 'pat', 'poke', 'cuddle', 'bite', 'kick', 'punch',
             'feed', 'highfive', 'dance', 'sleep', 'cry', 'smile', 'think',
             'wave', 'laugh', 'yeet', 'facepalm', 'baka', 'peck',
-            'run', 'stare', 'thumbsup', 'nya'
+            'run', 'stare', 'gamble', 'nya'
         ],
-        user: Optional[discord.User] = None,
-        everyone: Optional[bool] = False
+        user: discord.User | None,
+        everyone: bool | None = False
     ):
         try:
             await interaction.response.defer()
@@ -53,16 +58,20 @@ async def setup_reactions(bot):
             else:
                 base_desc = random.choice(action_data['desc_self']).format(user=interaction.user, author=interaction.user)
 
-            # ── Counter (only when targeting another real user) ───────────────
-            is_two_users_action = (
-                    user and user != interaction.user 
-                    and not user.bot and not everyone
-            )
+            # ── Counter ───────────────
+            
+            is_self_action = user and user == interaction.user or user is None and not everyone
 
-            if is_two_users_action:
-                counter = await get_counter_text(interaction, action, user)
+            if is_self_action:
+                user = interaction.user
+            
+            if everyone:
+                counter = await get_everyone_counter_text(interaction, action)
             else:
-                counter = None
+                counter = await get_counter_text(interaction, action, user)
+
+        
+
 
             # ── Dabloon reward ────────────────────────────────────────────────
             reward = await maybe_reward_dabloons(interaction.user.id, interaction.user.display_name)
@@ -98,7 +107,9 @@ async def setup_reactions(bot):
                 bot_embed = await build_embed(action_data['color'], bot_title, bot_desc, action, author=user)
                 await interaction.followup.send(embed=bot_embed)
 
+            await inform_level_up(interaction)
         except Exception as e:
+            e = str(e).replace(api_key, "[REDACTED]")
             embed = discord.Embed(
                 title="Error",
                 description=f"Something went wrong!\n```log\n\n{str(e)}\n\n```",

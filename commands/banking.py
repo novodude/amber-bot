@@ -7,11 +7,11 @@ from discord import app_commands
 from datetime import datetime, timedelta
 from utils.userbase.owner import is_owner
 from utils.banking import ProfileView, build_profile_embed
+from utils.userbase.database import get_user_id_from_discord
 from utils.userbase.ensure_registered import ensure_registered
 from utils.economy import (
-    add_dabloons, get_user_id_from_discord,
+    add_dabloons, is_private_account,
     get_dabloons, add_xp, get_level, get_xp,
-    is_private_account
 )
 
 
@@ -425,11 +425,11 @@ async def message_xp_handler(message):
         return
 
     user_id = await ensure_registered(message.author.id, message.author.display_name)
-    new_level = await add_xp(user_id, None, message.content)
+    new_level, reward = await add_xp(user_id, None, message.content)
     if new_level:
         embed = discord.Embed(
             title="Level Up!",
-            description=f"You've reached level {new_level}!\nquack on, {message.author.mention}!",
+            description=f"You've reached level {new_level}!\nYou gained {reward} debloons as a reward :3\nquack on, {message.author.mention}!",
             color=discord.Color.gold()
         )
         await message.channel.send(embed=embed, delete_after=10, reference=message)

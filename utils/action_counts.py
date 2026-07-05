@@ -2,7 +2,8 @@ import random
 from typing import Literal
 import aiosqlite
 import discord
-from utils.economy import get_user_id_from_discord, add_dabloons
+from utils.economy import add_dabloons
+from utils.userbase.database import get_user_id_from_discord
 from utils.userbase.ensure_registered import ensure_registered
 
 DB_PATH = "data/user.db"
@@ -22,7 +23,7 @@ REACTIONS = [
 
 # ── Count helpers ─────────────────────────────────────────────────────────────
 
-async def increment_action_count(actor_discord: discord.User, target_discord: discord.User | None, action: str) -> int:
+async def increment_action_count(actor_discord: discord.User, target_discord: discord.User | None, action: str):
     """
     Increment the action count for actor -> target -> action.
     target_discord_id can be None for /look or @everyone actions.
@@ -46,6 +47,29 @@ async def increment_action_count(actor_discord: discord.User, target_discord: di
         await db.commit()
 
 
+async def increment_action_count_to_everyone(actor_discord: discord.User, action: str):
+    actor_id = await get_user_id_from_discord(actor_discord.id)
+    async with aiosqlite.connect(DB_PATH) as db:
+        async with db.execute("SELECT id FROM users") as cursor:
+            user_ids = await cursor.fetchall()
+        for (target_id,) in user_ids:
+            await db.execute("""
+                INSERT INTO action_counts (actor_id, target_id, action, count)
+                VALUES (?, ?, ?, 1)
+                ON CONFLICT(actor_id, target_id, action)
+                DO UPDATE SET count = count + 1
+            """, (actor_id, target_id, action))
+        await db.commit()
+
+async def get_total_action_count(action: str) -> int:
+    """Get the total count for a specific action across all users."""
+    async with aiosqlite.connect(DB_PATH) as db:
+        cursor = await db.execute("""
+            SELECT COALESCE(SUM(count), 0) FROM action_counts
+            WHERE action = ?
+        """, (action,))
+        row = await cursor.fetchone()
+        return row[0] if row else 0
 
 async def get_action_count(actor_discord_id: int, target_discor_id: int | None, action: str) -> int:
     """Get the current count for actor -> target -> action."""

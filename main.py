@@ -1,3 +1,6 @@
+
+import asyncio
+
 # other libraries
 import os
 import logging
@@ -26,17 +29,19 @@ from commands.leaderboard import leaderboard_setup
 from commands.user import user_setup
 from commands.amber import amber_setup
 from commands.owner import owner_setup, updates_handler
+from commands.art import art_setup
 try:
     from commands.debugging import debug_setup
 except ImportError:
     pass
 # databases
+from utils.art.art import ArtUtils
 from utils.radio.database import init_radio_db
 from utils.userbase.database import init_user_db
 from utils.userbase.owner import init_owner_db
 from utils.quests import message_quest_handler
 from utils.pet import touch_owner_activity
-from utils.economy import get_user_id_from_discord
+from utils.userbase.database import get_user_id_from_discord
 from utils.amber import handle_delete_reply
 
 load_dotenv()
@@ -88,6 +93,7 @@ async def on_ready():
     await image_setup(bot)
     await anime_setup(bot)
     await owner_setup(bot)
+    await art_setup(bot)
     try:        await debug_setup(bot)
     except NameError: pass
     await leaderboard_setup(bot)

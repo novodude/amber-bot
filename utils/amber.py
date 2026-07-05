@@ -1,5 +1,3 @@
-import asyncio
-import functools
 import discord
 import utils.userbase.owner as owner
 from utils.userbase.database import get_user_info

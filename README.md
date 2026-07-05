@@ -229,6 +229,29 @@ Games integrate with the economy to reward or cost dabloons.
 
 ---
 
+### 🎨 Art
+
+Tools and generators to help you draw!
+
+| **/**                   | **description**                                                                           |
+| ----------------------- | ----------------------------------------------------------------------------------------- |
+| **`/art oc_maker`**     | Generate a character sheet with name, example cloth, color scheme and personality traits. |
+| **`/art pose`**         | Give you a random pose from a pool of images that is 160+ image.                          |
+| **`/art color_scheme`** | Generate a color scheme based on a base color.                                            |
+
+---
+
+### 🏭️ Generators
+
+Basically from the name they are generators :)
+
+| **/**                  | **description**                                           |
+| ---------------------- | --------------------------------------------------------- |
+| **`/generate name`**   | gives you name from a name list containing over 30k name. |
+| **`/generate traits`** | give you character traits with up to 25 at a time!        |
+
+---
+
 ### 📻 Radio System
 
 A streaming radio player that pulls tracks from YouTube and Spotify playlists and plays them directly — **nothing is saved to disk**.

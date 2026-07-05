@@ -1,5 +1,5 @@
 import aiosqlite
-from utils.economy import get_user_id_from_discord
+from utils.userbase.database import get_user_id_from_discord
 
 DB_PATH = "data/user.db"
 

@@ -3,8 +3,12 @@ import aiohttp
 import random
 from datetime import datetime
 from typing import Optional
+from assets.fun.gamble import GAMBLE_GIFS
+from utils.economy import inform_level_up
 from utils.action_counts import (
+    get_total_action_count,
     increment_action_count,
+    increment_action_count_to_everyone,
     maybe_reward_dabloons,
     get_received_count,
     get_action_between_users
@@ -12,6 +16,7 @@ from utils.action_counts import (
 
 # ── Action definitions ────────────────────────────────────────────────────────
 # Each action has:
+#
 #   act          - verb used in the embed title
 #   color        - embed sidebar color
 #   emoji        - displayed in title and button
@@ -353,11 +358,11 @@ ACTIONS = {
             'its okay to cry together 🥺',
         ],
         'desc_self': [
-            'aww {user.display_name} is lonely\n its okay to cry, let it out 💙',
+            'aww {author.display_name} is lonely\n its okay to cry, let it out 💙',
             'its okay, let it all out 😢',
             '*passes tissues* 🥺',
             'crying it out is valid 💙',
-            'we got you {user.display_name} 🫂',
+            'we got you {author.display_name} 🫂',
         ],
         'desc_other': [
             'aww dont cry! *hugs* 🥺',
@@ -536,7 +541,7 @@ ACTIONS = {
             'this server is a mess and {author.display_name} loves it :P',
         ],
         'desc_self': [
-            "mybe you're but you are the special kind of stoopid :3",
+            "maybe you're not, but you are the special kind of stoopid :3",
             'certified self-awareness moment 🦆',
             'at least you know :P',
             'the stoopidest and the proudest :3',
@@ -890,17 +895,20 @@ ACTION_PAST_TENSE = {
 PRIVATE_COUNTER_ACTIONS = {'kiss'}
 
 
-
 # ── Counter text builder ──────────────────────────────────────────────────────
-def build_counter_text(action: str, count: int, author_name: str, target_name: str | None, is_look: bool = False) -> str:
+def build_counter_text(action: str, count: int, author_name: str, target_name: str | None, is_look: bool = False, is_everyone: bool = False) -> str:
     if count <= 0:
         return ''
 
-    past = ACTION_PAST_TENSE.get(action, f'{action}ed')  # fallback just in case
+    past = ACTION_PAST_TENSE.get(action, f'{action}ed') if author_name != target_name else ACTION_PAST_TENSE_SELF.get(action, f'{action}ed')
     times = f'{count} time' if count == 1 else f'{count} times'
 
-    if is_look:
+    if is_look or (author_name == target_name):
         return f'-# {author_name} {past} {times}'
+
+    if is_everyone:
+        # e.g. "everyone got 3 times"
+        return f'-# everyone got {past} {times}'
 
     if action in PRIVATE_COUNTER_ACTIONS and target_name:
         # e.g. "Nova kissed Amber 3 times"
@@ -937,7 +945,7 @@ class React_back(discord.ui.View):
         reward = await maybe_reward_dabloons(interaction.user.id, interaction.user.display_name)
 
         title = build_title(self.action, self.action_data, self.author.display_name, interaction.user.display_name, react_back=True)
-        base_desc = random.choice(self.action_data['desc_other']).format(user=self.user, author=interaction.user)
+        base_desc = random.choice(self.action_data['desc_other']).format(user=self.author, author=interaction.user)
         counter = await get_counter_text(interaction, self.action, self.author, is_button=True)
 
         description = base_desc
@@ -948,6 +956,7 @@ class React_back(discord.ui.View):
 
         embed = await build_embed(self.action_data['color'], title, description, self.action, author=interaction.user)
 
+        await inform_level_up(interaction)
         button.disabled = True
         await interaction.response.defer()
         await interaction.followup.send(embed=embed)
@@ -997,9 +1006,9 @@ def build_title(action: str, action_data: dict, author_name: str, target_name: s
 # ── Button text ───────────────────────────────────────────────────────────────
 def button_text(action: str, action_data: dict) -> str:
     if action_data["lone"]:
-        return f"{ACTIONS[action]['emoji']} {action} with them"
-    elif action == "nom":
-        return f"{ACTIONS[action]['emoji']} {action} on them"
+        return f"{ACTIONS[action]['emoji']} {action} {action_data['link']} them"
+    elif action == "feed":
+        return f"{ACTIONS[action]['emoji']} {action} them"
     elif action == "baka":
         return f"{ACTIONS[action]['emoji']} call {action} back"
     return f"{ACTIONS[action]['emoji']} {action} them back!"
@@ -1016,15 +1025,34 @@ async def build_embed(color: discord.Color, title: str, description: str, action
 
 
 # ── GIF fetcher ───────────────────────────────────────────────────────────────
+_gif_cache: dict[str, list[str]] = {}
+_gif_used: dict[str, list[str]] = {}
+
 async def get_gif_url(action: str) -> str:
-    async with aiohttp.ClientSession() as session:
-        async with session.get(f"https://nekos.best/api/v2/{action}") as response:
-            data = await response.json()
-            return data['results'][0]['url']
+    if action == 'gamble':
+        return random.choice(GAMBLE_GIFS)
+
+    # refill if empty
+    if not _gif_cache.get(action):
+        if not _gif_used.get(action):
+            # cold start — fetch a batch
+            async with aiohttp.ClientSession() as session:
+                async with session.get(f"https://nekos.best/api/v2/{action}?amount=20") as response:
+                    data = await response.json()
+                    _gif_cache[action] = [r['url'] for r in data['results']]
+        else:
+            # recycle used ones back
+            _gif_cache[action] = _gif_used[action]
+            _gif_used[action] = []
+
+    url = random.choice(_gif_cache[action])
+    _gif_cache[action].remove(url)
+    _gif_used.setdefault(action, []).append(url)
+    return url
 
 
 # ── Counter text with the number ─────────────────────────────────────────────────────────────
-async def get_counter_text(interaction, action, user=None, is_button=False):
+async def get_counter_text(interaction: discord.Interaction, action: str, user: discord.User | None = None, is_button: bool = False) -> str:
     counter = ''
     author = interaction.user  # person who triggered this (button clicker, or original command user)
 
@@ -1049,4 +1077,11 @@ async def get_counter_text(interaction, action, user=None, is_button=False):
             count = await get_received_count(user.id, action)
             counter = build_counter_text(action, count, author.display_name, user.display_name)
 
+    return counter
+
+async def get_everyone_counter_text(interaction: discord.Interaction, action: str) -> str:
+    author = interaction.user
+    await increment_action_count_to_everyone(author, action)
+    count = await get_total_action_count(action)
+    counter = build_counter_text(action, count, author.display_name, None, is_everyone=True)
     return counter

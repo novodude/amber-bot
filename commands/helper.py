@@ -27,8 +27,13 @@ COMMANDS = {
         ("/anime quote",               "Get a random anime quote"),
     ],
     "🦆 amber": [
-        ("/quests", "View your daily quests and claim rewards"),
-        ("/level",  "Check your current level and XP progress"),
+        ("/quests",                    "View your daily quests and claim rewards"),
+        ("/level",                     "Check your current level and XP progress")
+    ],
+    "🎨 art": [
+        ("/art oc_maker",              "Generate a character sheet for you"),
+        ("/art pose",                  "Gives you a character pose to help you draw"),
+        ("/art color_scheme",          "Generate a color scheme based on a base color")
     ],
     "🐾 Animals": [
         ("/animal duck",     "Get a random duck image 🦆"),
@@ -103,7 +108,9 @@ COMMANDS = {
         ("/my stats [type]",              "View your stats"),
         ("/amber mute_update",            "Mute or unmute update messages from amber"),
         ("/amber mute_all_notif",         "Mute or unmute all notifications from the bot"),
-        ("/amber inbox",                  "send a message to the bot owner")
+        ("/amber inbox",                  "send a message to the bot owner"),
+        ("/generate name",                "Generate a random name for you"),
+        ("/generate traits",              "Generate up to 25 trait for you")
     ],
     "🎮 Games": [
         ("/games duck_clicker",              "Click ducks to earn dabloons — 2 per 5 clicks (4 with Double Points). Auto Clicker ticks every 60s in the background."),
@@ -167,6 +174,7 @@ CATEGORY_COLORS = {
     "🎭 Fun":      discord.Color.from_rgb(255, 100, 130),
     "🌸 Anime":    discord.Color.from_rgb(255, 150, 200),
     "🦆 amber":    discord.Color.from_rgb(255, 170, 0),
+    "🎨 art":      discord.Color.from_rgb(230, 70, 0),
     "🐾 Animals":  discord.Color.from_rgb(80, 200, 120),
     "💰 Economy":  discord.Color.from_rgb(255, 195, 40),
     "🛒 Shop":     discord.Color.from_rgb(255, 165, 0),

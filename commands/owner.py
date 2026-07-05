@@ -1,7 +1,8 @@
+from datetime import datetime
 from discord.ext import commands
 import utils.userbase.owner as owner_utils
 import utils.userbase.database as database
-from utils.userbase.database import DB_PATH
+from utils.userbase.database import DB_PATH, get_user_info
 import utils.amber as amber_utils
 from utils.amber import InboxView
 from discord import app_commands
@@ -253,6 +254,25 @@ class ListInboxView(discord.ui.View):
         self.update_buttons()
         await interaction.response.edit_message(embed=self.build_embed(), view=self)
 
+def make_user_embed(user: discord.User, user_info: dict):
+    embed = discord.Embed(
+        title=f"data of {user.display_name}:",
+        description=user_info.get('bio', "no bio is set"),
+        color=discord.Color.red(),
+        timestamp=datetime.now()
+    )
+    embed.set_thumbnail(url=user.avatar.url if user.avatar else None)
+    embed.add_field(name="User discord ID", value=str(user.id), inline=False)
+    embed.add_field(name="User ID", value=str(user_info.get("id",  "unknown")), inline=False)
+    embed.add_field(name="Level", value=str(user_info.get("level", 0)), inline=True)
+    embed.add_field(name="Amber Dabloons", value=str(user_info.get("amber_dabloons", 0)), inline=True)
+    embed.add_field(name="Total Actions", value=str(user_info.get("total_actions", 0)), inline=True)
+    embed.add_field(name="TTT Wins", value=str(user_info.get("ttt_wins", 0)), inline=True)
+    embed.add_field(name="TTT Streak", value=str(user_info.get("ttt_streak", 0)), inline=True)
+    embed.add_field(name="Duck Clicker Score", value=str(user_info.get("duck_clicker_score", 0)), inline=True)
+
+    return embed
+
 @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
 @app_commands.allowed_installs(guilds=True, users=True)
 class OwnerCommands(app_commands.Group):
@@ -290,6 +310,20 @@ class OwnerCommands(app_commands.Group):
             await interaction.followup.send("❌ Command timed out.")
         except Exception as e:
             await interaction.followup.send(f"❌ Error: {e}")
+
+    @app_commands.command(name="get_user", description="get user info and stats")
+    @app_commands.describe(user="the user you want to search")
+    @is_owner
+    async def get_user(self, interaction: discord.Interaction, user: discord.User):
+        await interaction.response.defer()
+        user_info = await get_user_info(user.id)
+
+        if user_info is None:
+            await interaction.followup.send("User is not is the system.", ephemeral=True)
+            return
+
+        embed = make_user_embed(user, user_info)
+        await interaction.followup.send(embed=embed)
 
     @app_commands.command(name="list_inbox", description="List all inbox messages.")
     @is_owner
@@ -348,19 +382,19 @@ class OwnerCommands(app_commands.Group):
     @app_commands.describe(
             user="The user to give dabloons to.",
             amount="The amount of dabloons to give.",
-            evryone="Whether to give dabloons to everyone.",
+            everyone="Whether to give dabloons to everyone.",
             reason="The reason for giving dabloons."
     )
     @is_owner
-    async def give_dabloons(self, interaction: discord.Interaction, user: discord.User = None, amount: int = 0, evryone: bool = False, reason: str = "No reason provided"):
-        if not user and not evryone:
+    async def give_dabloons(self, interaction: discord.Interaction, user: discord.User = None, amount: int = 0, everyone: bool = False, reason: str = "No reason provided"):
+        if not user and not everyone:
             await interaction.response.send_message("You must specify a user or set 'evryone' to True.", ephemeral=True)
             return
         if amount <= 0:
             await interaction.response.send_message("Amount must be greater than 0.", ephemeral=True)
             return
 
-        if evryone:
+        if everyone:
             await economy.add_dabloons_to_all(amount)
             await interaction.response.send_message(f"Gave {amount} dabloons to all users. Reason: {reason}", ephemeral=True)
         else:
@@ -369,8 +403,8 @@ class OwnerCommands(app_commands.Group):
                 await interaction.response.send_message(f"User {user} is not registered in the database.", ephemeral=True)
                 return
             await economy.add_dabloons(user_id, amount)
-            await user.send(f"You have received {amount} dabloons from the bot owner. Reason: {reason}")
-        await owner_utils.log_action(interaction, f"Owner {interaction.user.id} gave {amount} dabloons to {'everyone' if evryone else user}. Reason: {reason}")
+            await user.send(f"You have received {amount} dabloons from the bot owner.\nReason:\n {reason}")
+        await owner_utils.log_action(interaction, f"Owner {interaction.user.id} gave {amount} dabloons to {'everyone' if evryone else user}.\n Reason: {reason}")
         await interaction.response.send_message(f"Gave {amount} dabloons to {'everyone' if evryone else user}. Reason: {reason}", ephemeral=True)
 
     @app_commands.command(name="set_log_channel", description="Set the log channel for owner commands.")
@@ -387,8 +421,6 @@ class OwnerCommands(app_commands.Group):
         await owner_utils.set_update_channel(channel.id)
         await interaction.response.send_message(f"Update channel set to {channel.mention}.", ephemeral=True)
 
-
- 
     @app_commands.command(name="sync_usernames", description="Re-fetch and update stored usernames for all registered users.")
     @is_owner
     async def sync_usernames(self, interaction: discord.Interaction):
@@ -407,6 +439,9 @@ class OwnerCommands(app_commands.Group):
             progress_message=progress_msg,
             requester=interaction.user,
         ))
+        
+        log = f"syncing database usernames...\nrequested by `{interaction.user.id}`"
+        await owner_utils.log_action(interaction, log)
 
 
 async def updates_handler(bot: commands.Bot, message: discord.Message):

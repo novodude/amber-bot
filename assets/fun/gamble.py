@@ -1,0 +1,24 @@
+GAMBLE_GIFS = [
+    "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNmF5MHRuYjE1bDRza3JjZ3E4aGpwOGNuNnY5NjF5aTl2bmQxNHN1aCZlcD12MV9naWZzX3NlYXJjaCZjdD1n/xT9DPi61MmrDLzVFzq/giphy.gif",
+    "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNmF5MHRuYjE1bDRza3JjZ3E4aGpwOGNuNnY5NjF5aTl2bmQxNHN1aCZlcD12MV9naWZzX3NlYXJjaCZjdD1n/GWS8bXKxphfEI/giphy.gif",
+    "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNmF5MHRuYjE1bDRza3JjZ3E4aGpwOGNuNnY5NjF5aTl2bmQxNHN1aCZlcD12MV9naWZzX3NlYXJjaCZjdD1n/hTZzSLcDa04h9ldtFl/giphy.gif",
+    "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNmF5MHRuYjE1bDRza3JjZ3E4aGpwOGNuNnY5NjF5aTl2bmQxNHN1aCZlcD12MV9naWZzX3NlYXJjaCZjdD1n/69ANfjkDPdEoQCxrse/giphy.gif",
+    "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNmF5MHRuYjE1bDRza3JjZ3E4aGpwOGNuNnY5NjF5aTl2bmQxNHN1aCZlcD12MV9naWZzX3NlYXJjaCZjdD1n/xT9DPlAUKTl1GeZjC8/giphy.gif",
+    "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNmF5MHRuYjE1bDRza3JjZ3E4aGpwOGNuNnY5NjF5aTl2bmQxNHN1aCZlcD12MV9naWZzX3NlYXJjaCZjdD1n/ioopmOHLqIDfGxLLKG/giphy.gif",
+    "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNmF5MHRuYjE1bDRza3JjZ3E4aGpwOGNuNnY5NjF5aTl2bmQxNHN1aCZlcD12MV9naWZzX3NlYXJjaCZjdD1n/xUPGcHretmclA1QgY8/giphy.gif",
+    "https://media.giphy.com/media/v1.Y2lkPWVjZjA1ZTQ3dXYwMHZ6aHRqcTh1Mjlnemx5YXBudXM0cW56Z2pjYzduODA4YzdwOSZlcD12MV9naWZzX3NlYXJjaCZjdD1n/D4vcm5YQfFX828XlPB/giphy.gif",
+    "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNmF5MHRuYjE1bDRza3JjZ3E4aGpwOGNuNnY5NjF5aTl2bmQxNHN1aCZlcD12MV9naWZzX3NlYXJjaCZjdD1n/3o6gE5XfPapB5u0wDe/giphy.gif",
+    "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNmF5MHRuYjE1bDRza3JjZ3E4aGpwOGNuNnY5NjF5aTl2bmQxNHN1aCZlcD12MV9naWZzX3NlYXJjaCZjdD1n/xT5LMTsSK0xZPVlfPy/giphy.gif",
+    "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNmF5MHRuYjE1bDRza3JjZ3E4aGpwOGNuNnY5NjF5aTl2bmQxNHN1aCZlcD12MV9naWZzX3NlYXJjaCZjdD1n/5yYoECDolGySFHKZYl/giphy.gif",
+    "https://media.giphy.com/media/v1.Y2lkPWVjZjA1ZTQ3dXYwMHZ6aHRqcTh1Mjlnemx5YXBudXM0cW56Z2pjYzduODA4YzdwOSZlcD12MV9naWZzX3NlYXJjaCZjdD1n/3o7bugURGG1BktXHl6/giphy.gif",
+    "https://media.giphy.com/media/v1.Y2lkPWVjZjA1ZTQ3dXYwMHZ6aHRqcTh1Mjlnemx5YXBudXM0cW56Z2pjYzduODA4YzdwOSZlcD12MV9naWZzX3NlYXJjaCZjdD1n/26gJzYyBvqLpW7CyA/giphy.gif",
+    "https://media.giphy.com/media/v1.Y2lkPWVjZjA1ZTQ3dXYwMHZ6aHRqcTh1Mjlnemx5YXBudXM0cW56Z2pjYzduODA4YzdwOSZlcD12MV9naWZzX3NlYXJjaCZjdD1n/irwbbuOeIbTp5oRlgB/giphy.gif",
+    "https://media.giphy.com/media/v1.Y2lkPWVjZjA1ZTQ3dXYwMHZ6aHRqcTh1Mjlnemx5YXBudXM0cW56Z2pjYzduODA4YzdwOSZlcD12MV9naWZzX3NlYXJjaCZjdD1n/ReWidnzWEVF24HZW4a/giphy.gif",
+    "https://media.giphy.com/media/v1.Y2lkPWVjZjA1ZTQ3dXYwMHZ6aHRqcTh1Mjlnemx5YXBudXM0cW56Z2pjYzduODA4YzdwOSZlcD12MV9naWZzX3NlYXJjaCZjdD1n/od1ZGKWL5bsIlwqR6l/giphy.gif",
+    "https://media.giphy.com/media/v1.Y2lkPWVjZjA1ZTQ3dXYwMHZ6aHRqcTh1Mjlnemx5YXBudXM0cW56Z2pjYzduODA4YzdwOSZlcD12MV9naWZzX3NlYXJjaCZjdD1n/a0lsKRPtlPq9Yx6pHV/giphy.gif",
+    "https://tenor.com/view/cat-gambling-casino-slot-machine-jack-pot-gif-17498298081132407746",
+    "https://tenor.com/view/cat-gambling-gambler-gif-572068894331490223",
+    "https://tenor.com/view/bumbur95-gamba-gif-14352293880158182327",
+    "https://tenor.com/view/old-old-people-gambling-gamble-vegas-gif-7776685678749939051"
+]
+
