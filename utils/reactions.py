@@ -657,30 +657,29 @@ ACTIONS = {
             '{user.display_name} is very uncomfortable rn :P',
         ],
     },
-    'thumbsup': {
-        'act': 'gives thumbs up',
-        'color': discord.Color.green(),
-        'emoji': '👍',
-        'lone': True,
-        'link': 'to',
-        'desc_everyone': [
-            'thumbs up everyone! great job! 👍',
-            'everyone gets the seal of approval! ✨',
-            'certified good vibes only 👍',
-            'wholesome server moment 🥰',
+    "gamble": {
+        "act": "gambling",
+        "color": discord.Color.gold(),
+        "emoji": "🎲",
+        "lone": False,
+        "link": ["is", "with"],
+        "desc_everyone": [
+            "everyone's rolling the dice! 🎲",
+            "high stakes for the whole server! 💰",
+            "luck be with you all! 🍀",
+            "the gamble is on! 🎲",
         ],
-        'desc_self': [
-            'nice work! you got this! 👍',
-            'self-approval granted ✨',
-            'believing in yourself! 👍',
-            'you did that! own it! 😄',
+        "desc_self": [
+            "rolling the dice solo! 🎲",
+            "taking a chance on yourself! 💰",
+            "luck is in your hands! 🍀",
+            "the thrill of gambling alone! 🎲",
         ],
-        'desc_other': [
-            'approval granted! ✨',
-            '{user.display_name} earned that 👍',
-            'seal of approval delivered! ✨',
-            'big fan of {user.display_name} right now 👍',
-            'yes! exactly! 👍',
+        "desc_other": [
+            "rolling the dice with {user.display_name}! 🎲",
+            "high stakes with {user.display_name}! 💰",
+            "luck be with you and {user.display_name}! 🍀",
+            "the gamble is on with {user.display_name}! 🎲",
         ],
     },
 }
@@ -873,7 +872,7 @@ ACTION_PAST_TENSE = {
     'nya':      'nya\'d',
     'run':      'ran',
     'stare':    'stared',
-    'thumbsup': 'given a thumbs up',
+    'gamble':   'gambled',
     # reactions (/look)
     'blush':    'blushed',
     'shrug':    'shrugged',
@@ -894,6 +893,48 @@ ACTION_PAST_TENSE = {
 # Actions that use private counter format: "{author} kissed {user} X times"
 PRIVATE_COUNTER_ACTIONS = {'kiss'}
 
+ACTION_PAST_TENSE_SELF = {
+    'hug':      'hugged themselves',
+    'kiss':     'kissed themselves',
+    'pat':      'patted their head',
+    'poke':     'poked themselves',
+    'cuddle':   'cuddled alone',
+    'bite':     'bitten themselves',
+    'kick':     'kicked their butt',
+    'punch':    'punched their face',
+    'feed':     'ate',
+    'highfive': 'high-fived themselves',
+    'dance':    'danced alone',
+    'sleep':    'slept alone',
+    'cry':      'cried alone',
+    'smile':    'smiled at themselves',
+    'think':    'thought to themselves',
+    'wave':     'waved at themselves',
+    'laugh':    'laughed alone',
+    'yeet':     'yeeted themselves',
+    'facepalm': 'facepalmed at themselves',
+    'baka':     'baka\'d',
+    'peck':     'pecked their cheek',
+    'nya':      'nya\'d at themselves',
+    'run':      'ran alone',
+    'stare':    'stared at themselves',
+    'gamble':   'gambled alone',
+    # reactions (/look)
+    'blush':    'blushed',
+    'shrug':    'shrugged',
+    'yawn':     'yawned',
+    'angry':    'been angry',
+    'bored':    'been bored',
+    'happy':    'been happy',
+    'nope':     'noped out',
+    'smug':     'looked smug',
+    'lurk':     'lurked',
+    'pout':     'pouted',
+    'nod':      'nodded',
+    'wink':     'winked',
+    'wag':      'wagged their tail',
+    'bleh':     'said bleh',
+}
 
 # ── Counter text builder ──────────────────────────────────────────────────────
 def build_counter_text(action: str, count: int, author_name: str, target_name: str | None, is_look: bool = False, is_everyone: bool = False) -> str:
@@ -973,6 +1014,8 @@ def build_title(action: str, action_data: dict, author_name: str, target_name: s
     if react_back:
         if action == 'baka':
             return f"**{emoji} {target_name} {link[0]} {author_name} {link[1]} {act} back! {emoji}**"
+        if action == 'gamble':
+            return f"**{emoji} {target_name} {link[0]} {act} {link[1]} {author_name} back! {emoji}**"
         elif action_data['lone']:
             return f"**{emoji} {target_name} {act} {link} {author_name} back! {emoji}**"
         else:
@@ -987,6 +1030,14 @@ def build_title(action: str, action_data: dict, author_name: str, target_name: s
             return f"**{emoji} {author_name} {link[1]} {act} {emoji}**"
         else:
             return f"**{emoji} {author_name} {link[0]} {target_name} {link[1]} {act} {emoji}**"
+
+    if action == 'gamble':
+        if everyone:
+            return f"**{emoji} {author_name} {link[0]} {act} {link[1]} everyone {emoji}**"
+        elif not target_name or (target_name == author_name):
+            return f"**{emoji} {author_name} {link[0]} {act} {emoji}**"
+        else:
+            return f"**{emoji} {author_name} {link[0]} {act} {link[1]} {target_name} {emoji}**"
 
     if everyone:
         if action_data['lone']:

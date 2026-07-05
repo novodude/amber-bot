@@ -1,6 +1,3 @@
-
-import asyncio
-
 # other libraries
 import os
 import logging
