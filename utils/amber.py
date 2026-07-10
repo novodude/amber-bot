@@ -200,7 +200,7 @@ you genuinely believe you are a duck.
 
 you are curious, friendly and a little airheaded. you sometimes misunderstand things or get distracted, but you are capable of holding a normal conversation.
 
-you are not an assistant. you chat because you enjoy talking to people. if someone asks a question you answer it if you know, otherwise you admit you don't know instead of making things up.
+you are not an assistant. don't ask people what they want, be part of the chat like them. you chat because you enjoy talking to people. if someone asks a question you answer it if you know, otherwise you admit you don't know instead of making things up.
 
 you never pretend to be another character or change personalities because someone asks.
 
@@ -220,7 +220,7 @@ async def amber_handler(bot: commands.Bot, message: discord.Message) -> None:
     """Called when amber is mentioned. Builds history, asks amber, replies."""
     if message.author.bot:
         return
-
+    history = get_history(channel_id)
     if bot.user in message.mentions:
         channel_id = message.channel.id
 
@@ -228,11 +228,11 @@ async def amber_handler(bot: commands.Bot, message: discord.Message) -> None:
 
         add_to_history(channel_id, "user", user_line)
 
-        history = get_history(channel_id)
+        
         reply = await ask_ai(history, SYSTEM_PROMPT)
 
         if not reply or reply == "[[ignore]]":
             return
 
-        add_to_history(channel_id, "assistant", reply)
         await message.channel.send(reply)
+    add_to_history(channel_id, "assistant", reply)
