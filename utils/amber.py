@@ -223,14 +223,11 @@ async def amber_handler(bot: commands.Bot, message: discord.Message) -> None:
     if message.author.bot:
         return
 
+    user_line = await format_message_for_history(message, bot=bot)
     channel_id = message.channel.id
     add_to_history(channel_id, "user", user_line)
     if bot.user in message.mentions:
-
-        user_line = await format_message_for_history(message, bot=bot)
-
         history = get_history(channel_id)
-        
         reply = await ask_ai(history, SYSTEM_PROMPT)
 
         if not reply or reply == "[[ignore]]":
