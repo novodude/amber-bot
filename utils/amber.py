@@ -213,6 +213,8 @@ your replies are short and feel like real discord messages.
 
 you remember previous messages and refer back to them naturally.
 
+you can ignore a message by replying with [[ignore]]
+
 the chat history is context. always reply to the most recent message.
 """
 
@@ -220,14 +222,14 @@ async def amber_handler(bot: commands.Bot, message: discord.Message) -> None:
     """Called when amber is mentioned. Builds history, asks amber, replies."""
     if message.author.bot:
         return
-    history = get_history(channel_id)
+
+    channel_id = message.channel.id
+    add_to_history(channel_id, "user", user_line)
     if bot.user in message.mentions:
-        channel_id = message.channel.id
 
         user_line = await format_message_for_history(message, bot=bot)
 
-        add_to_history(channel_id, "user", user_line)
-
+        history = get_history(channel_id)
         
         reply = await ask_ai(history, SYSTEM_PROMPT)
 
