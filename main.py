@@ -39,7 +39,7 @@ from utils.userbase.owner import init_owner_db
 from utils.quests import message_quest_handler
 from utils.pet import touch_owner_activity
 from utils.userbase.database import get_user_id_from_discord
-from utils.amber import handle_delete_reply
+from utils.amber import amber_handler, handle_delete_reply
 
 load_dotenv()
 token = os.getenv("DISCORD_TOKEN")
@@ -111,6 +111,7 @@ async def on_message(message: discord.Message):
     await message_quest_handler(message)
     await updates_handler(bot, message)
     await handle_delete_reply(bot, message)
+    await amber_handler(bot, message)
 
     user_id = await get_user_id_from_discord(message.author.id)
     if user_id:
@@ -121,7 +122,6 @@ async def on_message(message: discord.Message):
         await mimic_cog.handle_mimic(message)
 
     await bot.process_commands(message)
-
 
 @bot.tree.command(name="ping", description="Check the bot's latency.")
 @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)

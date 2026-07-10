@@ -130,3 +130,4 @@ class Generators(app_commands.Group):
 
 async def art_setup(bot):
     bot.tree.add_command(Art())
+    bot.tree.add_command(Generators())

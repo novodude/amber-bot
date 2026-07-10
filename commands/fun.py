@@ -257,7 +257,9 @@ async def handle_4k(bot: commands.Bot, message: discord.Message):
     try:
         output_bytes = await img_gen.create_quote_image(
             replied.author,
-            replied.content or ""
+            replied.content or "",
+            None,
+            bot
         )
     except Exception as e:
         await message.reply(f"Error: {e}", delete_after=5)

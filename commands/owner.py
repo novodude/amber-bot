@@ -390,9 +390,6 @@ class OwnerCommands(app_commands.Group):
         if not user and not everyone:
             await interaction.response.send_message("You must specify a user or set 'evryone' to True.", ephemeral=True)
             return
-        if amount <= 0:
-            await interaction.response.send_message("Amount must be greater than 0.", ephemeral=True)
-            return
 
         if everyone:
             await economy.add_dabloons_to_all(amount)
@@ -404,8 +401,8 @@ class OwnerCommands(app_commands.Group):
                 return
             await economy.add_dabloons(user_id, amount)
             await user.send(f"You have received {amount} dabloons from the bot owner.\nReason:\n {reason}")
-        await owner_utils.log_action(interaction, f"Owner {interaction.user.id} gave {amount} dabloons to {'everyone' if evryone else user}.\n Reason: {reason}")
-        await interaction.response.send_message(f"Gave {amount} dabloons to {'everyone' if evryone else user}. Reason: {reason}", ephemeral=True)
+        await owner_utils.log_action(interaction, f"Owner {interaction.user.id} gave {amount} dabloons to {'everyone' if everyone else user}.\n Reason: {reason}")
+        await interaction.response.send_message(f"Gave {amount} dabloons to {'everyone' if everyone else user}. Reason: {reason}", ephemeral=True)
 
     @app_commands.command(name="set_log_channel", description="Set the log channel for owner commands.")
     @app_commands.describe(channel="The channel to set as the log channel.")

@@ -182,7 +182,7 @@ async def init_user_db():
             "ALTER TABLE user_purchases ADD COLUMN custom_value TEXT",
             "ALTER TABLE users ADD COLUMN is_private INTEGER DEFAULT 0",
             "ALTER TABLE guild_config ADD COLUMN four_k_channel INTEGER",
-            "ALTER TABLE users ADD COLUMN mute_update INTEGER DEFAULT 0",
+            "ALTER TABLE users ADD COLUMN mute_update INTEGER DEFAULT 1",
             "ALTER TABLE users ADD COLUMN mute_pet INTEGER DEFAULT 0"
         ]
 

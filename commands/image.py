@@ -9,6 +9,10 @@ import random
 import math
 import io
 
+from discord.ext import commands
+
+from utils.text import pretty_text
+
 ROOT_DIR = Path(__file__).resolve().parent.parent
 
 class ImageGenerator:
@@ -143,9 +147,11 @@ class ImageGenerator:
         
         return output_bytes
     
-    async def create_quote_image(self, user: discord.User, message: str) -> BytesIO:
+    async def create_quote_image(self, user: discord.User, message: str, interaction:discord.Interaction | None = None, bot: commands.Bot | None = None) -> BytesIO:
         """Create a quote/misquote image."""
         font_path = self.font_dir / "quote.ttf"
+
+        message = await pretty_text(interaction=interaction, bot=bot, text=message)
         
         # Fetch user avatar
         async with aiohttp.ClientSession() as session:
@@ -623,7 +629,7 @@ class ImageCommands(app_commands.Group):
             await interaction.followup.send(f"An error occurred:\n ```\n{str(e)}\n```")
     
 
-    @app_commands.command(name="misquote", description="Create a fake quote image")
+    @app_commands.command(name="quote", description="Create a fake quote image")
     @app_commands.describe(
         message="What did they say?",
         user="Who said it?"
@@ -631,7 +637,7 @@ class ImageCommands(app_commands.Group):
     async def misquote(self, interaction: discord.Interaction, user: discord.User, message: str):
         await interaction.response.defer()
         try:
-            output_bytes = await self.img_gen.create_quote_image(user, message)
+            output_bytes = await self.img_gen.create_quote_image(interaction=interaction, user=user, message=message)
             file = discord.File(output_bytes, filename=f"quote_{user.name}.png")
             await interaction.followup.send(file=file)
         except Exception as e:

@@ -155,10 +155,10 @@ async def list_inbox_messages(status: str = None) -> list:
     async with aiosqlite.connect(DB_PATH) as db:
         if status:
             async with db.execute("SELECT id, owner_id, user_id, message, status, timestamp FROM inbox_chats WHERE status = ?", (status,)) as cursor:
-                return [dict(zip(["id", "owner_id", "user_id", "message", "status", "timestamp"], row)) for row in await cursor.fetchall()]
+                return [dict(zip(["id", "owner_id", "user_id", "message", "status", "timestamp"], row)) for row in await cursor.fetchall()].reverse()
         else:
             async with db.execute("SELECT id, owner_id, user_id, message, status, timestamp FROM inbox_chats") as cursor:
-                return [dict(zip(["id", "owner_id", "user_id", "message", "status", "timestamp"], row)) for row in await cursor.fetchall()]
+                return [dict(zip(["id", "owner_id", "user_id", "message", "status", "timestamp"], row)) for row in await cursor.fetchall()].reverse()
 
 async def update_inbox_status(inbox_id: int, new_status: str):
     try:

@@ -61,11 +61,11 @@ class Mimic(commands.Cog):
     # ── helpers ────────────────────────────────────────────────
 
     @staticmethod
-    def _invoker_is_admin(interaction: discord.Interaction) -> bool:
+    async def _invoker_is_admin(interaction: discord.Interaction) -> bool:
         member = interaction.user
         if not isinstance(member, discord.Member):
             return False
-        if is_owner(member):
+        if await is_owner(member):
             return True
         return member.guild_permissions.administrator
 
@@ -82,7 +82,7 @@ class Mimic(commands.Cog):
     async def mimic_start(
         self, interaction: discord.Interaction, target: discord.Member
     ) -> None:
-        if not self._invoker_is_admin(interaction):
+        if not await self._invoker_is_admin(interaction):
             await interaction.response.send_message(
                 "⛔ Only admins can use this command.", ephemeral=True
             )
@@ -91,12 +91,6 @@ class Mimic(commands.Cog):
         if target.bot:
             await interaction.response.send_message(
                 "❌ You can't mimic a bot.", ephemeral=True
-            )
-            return
-
-        if target.id == interaction.user.id:
-            await interaction.response.send_message(
-                "❌ You can't mimic yourself.", ephemeral=True
             )
             return
 

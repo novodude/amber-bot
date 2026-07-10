@@ -1,4 +1,5 @@
 discord.py
+g4f
 python-dotenv
 pillow
 wavesynth
