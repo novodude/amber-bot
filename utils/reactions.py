@@ -1079,6 +1079,36 @@ async def build_embed(color: discord.Color, title: str, description: str, action
 _gif_cache: dict[str, list[str]] = {}
 _gif_used: dict[str, list[str]] = {}
 
+# nekos.best action name -> waifu.pics category, for the ones that map cleanly.
+# Actions not listed here just skip the gif if nekos.best is unavailable —
+# waifu.pics doesn't have a decent match for punch/feed/sleep/laugh/baka/
+# facepalm/peck/shoot/run/stare/thumbsup.
+_WAIFU_PICS_MAP = {
+    "hug": "hug", "kiss": "kiss", "pat": "pat", "poke": "poke",
+    "cuddle": "cuddle", "bite": "bite", "kick": "kick",
+    "highfive": "highfive", "dance": "dance", "cry": "cry",
+    "smile": "smile", "wave": "wave", "yeet": "yeet",
+}
+
+_HEADERS = {"User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36"}
+
+
+async def _get_gif_from_waifu_pics(action: str) -> str | None:
+    category = _WAIFU_PICS_MAP.get(action)
+    if category is None:
+        return None
+    try:
+        async with aiohttp.ClientSession(headers=_HEADERS) as session:
+            async with session.get(f"https://api.waifu.pics/sfw/{category}") as response:
+                if response.status != 200:
+                    return None
+                data = await response.json()
+                return data.get("url")
+    except Exception as e:
+        print(f"[reactions] waifu.pics also failed for '{action}': {e}")
+        return None
+
+
 async def get_gif_url(action: str) -> str:
     if action == 'gamble':
         return random.choice(GAMBLE_GIFS)
@@ -1086,22 +1116,22 @@ async def get_gif_url(action: str) -> str:
     # refill if empty
     if not _gif_cache.get(action):
         if not _gif_used.get(action):
-            # cold start — fetch a batch
-            headers = {"User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36"}
-            async with aiohttp.ClientSession(headers=headers) as session:
+            # cold start — try nekos.best first (bigger variety when it's up)
+            async with aiohttp.ClientSession(headers=_HEADERS) as session:
                 async with session.get(f"https://nekos.best/api/v2/{action}?amount=20") as response:
-                    if response.status != 200 or "json" not in response.content_type:
-                        print(f"[reactions] nekos.best gave {response.status} ({response.content_type}) for '{action}' — skipping gif this time")
-                        return None
-                    data = await response.json()
-                    _gif_cache[action] = [r['url'] for r in data['results']]
+                    if response.status == 200 and "json" in response.content_type:
+                        data = await response.json()
+                        _gif_cache[action] = [r['url'] for r in data['results']]
+                    else:
+                        print(f"[reactions] nekos.best gave {response.status} ({response.content_type}) for '{action}' — falling back to waifu.pics")
         else:
             # recycle used ones back
             _gif_cache[action] = _gif_used[action]
             _gif_used[action] = []
 
     if not _gif_cache.get(action):
-        return None
+        # nekos.best down/blocked and nothing cached
+        return await _get_gif_from_waifu_pics(action)
 
     url = random.choice(_gif_cache[action])
     _gif_cache[action].remove(url)
