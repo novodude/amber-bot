@@ -234,4 +234,4 @@ async def amber_handler(bot: commands.Bot, message: discord.Message) -> None:
             return
 
         await message.channel.send(reply)
-    add_to_history(channel_id, "assistant", reply)
+        add_to_history(channel_id, "assistant", reply)

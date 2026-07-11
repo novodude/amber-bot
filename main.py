@@ -27,6 +27,7 @@ from commands.user import user_setup
 from commands.amber import amber_setup
 from commands.owner import owner_setup, updates_handler
 from commands.art import art_setup
+from commands.lunita_bridge import setup_lunita_bridge
 try:
     from commands.debugging import debug_setup
 except ImportError:
@@ -91,6 +92,7 @@ async def on_ready():
     await anime_setup(bot)
     await owner_setup(bot)
     await art_setup(bot)
+    await setup_lunita_bridge(bot)
     try:        await debug_setup(bot)
     except NameError: pass
     await leaderboard_setup(bot)
@@ -100,9 +102,17 @@ async def on_ready():
     print("Commands synced.")
 
 
+LUNITA_BOT_ID = 951539463224451102
+
 @bot.event
 async def on_message(message: discord.Message):
     if message.author.bot:
+        # Skip all the human-facing stuff (AI replies, xp, quests, etc.) for
+        # any bot — but let Lunita specifically still trigger prefix commands
+        # like !do / !look / !rate. Gated by ID so a random bot can't abuse
+        # the dabloon-rewarding action commands.
+        if message.author.id == LUNITA_BOT_ID:
+            await bot.process_commands(message)
         return
 
     await handle_4k(bot, message)
@@ -122,6 +132,14 @@ async def on_message(message: discord.Message):
         await mimic_cog.handle_mimic(message)
 
     await bot.process_commands(message)
+
+@bot.event
+async def on_command_error(ctx: commands.Context, error: commands.CommandError):
+    print(f"[command error] {ctx.command}: {error!r}")
+    if isinstance(error, commands.CommandNotFound):
+        return  # comment this back in once we confirm commands are registering
+    await ctx.send(f"-# something broke: `{error}`")
+
 
 @bot.tree.command(name="ping", description="Check the bot's latency.")
 @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
