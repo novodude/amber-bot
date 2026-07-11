@@ -1079,33 +1079,19 @@ async def build_embed(color: discord.Color, title: str, description: str, action
 _gif_cache: dict[str, list[str]] = {}
 _gif_used: dict[str, list[str]] = {}
 
-# nekos.best action name -> waifu.pics category, for the ones that map cleanly.
-# Actions not listed here just skip the gif if nekos.best is unavailable —
-# waifu.pics doesn't have a decent match for punch/feed/sleep/laugh/baka/
-# facepalm/peck/shoot/run/stare/thumbsup.
-_WAIFU_PICS_MAP = {
-    "hug": "hug", "kiss": "kiss", "pat": "pat", "poke": "poke",
-    "cuddle": "cuddle", "bite": "bite", "kick": "kick",
-    "highfive": "highfive", "dance": "dance", "cry": "cry",
-    "smile": "smile", "wave": "wave", "yeet": "yeet",
-}
-
 _HEADERS = {"User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36"}
 
 
-async def _get_gif_from_waifu_pics(action: str) -> str | None:
-    category = _WAIFU_PICS_MAP.get(action)
-    if category is None:
-        return None
+async def _get_gif_from_otakugifs(action: str) -> str | None:
+
     try:
         async with aiohttp.ClientSession(headers=_HEADERS) as session:
-            async with session.get(f"https://api.waifu.pics/sfw/{category}") as response:
+            async with session.get(f"https://api.otakugifs.xyz/gif?reaction={action}") as response:
                 if response.status != 200:
                     return None
                 data = await response.json()
                 return data.get("url")
-    except Exception as e:
-        print(f"[reactions] waifu.pics also failed for '{action}': {e}")
+    except:
         return None
 
 
@@ -1122,16 +1108,15 @@ async def get_gif_url(action: str) -> str:
                     if response.status == 200 and "json" in response.content_type:
                         data = await response.json()
                         _gif_cache[action] = [r['url'] for r in data['results']]
-                    else:
-                        print(f"[reactions] nekos.best gave {response.status} ({response.content_type}) for '{action}' — falling back to waifu.pics")
         else:
             # recycle used ones back
             _gif_cache[action] = _gif_used[action]
             _gif_used[action] = []
 
     if not _gif_cache.get(action):
-        # nekos.best down/blocked and nothing cached
-        return await _get_gif_from_waifu_pics(action)
+        # nekos.best down/blocked and nothing cached — try otakugifs.xyz,
+        # one image at a time (no batching endpoint worth the complexity here).
+        return await _get_gif_from_otakugifs(action)
 
     url = random.choice(_gif_cache[action])
     _gif_cache[action].remove(url)
