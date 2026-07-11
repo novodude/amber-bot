@@ -1087,14 +1087,21 @@ async def get_gif_url(action: str) -> str:
     if not _gif_cache.get(action):
         if not _gif_used.get(action):
             # cold start — fetch a batch
-            async with aiohttp.ClientSession() as session:
+            headers = {"User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36"}
+            async with aiohttp.ClientSession(headers=headers) as session:
                 async with session.get(f"https://nekos.best/api/v2/{action}?amount=20") as response:
+                    if response.status != 200 or "json" not in response.content_type:
+                        print(f"[reactions] nekos.best gave {response.status} ({response.content_type}) for '{action}' — skipping gif this time")
+                        return None
                     data = await response.json()
                     _gif_cache[action] = [r['url'] for r in data['results']]
         else:
             # recycle used ones back
             _gif_cache[action] = _gif_used[action]
             _gif_used[action] = []
+
+    if not _gif_cache.get(action):
+        return None
 
     url = random.choice(_gif_cache[action])
     _gif_cache[action].remove(url)
