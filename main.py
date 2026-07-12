@@ -102,7 +102,7 @@ async def on_ready():
     print("Commands synced.")
 
 
-LUNITA_BOT_ID = 951539463224451102
+LUNITA_BOT_ID = 1458434082298921103
 
 @bot.event
 async def on_message(message: discord.Message):
