@@ -58,8 +58,15 @@ MAX_HISTORY = 20  # tune this — how many messages amber "remembers" per channe
 
 amber_history: dict[int, deque[dict]] = defaultdict(lambda: deque(maxlen=MAX_HISTORY))
 
-def add_to_history(channel_id: int, role: str, content: str) -> None:
-    amber_history[channel_id].append({"role": role, "content": content})
+def add_to_history(channel_id: int, role: str, content: str, mentioned: bool = False) -> None:
+    amber_history[channel_id].append({"role": role, "content": content, "mentioned": mentioned})
+
 
 def get_history(channel_id: int) -> list[dict]:
     return list(amber_history[channel_id])
+
+
+def was_amber_mentioned_recently(history: list[dict], limit: int = 5) -> bool:
+    """Check if amber was mentioned or replied to in the last `limit` history entries."""
+    return any(entry.get("mentioned") for entry in history[-limit:])
+

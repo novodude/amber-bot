@@ -437,7 +437,6 @@ class ModerationCog(commands.Cog):
         if row[0]:
             channel = member.guild.get_channel(row[0])
             if channel:
-                print(f"found welcome channel: {channel.name}")
                 message = (row[1] or "Welcome {user} to {server}!") \
                     .replace("{user}", member.mention) \
                     .replace("{server}", member.guild.name)

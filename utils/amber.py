@@ -218,26 +218,35 @@ you can ignore a message by replying with [[ignore]]
 the chat history is context. always reply to the most recent message.
 """
 
+
 async def amber_handler(bot: commands.Bot, message: discord.Message) -> None:
     """Called when amber is mentioned. Builds history, asks amber, replies."""
+    if message.author.bot:
+        return
 
-    if await can_amber_speak_in_server(message.guild.id):
-        if message.author.bot:
-            return
+    if not await can_amber_speak_in_server(message.guild.id):
+        return
 
-        user_line = await format_message_for_history(message, bot=bot)
-        channel_id = message.channel.id
-        add_to_history(channel_id, "user", user_line)
-        if bot.user in message.mentions:
-            history = get_history(channel_id)
-            reply = await ask_ai(history, SYSTEM_PROMPT)
+    mentions_amber = bot.user in message.mentions
 
-            if not reply or reply == "[[ignore]]":
-                return
+    user_line = await format_message_for_history(message, bot=bot)
+    channel_id = message.channel.id
+    add_to_history(channel_id, "user", user_line, mentioned=mentions_amber)
 
-            if len(history) <= 1:
-                ai_warning = "\n-# hello message from novo, if you don't want amber to talk ask the owner to use `/server set_amber_ai` to turn it off 🤍"
-                reply += ai_warning
+    if not mentions_amber:
+        return
 
-            await message.channel.send(reply)
-            add_to_history(channel_id, "assistant", reply.replace(ai_warning, ""))
+    history = get_history(channel_id)
+    is_first_reply = not any(entry["role"] == "assistant" for entry in history)
+
+    reply = await ask_ai(history, SYSTEM_PROMPT)
+    if not reply or reply == "[[ignore]]":
+        return
+
+    ai_warning = ""
+    if is_first_reply:
+        ai_warning = "\n-# hello message from novo, if you don't want amber to talk ask the owner to use `/server set_amber_ai` to turn it off 🤍"
+        reply += ai_warning
+
+    await message.channel.send(reply)
+    add_to_history(channel_id, "assistant", reply.replace(ai_warning, "") if ai_warning else reply, mentioned=False)
