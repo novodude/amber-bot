@@ -174,6 +174,7 @@ async def init_user_db():
             "ALTER TABLE games ADD COLUMN next_reward_threshold INTEGER DEFAULT 0",
             "ALTER TABLE users ADD COLUMN custom_hex_color TEXT",
             "ALTER TABLE guild_config ADD COLUMN pet_channel_id INTEGER",
+            "ALTER TABLE guild_config ADD COLUMN allow_ai INTEGER DEFAULT 1",
             "ALTER TABLE shop ADD COLUMN category TEXT DEFAULT 'misc'",
             "ALTER TABLE shop ADD COLUMN effect TEXT",
             "ALTER TABLE shop ADD COLUMN emoji TEXT DEFAULT '📦'",
@@ -390,3 +391,21 @@ async def get_user_id_from_discord(discord_id: int) -> int | None:
         )
         row = await cursor.fetchone()
         return row[0] if row else None
+
+async def can_amber_speak_in_server(guild_id: int) -> bool:
+
+    async with aiosqlite.connect(DB_PATH) as db:
+        cursor = await db.execute(
+            "SELECT allow_ai FROM guild_config WHERE guild_id = ?",
+            (guild_id,)
+        )
+        row = await cursor.fetchone()
+        return row[0] == 1 if row else True
+
+async def set_amber_speaking_permission(guild_id: int, allow: bool):
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute(
+            "INSERT INTO guild_config (guild_id, allow_ai) VALUES (?, ?) ON CONFLICT(guild_id) DO UPDATE SET allow_ai = ?",
+            (guild_id, 1 if allow else 0, 1 if allow else 0)
+        )
+        await db.commit()

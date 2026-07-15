@@ -1,7 +1,7 @@
 import discord
 from utils.ai import *
 import utils.userbase.owner as owner
-from utils.userbase.database import get_user_info
+from utils.userbase.database import get_user_info, can_amber_speak_in_server
 
 
 def make_inbox_embed(user: discord.User ,user_info: dict, message: str) -> discord.Embed:
@@ -220,18 +220,24 @@ the chat history is context. always reply to the most recent message.
 
 async def amber_handler(bot: commands.Bot, message: discord.Message) -> None:
     """Called when amber is mentioned. Builds history, asks amber, replies."""
-    if message.author.bot:
-        return
 
-    user_line = await format_message_for_history(message, bot=bot)
-    channel_id = message.channel.id
-    add_to_history(channel_id, "user", user_line)
-    if bot.user in message.mentions:
-        history = get_history(channel_id)
-        reply = await ask_ai(history, SYSTEM_PROMPT)
-
-        if not reply or reply == "[[ignore]]":
+    if await can_amber_speak_in_server(message.guild.id):
+        if message.author.bot:
             return
 
-        await message.channel.send(reply)
-        add_to_history(channel_id, "assistant", reply)
+        user_line = await format_message_for_history(message, bot=bot)
+        channel_id = message.channel.id
+        add_to_history(channel_id, "user", user_line)
+        if bot.user in message.mentions:
+            history = get_history(channel_id)
+            reply = await ask_ai(history, SYSTEM_PROMPT)
+
+            if not reply or reply == "[[ignore]]":
+                return
+
+            if len(history) <= 1:
+                ai_warning = "\n-# hello message from novo, if you don't want amber to talk ask the owner to use `/server set_amber_ai` to turn it off 🤍"
+                reply += ai_warning
+
+            await message.channel.send(reply)
+            add_to_history(channel_id, "assistant", reply.replace(ai_warning, ""))

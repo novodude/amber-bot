@@ -6,7 +6,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
-from utils.userbase.database import DB_PATH
+from utils.userbase.database import DB_PATH, can_amber_speak_in_server, set_amber_speaking_permission
 
 
 
@@ -292,6 +292,24 @@ class ModerationCog(commands.Cog):
         log_embed.set_author(name=interaction.user.display_name, icon_url=interaction.user.display_avatar.url)
         log_embed.add_field(name="Changed At", value=discord.utils.format_dt(discord.utils.utcnow(), style='d'), inline=True)
         await self.send_log(interaction.guild_id, log_embed)
+
+    @server.command(name="set_amber_ai", description="Disable/enable Amber AI in this server")
+    @app_commands.checks.has_permissions(administrator=True)
+    @app_commands.describe(enabled="Enable or disable Amber AI in this server")
+    @app_commands.guild_only()
+    async def stop_amber_ai(self, interaction: discord.Interaction, enabled: bool):
+        
+        amber_state = await can_amber_speak_in_server(interaction.guild_id)
+
+        state_str = "enabled" if enabled else "disabled"
+
+        if amber_state == enabled:
+            await interaction.response.send_message(f"Amber AI is already {state_str} in this server.", ephemeral=True)
+            return
+
+        await set_amber_speaking_permission(interaction.guild_id, enabled)
+
+        await interaction.response.send_message(f"Amber AI has been {state_str} in this server.", delete_after=5)
 
     @server.command(name="set_welcome", description="Set a channel for welcome messages")
     @app_commands.describe(channel="The channel to send welcome messages in")
