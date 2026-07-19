@@ -1,5 +1,5 @@
 from PIL import Image, ImageDraw, ImageFont, ImageFilter, ImageEnhance
-from pilmoji import Pilmoji
+from pilmoji import Pilmoji, getsize
 from pilmoji.helpers import EMOJI_REGEX
 from discord import app_commands
 from pathlib import Path
@@ -58,17 +58,28 @@ class ImageGenerator:
     
     def _wrap_text(self, draw: ImageDraw.Draw, text: str, font: ImageFont.FreeTypeFont, 
                 max_width: int) -> list[str]:
-        """Wrap text to fit within max_width."""
+        """Wrap text to fit within max_width, measuring width the same way
+        pilmoji will actually render it — so emoji tokens are sized as a
+        single font-height-wide glyph instead of by their raw markup length.
+        (draw.textlength on a raw '<:name:1234567890>' token measures it as
+        ~30 characters of literal text, wildly overestimating its real
+        on-screen width — which is why emoji used to get shoved one per line.)
+        """
         lines = []
         words = text.split()
         current_line = ""
-        
+
+        def width_of(s: str) -> int:
+            return getsize(s, font=font)[0]
+
         for word in words:
             test_line = f"{current_line} {word}".strip()
-            
-            # Never split emoji tokens mid-character — pilmoji needs them intact
+
+            # Never split emoji tokens mid-character — pilmoji needs them
+            # intact, and getsize() already sizes them correctly so several
+            # now fit per line instead of each one forcing its own line break.
             if EMOJI_REGEX.fullmatch(word):
-                if draw.textlength(test_line, font=font) <= max_width:
+                if width_of(test_line) <= max_width:
                     current_line = test_line
                 else:
                     if current_line:
@@ -77,16 +88,16 @@ class ImageGenerator:
                 continue
             
             # Handle long words that exceed max_width
-            if draw.textlength(word, font=font) > max_width:
+            if width_of(word) > max_width:
                 for char in word:
                     test_char = current_line + char
-                    if draw.textlength(test_char, font=font) <= max_width:
+                    if width_of(test_char) <= max_width:
                         current_line = test_char
                     else:
                         if current_line:
                             lines.append(current_line)
                         current_line = char
-            elif draw.textlength(test_line, font=font) <= max_width:
+            elif width_of(test_line) <= max_width:
                 current_line = test_line
             else:
                 if current_line:
@@ -97,7 +108,7 @@ class ImageGenerator:
             lines.append(current_line)
         
         return lines
-    
+
     async def create_wanted_poster(self, user: discord.User, amount: int) -> BytesIO:
         """Create a wanted poster image with optimized memory usage."""
         template_path = self.root_dir / "assets" / "fun" / "wanted.png"
