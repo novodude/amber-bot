@@ -168,6 +168,15 @@ async def init_user_db():
                 ON inventory (user_id, item_name)
             """)
 
+        await db.execute("""
+            CREATE TRIGGER IF NOT EXISTS default_mute_update
+            AFTER INSERT ON users
+            WHEN NEW.mute_update IS 0
+            BEGIN
+                UPDATE users SET mute_update = 1 WHERE id = NEW.id;
+            END
+        """)
+
         # ── migrations in case the db is old ───────────────────────────────────
         migrations = [
             "ALTER TABLE games ADD COLUMN action_use_count INTEGER DEFAULT 0",

@@ -447,6 +447,9 @@ async def updates_handler(bot: commands.Bot, message: discord.Message):
     update_channel_id = await owner_utils.get_update_channel()
     if not message.channel.id == update_channel_id:
         return
+    if not await owner_utils.is_owner(message.author.id):
+        return 
+
     await message.add_reaction("🦆")
     users = await database.list_users()
     failed = 0

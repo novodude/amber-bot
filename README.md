@@ -19,25 +19,26 @@ New commands and systems are added regularly as the project grows.
 
 ### General
 
-| **/**                            | **description**                                                                                                                                                                     | **how I made it?**                                                                                     |
-| -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| **`/do [action] [user]`**        | Anime action GIFs — hug, kiss, pat, poke, cuddle, bite, kick, punch, feed, highfive, dance, sleep, cry, smile, wave, laugh, yeet, baka, facepalm, peck, shoot, run, stare, thumbsup | Dictionary-driven actions with colors, emojis, text, and async fetching via `aiohttp` from nekos.best. |
-| **`/look [reaction]`**           | Anime reaction GIFs — blush, shrug, yawn, angry, bored, happy, nope, smug, lurk, pout, nod                                                                                          | Same system as `/do`, but emotion-focused reactions.                                                   |
-| **`/ping`**                      | Checks the bot's latency.                                                                                                                                                           | Uses `bot.latency * 1000` to report milliseconds.                                                      |
-| **`/rarch`**                     | Generates artistic symmetrical inkblot images.                                                                                                                                      | Pillow-based procedural generation with blur and noise.                                                |
-| **`/ofc [type]`**                | Displays out-of-context images from local assets (SFW or NSFW).                                                                                                                     | Serves images locally with NSFW channel checks.                                                        |
-| **`/wanted [user] [amount]`**    | Creates a wanted poster for a user.                                                                                                                                                 | Pillow image compositing with avatars and text fitting.                                                |
-| **`/misquote [user] [message]`** | Generates a fake misquote image.                                                                                                                                                    | Pillow canvas with avatar and styled text.                                                             |
-| **`/melody`**                    | Generates short WAV melodies from notes or beats.                                                                                                                                   | Modal input + `wavesynth` audio generation.                                                            |
-| **`/8ball [question]`**          | Ask the magic 8 ball a question.                                                                                                                                                    | Random response pool.                                                                                  |
-| **`/coinflip`**                  | Flip a coin.                                                                                                                                                                        | `random.choice` between heads and tails.                                                               |
-| **`/no`**                        | Random rejection reasons.                                                                                                                                                           | Fetches from `naas.isalman.dev/no` API.                                                                |
-| **`/yes`**                       | Random agreement reasons.                                                                                                                                                           | Static response pool from `assets/fun/yes.json`.                                                       |
-| **`/rate [user]`**               | Rates you or another user across 6 categories.                                                                                                                                      | Random scoring with description tiers from `assets/fun/rating.json`.                                   |
-| **`/download [url] [format]`**   | Downloads audio or video from a YouTube or Spotify URL using yt‑dlp. Files under 25MB are sent directly to Discord; larger files are uploaded to Catbox and the link is shared.     | Uses yt‑dlp + ffmpeg. Spotify tracks are resolved to YouTube automatically via spotipy.                |
-| **`/mimic start [@user]`**       | Makes Amber repeat the target user's messages, with a 30% chance of sending one of their last 15 messages instead.                                                                  | Admin only. Mirrors text, attachments, and stickers.                                                   |
-| **`/say embed [message]`**       | Makes Amber send an embed message.                                                                                                                                                  | Supports text, timestamps, author display, image attachments, and 6 color options.                     |
-| **`/say text [message]`**        | Makes Amber say a text message.                                                                                                                                                     | Can send text and attachments.                                                                         |
+| **/**                            | **description**                                                                                                                                                                            | **how I made it?**                                                                                                                                                            |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **`/do [action] [user]`**        | Anime action GIFs — hug, kiss, pat, poke, cuddle, bite, kick, punch, feed, highfive, dance, sleep, cry, smile, wave, laugh, yeet, baka, facepalm, peck, shoot, run, stare, thumbsup        | Dictionary-driven actions with colors, emojis, text, and async fetching via `aiohttp` from nekos.best.                                                                        |
+| **`/look [reaction]`**           | Anime reaction GIFs — blush, shrug, yawn, angry, bored, happy, nope, smug, lurk, pout, nod                                                                                                 | Same system as `/do`, but emotion-focused reactions.                                                                                                                          |
+| **`/ping`**                      | Checks the bot's latency.                                                                                                                                                                  | Uses `bot.latency * 1000` to report milliseconds.                                                                                                                             |
+| **`/rarch`**                     | Generates artistic symmetrical inkblot images.                                                                                                                                             | Pillow-based procedural generation with blur and noise.                                                                                                                       |
+| **`/ofc [type]`**                | Displays out-of-context images from local assets (SFW or NSFW).                                                                                                                            | Serves images locally with NSFW channel checks.                                                                                                                               |
+| **`/wanted [user] [amount]`**    | Creates a wanted poster for a user.                                                                                                                                                        | Pillow image compositing with avatars and text fitting.                                                                                                                       |
+| **`/misquote [user] [message]`** | Generates a fake misquote image.                                                                                                                                                           | Pillow canvas with avatar and styled text.                                                                                                                                    |
+| **`/melody`**                    | Generates short WAV melodies from notes or beats.                                                                                                                                          | Modal input + `wavesynth` audio generation.                                                                                                                                   |
+| **`/8ball [question]`**          | Ask the magic 8 ball a question.                                                                                                                                                           | Random response pool.                                                                                                                                                         |
+| **`/coinflip`**                  | Flip a coin.                                                                                                                                                                               | `random.choice` between heads and tails.                                                                                                                                      |
+| **`/no`**                        | Random rejection reasons.                                                                                                                                                                  | Fetches from `naas.isalman.dev/no` API.                                                                                                                                       |
+| **`/yes`**                       | Random agreement reasons.                                                                                                                                                                  | Static response pool from `assets/fun/yes.json`.                                                                                                                              |
+| **`/rate [user]`**               | Rates you or another user across 6 categories.                                                                                                                                             | Random scoring with description tiers from `assets/fun/rating.json`.                                                                                                          |
+| **`/download [url] [format]`**   | Downloads audio or video from a YouTube or Spotify URL using yt‑dlp. Files under 25MB are sent directly to Discord; larger files are uploaded to Catbox and the link is shared.            | Uses yt‑dlp + ffmpeg. Spotify tracks are resolved to YouTube automatically via spotipy.                                                                                       |
+| **`/mimic start [@user]`**       | Makes Amber repeat the target user's messages, with a 30% chance of sending one of their last 15 messages instead.                                                                         | Admin only. Mirrors text, attachments, and stickers.                                                                                                                          |
+| **`/say embed [message]`**       | Makes Amber send an embed message.                                                                                                                                                         | Supports text, timestamps, author display, image attachments, and 6 color options.                                                                                            |
+| **`/say text [message]`**        | Makes Amber say a text message.                                                                                                                                                            | Can send text and attachments.                                                                                                                                                |
+| **`/urban [term] [private]`**    | Look up a phrase on Urban Dictionary — shows up to 10 definitions with Previous/Next buttons to page through them. Toggle `private` to send the result as an ephemeral (only-you) message. | Fetches from the unofficial `api.urbandictionary.com/v0/define` endpoint via `aiohttp`; bracketed cross-reference terms are turned into clickable links to their own UD page. |
 
 ---
 
@@ -245,10 +246,37 @@ Tools and generators to help you draw!
 
 Basically from the name they are generators :)
 
-| **/**                  | **description**                                           |
-| ---------------------- | --------------------------------------------------------- |
-| **`/generate name`**   | gives you name from a name list containing over 30k name. |
-| **`/generate traits`** | give you character traits with up to 25 at a time!        |
+| **/**                                          | **description**                                                                                                                                             |
+| ---------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **`/generate name`**                           | gives you name from a name list containing over 30k name.                                                                                                   |
+| **`/generate traits`**                         | give you character traits with up to 25 at a time!                                                                                                          |
+| **`/generate lorem [paragraphs] [sentences]`** | Generate placeholder Lorem Ipsum text.                                                                                                                      |
+| **`/generate amberia [sentences]`**            | Generate grammatically-structured nonsense text where every noun/adjective/verb is a variation of "amber".                                                  |
+| **`/generate ad [subject]`**                   | Generate a random or given-subject ad in old TV infomercial style — problem, product, benefits, optional testimonial/price/guarantee, and a call to action. |
+
+---
+
+### 📝 Text Utilities
+
+A `/text` command group for manipulating and analyzing text.
+
+| **/**                                                                      | **description**                                                                                                                     |
+| -------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| **`/text uwu [text] [stutter] [faces] [word_swaps]`**                      | Convert text into uwu-speak (l/r → w, n/m+o → ny/myo nasalization), with optional stuttering, kaomoji faces, and common word swaps. |
+| **`/text count [text] [target]`**                                          | Get character, word, and line counts for a piece of text — optionally counts occurrences of a specific word/substring too.          |
+| **`/text find [text] [target] [case_sensitive]`**                          | Find every position where a word or substring occurs in text.                                                                       |
+| **`/text replace [text] [target] [replacement] [case_sensitive] [limit]`** | Replace occurrences of a word/substring in text, with an optional cap on how many replacements to make.                             |
+
+---
+
+### 🔐 Cypher
+
+A `/cypher` command group for encoding and decoding text into various formats — for fun, not real security.
+
+| **/**                                | **description**                                                                                                                                                                                     |
+| ------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **`/cypher encode [text] [format]`** | Encode text into one of: binary, hex, base64, base32, morse, NATO phonetic, rot13, url, reverse.                                                                                                    |
+| **`/cypher decode [text] [format]`** | Decode cyphered text. Leave `format` blank to auto-detect — checks each format's charset structure (most distinctive first) and falls back to brute-force for ambiguous formats like rot13/reverse. |
 
 ---
 
@@ -464,6 +492,10 @@ python update.py
 - [x] Gambling system
 - [x] User info, avatar, and banner commands
 - [x] Action stats command (`/my stats`)
+- [x] Cypher system — encode/decode text into binary, hex, base64, base32, morse, NATO phonetic, rot13, url, and reverse, with format auto-detection
+- [x] Text utilities — uwu-speak converter, count, find, replace
+- [x] Themed generators — Lorem Ipsum, Amberia (amber-themed nonsense text), old-TV-style ad generator
+- [x] Urban Dictionary lookup (`/urban`) with paginated results and ephemeral toggle
 
 ---
 
@@ -481,6 +513,7 @@ Full model card: [novodude/domesticated-LLM](https://huggingface.co/novodude/dom
 - aiohttp
 - python-dotenv
 - pillow
+- pilmoji
 - wavesynth
 - yt-dlp
 - aiosqlite

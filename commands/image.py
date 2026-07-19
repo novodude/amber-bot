@@ -1,4 +1,6 @@
 from PIL import Image, ImageDraw, ImageFont, ImageFilter, ImageEnhance
+from pilmoji import Pilmoji
+from pilmoji.helpers import EMOJI_REGEX
 from discord import app_commands
 from pathlib import Path
 from io import BytesIO
@@ -55,7 +57,7 @@ class ImageGenerator:
         return ImageFont.truetype(font_path, 8), text, pad
     
     def _wrap_text(self, draw: ImageDraw.Draw, text: str, font: ImageFont.FreeTypeFont, 
-                   max_width: int) -> list[str]:
+                max_width: int) -> list[str]:
         """Wrap text to fit within max_width."""
         lines = []
         words = text.split()
@@ -63,6 +65,16 @@ class ImageGenerator:
         
         for word in words:
             test_line = f"{current_line} {word}".strip()
+            
+            # Never split emoji tokens mid-character — pilmoji needs them intact
+            if EMOJI_REGEX.fullmatch(word):
+                if draw.textlength(test_line, font=font) <= max_width:
+                    current_line = test_line
+                else:
+                    if current_line:
+                        lines.append(current_line)
+                    current_line = word
+                continue
             
             # Handle long words that exceed max_width
             if draw.textlength(word, font=font) > max_width:
@@ -147,46 +159,48 @@ class ImageGenerator:
         
         return output_bytes
     
-    async def create_quote_image(self, user: discord.User, message: str, interaction:discord.Interaction | None = None, bot: commands.Bot | None = None) -> BytesIO:
+    async def create_quote_image(self, user: discord.User, message: str, interaction: discord.Interaction | None = None, bot: commands.Bot | None = None) -> BytesIO:
         """Create a quote/misquote image."""
         font_path = self.font_dir / "quote.ttf"
 
-        message = await pretty_text(interaction=interaction, bot=bot, text=message)
-        
         # Fetch user avatar
         async with aiohttp.ClientSession() as session:
             async with session.get(user.display_avatar.url) as resp:
                 avatar_bytes = await resp.read()
-        
+
         # Create canvas
         canvas = Image.new("RGBA", (500, 250), "black")
         draw = ImageDraw.Draw(canvas)
-        
+
         # Add avatar
-        avatar = Image.open(BytesIO(avatar_bytes)).convert("RGBA").resize((250, 250))
+        avatar_raw = Image.open(BytesIO(avatar_bytes))
+        if getattr(avatar_raw, "is_animated", False):
+            avatar_raw.seek(0)
+        avatar = avatar_raw.convert("RGBA").resize((250, 250))
         canvas.paste(avatar, (0, 0), avatar)
-        
+
         # Add quote
         quote_font, wrapped_quote, pad = self.fit_text_into_box(
             draw, message, str(font_path), 230, 190, 25
         )
-        
+
         # Calculate quote height for vertical centering
         quote_bbox = draw.multiline_textbbox((0, 0), wrapped_quote, font=quote_font)
         quote_height = quote_bbox[3] - quote_bbox[1]
-        
+
         available_height = 170
         quote_y = 30 + (available_height - quote_height) // 2
-        
-        draw.multiline_text((270 + pad, quote_y), wrapped_quote, font=quote_font, fill=(200, 200, 200))
-        
-        draw.line((270, 200, 480, 200), fill=(200, 200, 200), width=2)
-        
-        name_font, wrapped_name, pad = self.fit_text_into_box(
+
+        name_font, wrapped_name, name_pad = self.fit_text_into_box(
             draw, f"- @{user.display_name}", str(font_path), 250, 60, 15
         )
-        draw.multiline_text((270 + pad, 210), wrapped_name, font=name_font, fill=(255, 240, 200))
-        
+
+        with Pilmoji(canvas) as pilmoji:
+            pilmoji.text((270 + pad, quote_y), wrapped_quote, (200, 200, 200), quote_font)
+            pilmoji.text((270 + name_pad, 210), wrapped_name, (255, 240, 200), name_font)
+
+        draw.line((270, 200, 480, 200), fill=(200, 200, 200), width=2)
+
         # Save to bytes
         output_bytes = BytesIO()
         canvas.save(output_bytes, format="PNG")
@@ -308,14 +322,15 @@ class ImageGenerator:
         text_x = (width - text_width) // 2
         text_y = (height - caption_height + (caption_height - text_height) // 2) - 20
 
-        draw.text(
-            (text_x, text_y),
-            caption,
-            font=font,
-            fill=(255, 255, 255),
-            stroke_width=4,
-            stroke_fill=(0, 0, 0)
-        )
+        with Pilmoji(new_img) as pilmoji:
+            pilmoji.text(
+                (text_x, text_y),
+                caption,
+                (255, 255, 255),
+                font,
+                stroke_width=4,
+                stroke_fill=(0, 0, 0)
+            )
 
         return new_img
 
@@ -324,19 +339,18 @@ class ImageGenerator:
         padding = 200
 
         # Create canvas
-        new_img = Image.new("RGBA", (width, height + padding), "black")
+        new_img = Image.new("RGBA", (width, height + padding), "white")
 
         if bottom:
-            new_img.paste(image, (0, 0))          # caption at bottom
+            new_img.paste(image, (0, 0))
             text_area_y = height
         else:
-            new_img.paste(image, (0, padding))    # caption at top
+            new_img.paste(image, (0, padding))
             text_area_y = 0
 
         draw = ImageDraw.Draw(new_img)
         font_path = self.font_dir / "caption.ttf"
 
-        # Fit text to full width
         font, wrapped_text, _ = self.fit_text_into_box(
             draw,
             caption.upper(),
@@ -346,7 +360,6 @@ class ImageGenerator:
             80
         )
 
-        # Center text in the padding area
         text_bbox = draw.multiline_textbbox((0, 0), wrapped_text, font=font)
         text_width = text_bbox[2] - text_bbox[0]
         text_height = text_bbox[3] - text_bbox[1]
@@ -354,15 +367,16 @@ class ImageGenerator:
         text_x = (width - text_width) // 2
         text_y = text_area_y + (padding - text_height) // 2
 
-        draw.multiline_text(
-            (text_x, text_y),
-            wrapped_text,
-            font=font,
-            fill=(255, 255, 255),
-            align="center",
-            stroke_width=5,
-            stroke_fill=(0, 0, 0)
-        )
+        with Pilmoji(new_img) as pilmoji:
+            pilmoji.text(
+                (text_x, text_y),
+                wrapped_text,
+                (0, 0, 0),
+                font,
+                align="center",
+                stroke_width=5,
+                stroke_fill=(255, 255, 255)
+            )
 
         return new_img
 
@@ -634,9 +648,10 @@ class ImageCommands(app_commands.Group):
         message="What did they say?",
         user="Who said it?"
     )
-    async def misquote(self, interaction: discord.Interaction, user: discord.User, message: str):
+    async def quote(self, interaction: discord.Interaction, user: discord.User, message: str):
         await interaction.response.defer()
         try:
+            message = await pretty_text(interaction, None, message, False)
             output_bytes = await self.img_gen.create_quote_image(interaction=interaction, user=user, message=message)
             file = discord.File(output_bytes, filename=f"quote_{user.name}.png")
             await interaction.followup.send(file=file)
@@ -694,8 +709,9 @@ class ImageCommands(app_commands.Group):
     )
     async def caption(self, interaction: discord.Interaction, caption: str, image: discord.Attachment = None, url: str = None):
         async def logic():
+            text = await pretty_text(interaction, None, caption, False)
             img = await self.resolve_image(image, url)
-            result = self.img_gen.caption_image(img, caption)
+            result = self.img_gen.caption_image(img, text)
             await self.send_image(interaction, result, "caption.png")
         await self.run_image_command(interaction, logic, image, url)
 
@@ -708,8 +724,9 @@ class ImageCommands(app_commands.Group):
     )
     async def meme(self, interaction: discord.Interaction, caption: str, image: discord.Attachment = None, url: str = None, bottom: bool = False):
         async def logic():
+            text = await pretty_text(interaction, None, caption, False)
             img = await self.resolve_image(image, url)
-            result = self.img_gen.memeify_image(img, bottom, caption)
+            result = self.img_gen.memeify_image(img, bottom, text)
             await self.send_image(interaction, result, "meme.png")
         await self.run_image_command(interaction, logic, image, url)
 

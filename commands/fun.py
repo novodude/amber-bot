@@ -11,6 +11,8 @@ import random
 import json
 import os
 
+from utils.text import pretty_text
+
 class OFCType(discord.Enum):
     SFW = "sfw"
     NSFW = "nsfw"
@@ -251,13 +253,15 @@ async def handle_4k(bot: commands.Bot, message: discord.Message):
             await message.reply("Can't read the replied message.", delete_after=2)
             return
 
+    text = await pretty_text(None, bot, replied.content, False) or "No text content"
+
     ROOT_DIR = Path(__file__).resolve().parent.parent
     img_gen = ImageGenerator(ROOT_DIR)
 
     try:
         output_bytes = await img_gen.create_quote_image(
             replied.author,
-            replied.content or "",
+            text,
             None,
             bot
         )

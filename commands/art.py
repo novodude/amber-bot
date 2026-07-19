@@ -1,6 +1,7 @@
 import discord
 from discord import app_commands
 from utils.art.art import ArtUtils
+from utils.text import generate_lorem, generate_amberia, generate_ad
 import io
 
 @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
@@ -93,6 +94,8 @@ class Art(app_commands.Group):
 
         await interaction.followup.send("here's a idea have fun drawing!", file=discord.File(buffer, filename="pose.png"))
 
+@app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+@app_commands.allowed_installs(guilds=True, users=True)
 class Generators(app_commands.Group):
     """Commands related to generators."""
 
@@ -126,7 +129,37 @@ class Generators(app_commands.Group):
         embed = discord.Embed(title="Character Name", description=f"Generated name: {name}", color=0x2F3136)
 
         await interaction.followup.send(embed=embed)
+    @app_commands.command(name="lorem", description="Generate placeholder Lorem Ipsum text")
+    @app_commands.describe(
+        paragraphs="Number of paragraphs to generate (1-10). Default 1.",
+        sentences="Sentences per paragraph (1-20). Default 5."
+    )
+    async def lorem(
+        self, interaction: discord.Interaction,
+        paragraphs: app_commands.Range[int, 1, 10] = 1,
+        sentences: app_commands.Range[int, 1, 20] = 5
+    ):
+        result = generate_lorem(paragraphs, sentences)
+        await interaction.response.send_message(result)
 
+    @app_commands.command(name="amberia", description="Generate text where everything is a variation of 'amber'")
+    @app_commands.describe(
+        sentences="Number of sentences to generate (1-20). Default 5."
+    )
+    async def amberia(
+        self, interaction: discord.Interaction,
+        sentences: app_commands.Range[int, 1, 20] = 5
+    ):
+        result = generate_amberia(sentences)
+        await interaction.response.send_message(result)
+
+    @app_commands.command(name="ad", description="Generate an old-school TV infomercial-style ad")
+    @app_commands.describe(
+        subject="Optional: what the ad should be for. Leave blank for a random product."
+    )
+    async def ad(self, interaction: discord.Interaction, subject: str = None):
+        result = generate_ad(subject)
+        await interaction.response.send_message(result)
 
 async def art_setup(bot):
     bot.tree.add_command(Art())

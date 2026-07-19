@@ -27,12 +27,13 @@ from commands.user import user_setup
 from commands.amber import amber_setup
 from commands.owner import owner_setup, updates_handler
 from commands.art import art_setup
+from commands.cypher import cypher_setup
+from commands.text import text_setup
 try:
     from commands.debugging import debug_setup
 except ImportError:
     pass
 # databases
-from utils.art.art import ArtUtils
 from utils.radio.database import init_radio_db
 from utils.userbase.database import init_user_db
 from utils.userbase.owner import init_owner_db
@@ -91,6 +92,8 @@ async def on_ready():
     await anime_setup(bot)
     await owner_setup(bot)
     await art_setup(bot)
+    await cypher_setup(bot)
+    await text_setup(bot)
     try:        await debug_setup(bot)
     except NameError: pass
     await leaderboard_setup(bot)

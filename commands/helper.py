@@ -18,6 +18,7 @@ COMMANDS = {
         ("/mimic start [user]",        "Activate mimic mode for a user"),
         ("/mimic stop [user]",         "Stop mimic mode for a user"),
         ("/mimic list",                "List of users that Amber mimics"),
+        ("urban [term]",                  "Get the Urban Dictionary definition of a term")
     ],
    "🌸 Anime": [
         ("/anime waifu",               "Get a random anime waifu image"),
@@ -109,8 +110,17 @@ COMMANDS = {
         ("/amber mute_update",            "Mute or unmute update messages from amber"),
         ("/amber mute_all_notif",         "Mute or unmute all notifications from the bot"),
         ("/amber inbox",                  "send a message to the bot owner"),
+        ("/text find [text] [target] [case_sensitive]", "Search for target in text"),
+        ("/text count [text] [target]", "Count occurrences of target in text"),
+        ("/text replace [text] [target] [replacement] [case_sensitive] [limit]", "Replace occurrences of target with replacement in text"),
+        ("text uwu [text]", "Convert text to uwu-speak"),
         ("/generate name",                "Generate a random name for you"),
-        ("/generate traits",              "Generate up to 25 trait for you")
+        ("/generate traits",                          "Generate up to 25 trait for you"),
+        ("/generate lorem [sentences]",               "Generate a random lorem ipsum text"),
+        ("/generate amberia [sentences]",             "Generate a random amberia text"),
+        ("/generate ad [subject]",                    "Generate a random advertisement for a subject"),
+        ("cypher encrypt [text] [format]", "Encrypt text using a simple cipher (base64, hex, binary)"),
+        ("cypher decrypt [text] [format]", "Decrypt text using a simple cipher (base64, hex, binary)")
     ],
     "🎮 Games": [
         ("/games duck_clicker",              "Click ducks to earn dabloons — 2 per 5 clicks (4 with Double Points). Auto Clicker ticks every 60s in the background."),
