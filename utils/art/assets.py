@@ -43,7 +43,7 @@ ITEMS = {
 
 FONTS = [f"assets/fonts/art/{i}.ttf" for i in range(1, 5)]
 
-POSES = [f"assets/art/poses/{i}.jpg" for i in range(1, 301)]
+POSES = [f"assets/art/poses/{i}.jpg" for i in range(1, 162)]
 
 NAMES = [
     "emma",
