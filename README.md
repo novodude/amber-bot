@@ -518,9 +518,10 @@ Full model card: [novodude/domesticated-LLM](https://huggingface.co/novodude/dom
 - yt-dlp
 - aiosqlite
 - spotipy
-- torch
-- transformers
-- accelerate
+- nekosbest
+- torch - **optional**
+- transformers - **optional**
+- accelerate - **optional**
 - **ffmpeg** — required for audio streaming in `/radio`
   > Download at [ffmpeg.org/download.html](https://ffmpeg.org/download.html)
 

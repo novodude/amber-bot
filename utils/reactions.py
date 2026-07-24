@@ -1,5 +1,5 @@
 import discord
-import aiohttp
+from nekosbest import Client
 import random
 from datetime import datetime
 from typing import Optional
@@ -1079,22 +1079,6 @@ async def build_embed(color: discord.Color, title: str, description: str, action
 _gif_cache: dict[str, list[str]] = {}
 _gif_used: dict[str, list[str]] = {}
 
-_HEADERS = {"User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36"}
-
-
-async def _get_gif_from_otakugifs(action: str) -> str | None:
-
-    try:
-        async with aiohttp.ClientSession(headers=_HEADERS) as session:
-            async with session.get(f"https://api.otakugifs.xyz/gif?reaction={action}") as response:
-                if response.status != 200:
-                    return None
-                data = await response.json()
-                return data.get("url")
-    except:
-        return None
-
-
 async def get_gif_url(action: str) -> str:
     if action == 'gamble':
         return random.choice(GAMBLE_GIFS)
@@ -1103,26 +1087,19 @@ async def get_gif_url(action: str) -> str:
     if not _gif_cache.get(action):
         if not _gif_used.get(action):
             # cold start — try nekos.best first (bigger variety when it's up)
-            async with aiohttp.ClientSession(headers=_HEADERS) as session:
-                async with session.get(f"https://nekos.best/api/v2/{action}?amount=20") as response:
-                    if response.status == 200 and "json" in response.content_type:
-                        data = await response.json()
-                        _gif_cache[action] = [r['url'] for r in data['results']]
+            async with Client() as client:
+                result = await client.get_image("hug", 10)
+
+                _gif_cache[action] = [r.url for r in result]
         else:
             # recycle used ones back
             _gif_cache[action] = _gif_used[action]
             _gif_used[action] = []
 
-    if not _gif_cache.get(action):
-        # nekos.best down/blocked and nothing cached — try otakugifs.xyz,
-        # one image at a time (no batching endpoint worth the complexity here).
-        return await _get_gif_from_otakugifs(action)
-
     url = random.choice(_gif_cache[action])
     _gif_cache[action].remove(url)
     _gif_used.setdefault(action, []).append(url)
     return url
-
 
 # ── Counter text with the number ─────────────────────────────────────────────────────────────
 async def get_counter_text(interaction: discord.Interaction, action: str, user: discord.User | None = None, is_button: bool = False) -> str:
