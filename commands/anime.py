@@ -1,5 +1,6 @@
 import discord
 from discord import app_commands
+from nekosbest import Client
 import aiohttp
 
 @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
@@ -12,15 +13,10 @@ class Anime(app_commands.Group):
 
 
     async def get_anime_image(self, type: str):
-        url = f"https://nekos.best/api/v2/{type}"
-        async with aiohttp.ClientSession() as session:
+        async with Client() as client:
             try:
-                async with session.get(url) as response:
-                    if response.status == 200:
-                        data = await response.json()
-                        return data
-                    else:
-                        return "Sorry, I couldn't fetch an image at the moment. Please try again later."
+                result = await client.get_image(type)
+                return result
             except Exception as e:
                 return e
 
@@ -37,12 +33,12 @@ class Anime(app_commands.Group):
             except Exception as e:
                 return e
 
-    def build_embed(self, data: dict, title: str):
-        image_url = data['results'][0]['url']
+    def build_embed(self, data, title: str):
+        image_url = data.url
         embed = discord.Embed(title=title, color=discord.Color.purple())
-        embed.add_field(name="Source", value=f"[Artist's Page]({data['results'][0]['artist_href']}) | [Artwork]({data['results'][0]['source_url']})", inline=False)
+        embed.add_field(name="Source", value=f"[Artist's Page]({data.artist_href}) | [Artwork]({data.source_url})", inline=False)
         embed.set_image(url=image_url)
-        embed.set_footer(text=f"Artist: {data['results'][0]['artist_name']} | Dimensions: {data['results'][0]['dimensions']['width']}x{data['results'][0]['dimensions']['height']}")
+        embed.set_footer(text=f"Artist: {data.artist_name} | Dimensions: {data.dimensions.width}x{data.dimensions.height}")
         return embed
 
 
