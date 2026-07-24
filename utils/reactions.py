@@ -1088,7 +1088,7 @@ async def get_gif_url(action: str) -> str:
         if not _gif_used.get(action):
             # cold start — try nekos.best first (bigger variety when it's up)
             async with Client() as client:
-                result = await client.get_image("hug", 10)
+                result = await client.get_image(action, 10)
 
                 _gif_cache[action] = [r.url for r in result]
         else:
